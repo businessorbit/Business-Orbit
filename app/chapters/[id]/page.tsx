@@ -337,16 +337,16 @@ export default function ChapterPage() {
         rememberUpgrade: true
       })
       socketRef.current = s
-      s.on('connect', () => { 
+      s.off('connect').on('connect', () => { 
         setConnecting(false); 
         setConnectionError("") 
         console.log('Socket connected successfully')
       })
-      s.on('disconnect', () => {
+      s.off('disconnect').on('disconnect', () => {
         setConnecting(true)
         console.log('Socket disconnected')
       })
-      s.on('connect_error', (error: any) => {
+      s.off('connect_error').on('connect_error', (error: any) => {
         console.error('Socket connection error:', error)
         console.error('Error details:', {
           message: error.message,
@@ -359,7 +359,7 @@ export default function ChapterPage() {
       // Deduplicate socket deliveries using a global Set
       ;(globalThis as any).__processedChatMsgIds = (globalThis as any).__processedChatMsgIds || new Set<string>()
       const processed = (globalThis as any).__processedChatMsgIds as Set<string>
-      s.on('newMessage', (msg: ChatMessage) => {
+      s.off('newMessage').on('newMessage', (msg: ChatMessage) => {
         if (processed.has(msg.id)) return
         processed.add(msg.id)
         console.log('Received new message via socket:', msg.content)
@@ -382,20 +382,33 @@ export default function ChapterPage() {
         }
         // Keep processed IDs for the session to avoid any duplicate prints permanently
       })
-      s.on('presence', (p: { count: number }) => {
+      s.off('presence').on('presence', (p: { count: number }) => {
         setOnlineCount(p?.count || 0)
       })
-      s.on('typing', ({ userId }: { userId: string }) => {
+      s.off('typing').on('typing', ({ userId }: { userId: string }) => {
         if (String(userId) === String(user?.id)) return
         setTypingUsers(prev => new Set([...prev, String(userId)]))
       })
-      s.on('stopTyping', ({ userId }: { userId: string }) => {
+      s.off('stopTyping').on('stopTyping', ({ userId }: { userId: string }) => {
         setTypingUsers(prev => {
           const newSet = new Set(prev)
           newSet.delete(String(userId))
           return newSet
         })
       })
+    }
+    // Cleanup: ensure we don't accumulate duplicate listeners across navigations
+    return () => {
+      const s = socketRef.current
+      if (s) {
+        s.off('newMessage')
+        s.off('presence')
+        s.off('typing')
+        s.off('stopTyping')
+        s.off('connect')
+        s.off('disconnect')
+        s.off('connect_error')
+      }
     }
     // If not connected within 8s, show a hint
     
