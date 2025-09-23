@@ -7,6 +7,13 @@ export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
+    // Preflight check for Cloudinary credentials in production
+    if (!process.env.CLOUDINARY_URL && (
+      !process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET
+    )) {
+      console.error('Cloudinary environment variables are missing. Please set CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET in Vercel env.')
+      return NextResponse.json({ error: 'Server misconfiguration: Cloudinary credentials missing' }, { status: 500 })
+    }
     const formData = await request.formData();
     
     const name = formData.get('name') as string;
@@ -69,6 +76,37 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle file uploads with Cloudinary
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    const maxSize = 4 * 1024 * 1024 // 4MB to align with serverless payload constraints
+
+    // Upload helper with stream + base64 fallback
+    const uploadWithFallback = async (
+      buffer: Buffer,
+      options: { folder: string; transformation: any[]; resource_type?: 'image' | 'video' | 'raw' | 'auto' }
+    ) => {
+      try {
+        const result = await new Promise<any>((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            options as any,
+            (error, result) => {
+              if (error) return reject(error)
+              resolve(result)
+            }
+          )
+          uploadStream.end(buffer)
+        })
+        return result
+      } catch (streamErr) {
+        console.error('Cloudinary stream upload failed. Falling back to base64 upload.', streamErr)
+        // Fallback to base64 data URI upload
+        const base64 = buffer.toString('base64')
+        // Try a generic jpeg content-type for safety; Cloudinary will sniff format
+        const dataUri = `data:image/jpeg;base64,${base64}`
+        const result = await cloudinary.uploader.upload(dataUri, options as any)
+        return result
+      }
+    }
+
     let profilePhotoUrl: string | null = null;
     let profilePhotoId: string | null = null;
     let bannerUrl: string | null = null;
@@ -76,79 +114,69 @@ export async function POST(request: NextRequest) {
 
     // Upload profile photo to Cloudinary
     if (profilePhoto && profilePhoto.size > 0) {
+      if (!allowedTypes.includes(profilePhoto.type)) {
+        return NextResponse.json({ error: 'Invalid profile photo type. Only JPEG, PNG, GIF, and WebP are allowed' }, { status: 400 })
+      }
+      if (profilePhoto.size > maxSize) {
+        return NextResponse.json({ error: 'Profile photo must be less than 4MB' }, { status: 400 })
+      }
       try {
         const arrayBuffer = await profilePhoto.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        
-        const profilePhotoResult = await new Promise<any>((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            {
-              folder: 'business-orbit',
-              transformation: [
-                { width: 800, height: 800, crop: 'limit' },
-                { quality: 'auto' }
-              ]
-            },
-            (error, result) => {
-              if (error) {
-                console.error('Profile photo upload error:', error);
-                reject(error);
-              } else {
-                console.log('Profile photo uploaded:', result);
-                resolve(result);
-              }
-            }
-          );
-          uploadStream.end(buffer);
-        });
+        const profilePhotoResult = await uploadWithFallback(buffer, {
+          folder: 'business-orbit/profile-photos',
+          transformation: [
+            { width: 800, height: 800, crop: 'limit' },
+            { quality: 'auto:good' },
+            { fetch_format: 'auto' }
+          ],
+          resource_type: 'image'
+        })
         
         profilePhotoUrl = profilePhotoResult.secure_url || profilePhotoResult.url;
         profilePhotoId = profilePhotoResult.public_id;
       } catch (error) {
-        console.error('Profile photo upload error:', error);
-        return NextResponse.json(
-          { error: 'Failed to upload profile photo' },
-          { status: 500 }
-        );
+        console.error('Profile photo upload error:', {
+          message: (error as any)?.message,
+          name: (error as any)?.name,
+          http_code: (error as any)?.http_code,
+          stack: (error as any)?.stack,
+        });
+        return NextResponse.json({ error: 'Failed to upload profile photo' }, { status: 500 });
       }
     }
 
     // Upload banner to Cloudinary
     if (banner && banner.size > 0) {
+      if (!allowedTypes.includes(banner.type)) {
+        return NextResponse.json({ error: 'Invalid banner type. Only JPEG, PNG, GIF, and WebP are allowed' }, { status: 400 })
+      }
+      if (banner.size > maxSize) {
+        return NextResponse.json({ error: 'Banner image must be less than 4MB' }, { status: 400 })
+      }
       try {
         const arrayBuffer = await banner.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        
-        const bannerResult = await new Promise<any>((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            {
-              folder: 'business-orbit',
-              transformation: [
-                { width: 1200, height: 400, crop: 'limit' },
-                { quality: 'auto' }
-              ]
-            },
-            (error, result) => {
-              if (error) {
-                console.error('Banner upload error:', error);
-                reject(error);
-              } else {
-                console.log('Banner uploaded:', result);
-                resolve(result);
-              }
-            }
-          );
-          uploadStream.end(buffer);
-        });
+        const bannerResult = await uploadWithFallback(buffer, {
+          folder: 'business-orbit/banners',
+          transformation: [
+            { width: 1200, height: 400, crop: 'limit' },
+            { quality: 'auto:good' },
+            { fetch_format: 'auto' }
+          ],
+          resource_type: 'image'
+        })
         
         bannerUrl = bannerResult.secure_url || bannerResult.url;
         bannerId = bannerResult.public_id;
       } catch (error) {
-        console.error('Banner upload error:', error);
-        return NextResponse.json(
-          { error: 'Failed to upload banner image' },
-          { status: 500 }
-        );
+        console.error('Banner upload error:', {
+          message: (error as any)?.message,
+          name: (error as any)?.name,
+          http_code: (error as any)?.http_code,
+          stack: (error as any)?.stack,
+        });
+        return NextResponse.json({ error: 'Failed to upload banner image' }, { status: 500 });
       }
     }
 
