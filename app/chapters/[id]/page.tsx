@@ -269,16 +269,25 @@ export default function ChapterPage() {
     async function load() {
       if (!params.id) return
       try {
+        // Try app API first (auth-protected, membership aware)
         const res = await fetch(`/api/chat/${params.id}/messages?limit=50`, { credentials: 'include' })
         if (res.ok) {
           const data = await res.json() as { success: boolean; messages: ChatMessage[]; nextCursor?: string | null }
           console.log('Loaded messages from API:', data.messages.length, 'messages')
-          if (data.success) {
+          if (data.success && data.messages.length) {
             setMessages(data.messages)
             setNextCursor(data.nextCursor || null)
+            return
           }
-        } else {
-          console.error('Failed to load messages:', res.status)
+        }
+        // Fallback: read directly from chat server history if app API returned none
+        const res2 = await fetch(`${CHAT_HTTP_URL}/messages/${params.id}?limit=50`)
+        if (res2.ok) {
+          const data2 = await res2.json() as { success: boolean; messages: ChatMessage[] }
+          if (data2.success) {
+            console.log('Loaded messages from ChatServer:', data2.messages.length, 'messages')
+            setMessages(data2.messages)
+          }
         }
       } catch (e) {
         console.error('Load chat messages error', e)

@@ -74,6 +74,38 @@ app.post('/messages/:chapterId', async (req: any, res: any) => {
   }
 })
 
+// HTTP history: fetch recent messages for a chapter (no auth at this layer; rely on app API for gated views)
+app.get('/messages/:chapterId', async (req: any, res: any) => {
+  try {
+    const { chapterId } = req.params as { chapterId: string }
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100)
+    if (!chapterId) return res.status(400).json({ success: false, error: 'chapterId required' })
+    const { rows } = await pool.query(
+      `SELECT m.id::text, m.chapter_id::text as chapter_id, m.sender_id::text as sender_id, m.content, m.created_at,
+              u.name as sender_name, u.profile_photo_url as sender_avatar_url
+         FROM chapter_messages m
+         JOIN users u ON u.id = m.sender_id
+        WHERE m.chapter_id = $1
+        ORDER BY m.created_at DESC
+        LIMIT $2`,
+      [chapterId, limit]
+    )
+    const messages = rows.map((r: any) => ({
+      id: String(r.id),
+      chapterId: String(r.chapter_id),
+      senderId: String(r.sender_id),
+      senderName: r.sender_name || 'User',
+      senderAvatarUrl: r.sender_avatar_url || null,
+      content: r.content,
+      timestamp: new Date(r.created_at).toISOString(),
+    })).reverse()
+    res.json({ success: true, messages })
+  } catch (e) {
+    console.error('HTTP GET /messages error', e)
+    res.status(500).json({ success: false, error: 'internal error' })
+  }
+})
+
 const server = http.createServer(app)
 const io = new Server(server, {
   cors: { origin: true, credentials: true },
