@@ -94,7 +94,7 @@ export default function ChapterPage() {
   
   const fetchingMembersRef = (globalThis as any).__fetchingMembersRef as { current: boolean } || { current: false }
   ;(globalThis as any).__fetchingMembersRef = fetchingMembersRef
-  const SOCKET_URL = process.env.NEXT_PUBLIC_CHAT_SOCKET_URL || "http://localhost:4000"
+  const SOCKET_URL = process.env.NEXT_PUBLIC_CHAT_SOCKET_URL || (typeof window !== 'undefined' ? `${window.location.origin.replace('http','ws').replace('https','wss')}` : 'http://localhost:4000')
   const [onlineCount, setOnlineCount] = useState<number>(0)
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set())
 
