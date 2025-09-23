@@ -2,13 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/config/database';
 import { getUserFromToken } from '@/lib/utils/auth';
 
-// Cache for user profiles (in production, use Redis or similar)
-const profileCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
+// Note: Avoid in-memory caching on serverless to prevent stale profile images
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const user = await getUserFromToken(request);
@@ -20,7 +17,7 @@ export async function GET(
       );
     }
 
-    const { id: userIdParam } = await params;
+    const { id: userIdParam } = params || ({} as any);
     const userId = parseInt(userIdParam);
 
     if (isNaN(userId)) {
@@ -28,13 +25,6 @@ export async function GET(
         { error: 'Invalid user ID' },
         { status: 400 }
       );
-    }
-
-    // Check cache first
-    const cacheKey = `profile_${userId}`;
-    const cached = profileCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return NextResponse.json(cached.data);
     }
 
     // Get user basic info
@@ -87,13 +77,12 @@ export async function GET(
       }
     };
 
-    // Cache the response
-    profileCache.set(cacheKey, {
-      data: responseData,
-      timestamp: Date.now()
-    });
-
-    return NextResponse.json(responseData);
+    const res = NextResponse.json(responseData);
+    // Disable caching to always reflect latest Cloudinary URLs
+    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.headers.set('Pragma', 'no-cache');
+    res.headers.set('Expires', '0');
+    return res;
 
   } catch (error: any) {
     console.error('Get user profile error:', error);
