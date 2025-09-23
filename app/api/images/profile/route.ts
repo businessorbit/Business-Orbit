@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs'
 import { cloudinary } from '@/lib/config/cloudinary';
 import pool from '@/lib/config/database';
 import { verifyToken } from '@/lib/utils/auth';
@@ -35,8 +36,8 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Validate file size (4MB limit to fit Vercel payload constraints)
+    const maxSize = 4 * 1024 * 1024; // 4MB
     if (profilePhoto.size > maxSize) {
       return NextResponse.json(
         { error: 'File size must be less than 5MB' },
@@ -78,7 +79,8 @@ export async function PUT(request: NextRequest) {
             folder: 'business-orbit/profile-photos',
             transformation: [
               { width: 800, height: 800, crop: 'limit' },
-              { quality: 'auto' }
+              { quality: 'auto:good' },
+              { fetch_format: 'auto' }
             ]
           },
           (error, result) => {
@@ -94,7 +96,7 @@ export async function PUT(request: NextRequest) {
         uploadStream.end(buffer);
       });
       
-      profilePhotoUrl = uploadResult.secure_url;
+      profilePhotoUrl = uploadResult.secure_url || uploadResult.url;
       profilePhotoId = uploadResult.public_id;
     } catch (error) {
       console.error('Profile photo upload error:', error);

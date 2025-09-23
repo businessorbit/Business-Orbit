@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs'
 import { cloudinary } from '@/lib/config/cloudinary';
 import pool from '@/lib/config/database';
 import { verifyToken } from '@/lib/utils/auth';
@@ -35,8 +36,8 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Validate file size (4MB limit to fit Vercel payload constraints)
+    const maxSize = 4 * 1024 * 1024; // 4MB
     if (banner.size > maxSize) {
       return NextResponse.json(
         { error: 'File size must be less than 5MB' },
@@ -78,7 +79,8 @@ export async function PUT(request: NextRequest) {
             folder: 'business-orbit/banners',
             transformation: [
               { width: 1200, height: 400, crop: 'limit' },
-              { quality: 'auto' }
+              { quality: 'auto:good' },
+              { fetch_format: 'auto' }
             ]
           },
           (error, result) => {
@@ -94,7 +96,7 @@ export async function PUT(request: NextRequest) {
         uploadStream.end(buffer);
       });
       
-      bannerUrl = uploadResult.secure_url;
+      bannerUrl = uploadResult.secure_url || uploadResult.url;
       bannerId = uploadResult.public_id;
     } catch (error) {
       console.error('Banner upload error:', error);
