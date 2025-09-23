@@ -65,7 +65,7 @@ export async function GET(
     const hasMore = rows.length > limit
     const sliced = rows.slice(0, limit)
     const messages = sliced
-      .map(r => ({
+      .map((r: any) => ({
         id: String(r.id),
         chapterId: String(r.chapter_id),
         senderId: String(r.sender_id),
