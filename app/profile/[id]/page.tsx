@@ -249,7 +249,37 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
               </div>
 
               <div className="text-center md:text-left space-y-2 bg-background/80 backdrop-blur-sm rounded-lg p-4 md:bg-transparent md:backdrop-blur-none md:p-0">
-                <h1 className="text-2xl md:text-3xl font-bold">{profileData.name}</h1>
+                <div className="flex items-center justify-center md:justify-start gap-2">
+                  {isOwnProfile ? (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault()
+                        const fd = new FormData(e.currentTarget)
+                        const name = (fd.get('name') as string)?.trim()
+                        if (!name || name === profileData.name) return
+                        const res = await fetch(`/api/users/${params.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ name })
+                        })
+                        if (res.ok) {
+                          const data = await res.json()
+                          setProfileData(prev => prev ? ({...prev, name: data.user.name}) : prev)
+                        }
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <input
+                        name="name"
+                        defaultValue={profileData.name}
+                        className="px-2 py-1 border rounded text-base md:text-lg"
+                      />
+                      <Button type="submit" size="sm">Save</Button>
+                    </form>
+                  ) : (
+                    <h1 className="text-2xl md:text-3xl font-bold">{profileData.name}</h1>
+                  )}
+                </div>
                 <p className="text-base md:text-lg text-muted-foreground">{profileData.description || 'Professional'}</p>
 
                 <div className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4 text-sm text-muted-foreground">

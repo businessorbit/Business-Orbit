@@ -92,3 +92,51 @@ export async function GET(
     );
   }
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const authUser = await getUserFromToken(request)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const { id: userIdParam } = params || ({} as any)
+    const userId = parseInt(userIdParam)
+    if (!Number.isFinite(userId) || userId !== Number(authUser.id)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    const body = await request.json().catch(() => ({})) as { name?: string }
+    const name = typeof body.name === 'string' ? body.name.trim() : undefined
+    if (!name || name.length < 2 || name.length > 100) {
+      return NextResponse.json({ error: 'Invalid name' }, { status: 400 })
+    }
+
+    const result = await pool.query(
+      'UPDATE users SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, name, email, phone, profile_photo_url, banner_url, skills, description, created_at',
+      [name, userId]
+    )
+    const row = result.rows[0]
+    const res = NextResponse.json({
+      user: {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        phone: row.phone,
+        profilePhotoUrl: row.profile_photo_url,
+        bannerUrl: row.banner_url,
+        skills: row.skills || [],
+        description: row.description,
+        createdAt: row.created_at,
+      }
+    })
+    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    res.headers.set('Pragma', 'no-cache')
+    res.headers.set('Expires', '0')
+    return res
+  } catch (error: any) {
+    console.error('PATCH /api/users/[id] error:', error?.message || error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
