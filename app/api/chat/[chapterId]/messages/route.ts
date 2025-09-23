@@ -4,10 +4,10 @@ import { getUserFromToken } from '@/lib/utils/auth'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ chapterId: string }> }
+  { params }: { params: { chapterId: string } }
 ) {
   try {
-    const { chapterId } = await params
+    const { chapterId } = params || ({} as any)
     const url = new URL(request.url)
     const limitParam = url.searchParams.get('limit')
     const cursor = url.searchParams.get('cursor')
@@ -22,7 +22,10 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
-    const membership = await pool.query('SELECT 1 FROM chapter_memberships WHERE user_id = $1 AND chapter_id = $2 LIMIT 1', [user.id, chapterId])
+    const membership = await pool.query(
+      'SELECT 1 FROM chapter_memberships WHERE user_id = $1 AND chapter_id = $2 LIMIT 1',
+      [user.id, chapterId]
+    )
     if (membership.rowCount === 0) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
     }
@@ -76,9 +79,9 @@ export async function GET(
     const nextCursor = hasMore ? new Date(sliced[sliced.length - 1].created_at).toISOString() : null
 
     return NextResponse.json({ success: true, messages, nextCursor })
-  } catch (error) {
+  } catch (error: any) {
     // eslint-disable-next-line no-console
-    console.error('GET /api/chat/[chapterId]/messages error', error)
+    console.error('GET /api/chat/[chapterId]/messages error', error?.message || error)
     return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 })
   }
 }

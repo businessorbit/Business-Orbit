@@ -4,10 +4,10 @@ import { getUserFromToken } from '@/lib/utils/auth'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ chapterId: string }> }
+  { params }: { params: { chapterId: string } }
 ) {
   try {
-    const { chapterId } = await params
+    const { chapterId } = params || ({} as any)
     const url = new URL(request.url)
     const limitParam = url.searchParams.get('limit')
     const cursor = url.searchParams.get('cursor')
@@ -78,9 +78,9 @@ export async function GET(
     const nextCursor = hasMore ? new Date(sliced[sliced.length - 1].created_at).toISOString() : null
 
     return NextResponse.json({ success: true, messages, nextCursor })
-  } catch (error) {
+  } catch (error: any) {
     // eslint-disable-next-line no-console
-    console.error('GET /api/chat/[chapterId]/messages error', error)
+    console.error('GET /api/chat/[chapterId]/messages error', error?.message || error)
     return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 })
   }
 }
