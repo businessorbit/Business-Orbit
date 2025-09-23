@@ -79,32 +79,15 @@ export async function POST(request: NextRequest) {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
     const maxSize = 4 * 1024 * 1024 // 4MB to align with serverless payload constraints
 
-    // Upload helper with stream + base64 fallback
-    const uploadWithFallback = async (
+    // Upload helper: use base64 data URI (more reliable on serverless)
+    const uploadImage = async (
       buffer: Buffer,
       options: { folder: string; transformation: any[]; resource_type?: 'image' | 'video' | 'raw' | 'auto' }
     ) => {
-      try {
-        const result = await new Promise<any>((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            options as any,
-            (error, result) => {
-              if (error) return reject(error)
-              resolve(result)
-            }
-          )
-          uploadStream.end(buffer)
-        })
-        return result
-      } catch (streamErr) {
-        console.error('Cloudinary stream upload failed. Falling back to base64 upload.', streamErr)
-        // Fallback to base64 data URI upload
-        const base64 = buffer.toString('base64')
-        // Try a generic jpeg content-type for safety; Cloudinary will sniff format
-        const dataUri = `data:image/jpeg;base64,${base64}`
-        const result = await cloudinary.uploader.upload(dataUri, options as any)
-        return result
-      }
+      const base64 = buffer.toString('base64')
+      const dataUri = `data:image/jpeg;base64,${base64}`
+      const result = await cloudinary.uploader.upload(dataUri, options as any)
+      return result
     }
 
     let profilePhotoUrl: string | null = null;
@@ -123,7 +106,7 @@ export async function POST(request: NextRequest) {
       try {
         const arrayBuffer = await profilePhoto.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const profilePhotoResult = await uploadWithFallback(buffer, {
+        const profilePhotoResult = await uploadImage(buffer, {
           folder: 'business-orbit/profile-photos',
           transformation: [
             { width: 800, height: 800, crop: 'limit' },
@@ -157,7 +140,7 @@ export async function POST(request: NextRequest) {
       try {
         const arrayBuffer = await banner.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const bannerResult = await uploadWithFallback(buffer, {
+        const bannerResult = await uploadImage(buffer, {
           folder: 'business-orbit/banners',
           transformation: [
             { width: 1200, height: 400, crop: 'limit' },
