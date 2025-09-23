@@ -35,15 +35,14 @@ export async function GET(
       count: result.rows.length
     })
   } catch (error: any) {
-    // Deduplicate noisy logs (e.g., retries) within a short window
-    const _now = Date.now()
-    ;(globalThis as any).__chaptersLog = (globalThis as any).__chaptersLog || { msg: '', ts: 0 }
-    const _cache = (globalThis as any).__chaptersLog as { msg: string; ts: number }
-    const _msg = String(error?.message || error)
-    if (_msg !== _cache.msg || _now - _cache.ts > 3000) {
-      console.error('GET /api/users/[id]/chapters error:', _msg)
-      _cache.msg = _msg
-      _cache.ts = _now
+    // Deduplicate identical errors for a brief window using a global Set
+    ;(globalThis as any).__onceLogKeys = (globalThis as any).__onceLogKeys || new Set<string>()
+    const _once = (globalThis as any).__onceLogKeys as Set<string>
+    const key = `chapters:${String(error?.message || error)}`
+    if (!_once.has(key)) {
+      _once.add(key)
+      console.error('GET /api/users/[id]/chapters error:', String(error?.message || error))
+      setTimeout(() => _once.delete(key), 3000)
     }
     return NextResponse.json({ 
       success: false,
