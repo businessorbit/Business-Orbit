@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import { io, Socket } from 'socket.io-client';
 
 interface ChatAnalytics {
   totalMessages: number;
@@ -69,6 +70,10 @@ export default function ChatManagementDashboard() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(30);
   const [error, setError] = useState<string | null>(null);
+  const socketRef = useRef<Socket | null>(null)
+  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const CHAT_HTTP_URL = process.env.NEXT_PUBLIC_CHAT_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000')
+  const CHAT_WS_URL = CHAT_HTTP_URL.replace(/^http/, 'ws')
 
   const fetchAnalytics = async (days: number) => {
     try {
@@ -97,6 +102,56 @@ export default function ChatManagementDashboard() {
   useEffect(() => {
     fetchAnalytics(timeRange);
   }, [timeRange]);
+
+  // Live updates: connect to socket server read-only and refresh analytics on new messages
+  useEffect(() => {
+    try {
+      const s = io(CHAT_WS_URL, {
+        autoConnect: true,
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        withCredentials: true,
+      })
+      socketRef.current = s
+      // Admin monitoring hook available on server; join all rooms for presence if needed
+      s.on('connect', () => {
+        try { s.emit('joinAllRooms') } catch {}
+      })
+      // Debounced refresh on activity
+      let t: ReturnType<typeof setTimeout> | null = null
+      const scheduleRefresh = () => {
+        if (t) clearTimeout(t)
+        t = setTimeout(() => fetchAnalytics(timeRange), 800)
+      }
+      s.on('newMessage', scheduleRefresh)
+      s.on('presence', scheduleRefresh)
+      // Periodic safety refresh every 60s
+      refreshTimer.current = setInterval(() => fetchAnalytics(timeRange), 60000)
+
+      const onVis = () => { if (document.visibilityState === 'visible') fetchAnalytics(timeRange) }
+      document.addEventListener('visibilitychange', onVis)
+
+      return () => {
+        if (t) clearTimeout(t)
+        if (refreshTimer.current) clearInterval(refreshTimer.current)
+        document.removeEventListener('visibilitychange', onVis)
+        const s2 = socketRef.current
+        if (s2) {
+          try { s2.emit('leaveAllRooms') } catch {}
+          s2.off('newMessage')
+          s2.off('presence')
+          s2.off('connect')
+          s2.disconnect()
+          socketRef.current = null
+        }
+      }
+    } catch {
+      // ignore socket errors for admin dashboard
+      return () => {}
+    }
+  }, [timeRange])
 
   const timeRangeOptions = [
     { label: 'Last 7 days', value: 7 },
