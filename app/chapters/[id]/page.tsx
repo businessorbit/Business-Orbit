@@ -356,24 +356,23 @@ export default function ChapterPage() {
         })
         setConnectionError('Connection failed. Retrying...')
       })
+      // Deduplicate socket deliveries using a global Set
+      ;(globalThis as any).__processedChatMsgIds = (globalThis as any).__processedChatMsgIds || new Set<string>()
+      const processed = (globalThis as any).__processedChatMsgIds as Set<string>
       s.on('newMessage', (msg: ChatMessage) => {
+        if (processed.has(msg.id)) return
+        processed.add(msg.id)
         console.log('Received new message via socket:', msg.content)
         if (String(msg.chapterId) === String(params.id)) {
           setMessages(prev => {
-            // Check if message already exists to prevent duplicates
             const exists = prev.some(m => m.id === msg.id)
-            if (exists) {
-              console.log('Message already exists, skipping duplicate:', msg.id)
-              return prev
-            }
-            // Check if this is an update to an optimistic message (same content, different ID)
+            if (exists) return prev
             const optimisticIndex = prev.findIndex(m => 
               m.content === msg.content && 
               m.senderId === msg.senderId && 
               m.id.startsWith('tmp-')
             )
             if (optimisticIndex !== -1) {
-              // Replace optimistic message with real message
               const updated = [...prev]
               updated[optimisticIndex] = msg
               return updated
@@ -381,6 +380,8 @@ export default function ChapterPage() {
             return [...prev, msg]
           })
         }
+        // drop id after a short window to prevent unbounded growth
+        setTimeout(() => processed.delete(msg.id), 60000)
       })
       s.on('presence', (p: { count: number }) => {
         setOnlineCount(p?.count || 0)
