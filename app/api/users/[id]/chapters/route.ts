@@ -35,7 +35,16 @@ export async function GET(
       count: result.rows.length
     })
   } catch (error: any) {
-    console.error('GET /api/users/[id]/chapters error:', error?.message || error)
+    // Deduplicate noisy logs (e.g., retries) within a short window
+    const _now = Date.now()
+    ;(globalThis as any).__chaptersLog = (globalThis as any).__chaptersLog || { msg: '', ts: 0 }
+    const _cache = (globalThis as any).__chaptersLog as { msg: string; ts: number }
+    const _msg = String(error?.message || error)
+    if (_msg !== _cache.msg || _now - _cache.ts > 3000) {
+      console.error('GET /api/users/[id]/chapters error:', _msg)
+      _cache.msg = _msg
+      _cache.ts = _now
+    }
     return NextResponse.json({ 
       success: false,
       error: 'Failed to fetch user chapters',
