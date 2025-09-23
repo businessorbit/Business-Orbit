@@ -18,9 +18,20 @@ if (!process.env.DATABASE_URL) {
   }
 }
 
+const databaseUrl: string | undefined = process.env.DATABASE_URL;
+const shouldUseSsl = Boolean(
+  databaseUrl && (
+    databaseUrl.includes('render.com') ||
+    databaseUrl.includes('neon.tech') ||
+    databaseUrl.includes('supabase') ||
+    databaseUrl.includes('railway') ||
+    /[?&]sslmode=require/.test(databaseUrl)
+  )
+);
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString: databaseUrl,
+  ssl: shouldUseSsl || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   max: process.env.NODE_ENV === 'production' ? 20 : 10, 
   min: process.env.NODE_ENV === 'production' ? 5 : 2,  
   idleTimeoutMillis: 30000,
