@@ -1,8 +1,10 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
-// In Vercel, envs are already injected. Locally, load from .env.local if present.
-dotenv.config({ path: '.env.local' });
+// Load local env variables only during local development (not on Vercel/build)
+if (process.env.VERCEL !== '1' && process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: '.env.local' });
+}
 
 if (!process.env.DATABASE_URL) {
   // Avoid crashing builds in environments where the DB is not needed at build step
@@ -67,7 +69,8 @@ const testConnection = async (retries = 3) => {
   }
 };
 
-if (process.env.NODE_ENV !== 'test') {
+// Skip eager connection checks during Vercel build or tests
+if (process.env.NODE_ENV !== 'test' && process.env.VERCEL !== '1') {
   testConnection();
 }
 
