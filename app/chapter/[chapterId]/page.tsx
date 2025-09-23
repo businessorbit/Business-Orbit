@@ -21,7 +21,8 @@ type ChatMessage = {
 };
 
 // Configure this with your deployed WebSocket server URL
-const SOCKET_URL = process.env.NEXT_PUBLIC_CHAT_SOCKET_URL || (typeof window !== 'undefined' ? `${window.location.origin.replace('http','ws').replace('https','wss')}` : 'http://localhost:4000');
+const CHAT_HTTP_URL = process.env.NEXT_PUBLIC_CHAT_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000')
+const CHAT_WS_URL = CHAT_HTTP_URL.replace(/^http/, 'ws')
 
 export default function ChapterChatPage(): React.JSX.Element {
   const params = useParams<{ chapterId: string }>();
@@ -65,7 +66,7 @@ export default function ChapterChatPage(): React.JSX.Element {
 
   // Init websocket connection and subscriptions
   useEffect(() => {
-    const socket = io(SOCKET_URL, {
+    const socket = io(CHAT_WS_URL, {
       transports: ["websocket"],
       autoConnect: true,
       reconnection: true,

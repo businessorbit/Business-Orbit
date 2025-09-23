@@ -94,7 +94,9 @@ export default function ChapterPage() {
   
   const fetchingMembersRef = (globalThis as any).__fetchingMembersRef as { current: boolean } || { current: false }
   ;(globalThis as any).__fetchingMembersRef = fetchingMembersRef
-  const SOCKET_URL = process.env.NEXT_PUBLIC_CHAT_SOCKET_URL || (typeof window !== 'undefined' ? `${window.location.origin.replace('http','ws').replace('https','wss')}` : 'http://localhost:4000')
+  // Chat server endpoints: separate HTTP base and WS base
+  const CHAT_HTTP_URL = process.env.NEXT_PUBLIC_CHAT_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000')
+  const CHAT_WS_URL = CHAT_HTTP_URL.replace(/^http/, 'ws')
   const [onlineCount, setOnlineCount] = useState<number>(0)
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set())
 
@@ -299,13 +301,13 @@ export default function ChapterPage() {
     
     if (!socketRef.current) {
       // Test server connectivity first
-      console.log('Testing server connectivity to:', SOCKET_URL)
-      fetch(`${SOCKET_URL}/health`)
+      console.log('Testing server connectivity to:', CHAT_HTTP_URL)
+      fetch(`${CHAT_HTTP_URL}/health`)
         .then(res => res.json())
         .then(data => console.log('Server health check:', data))
         .catch(err => console.error('Server health check failed:', err))
       
-      const s = io(SOCKET_URL, {
+      const s = io(CHAT_WS_URL, {
         autoConnect: true,
         withCredentials: true,
         timeout: 20000,
@@ -440,7 +442,7 @@ export default function ChapterPage() {
         console.log('Message sent via WebSocket')
       } else {
         // Fallback to HTTP
-        const response = await fetch(`${SOCKET_URL}/messages/${params.id}`, {
+        const response = await fetch(`${CHAT_HTTP_URL}/messages/${params.id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
