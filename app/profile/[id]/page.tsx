@@ -200,8 +200,8 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
         <div
           className="h-32 md:h-48 bg-muted relative overflow-hidden group"
           style={{ 
-            backgroundImage: profileData.bannerUrl 
-              ? `url("${profileData.bannerUrl}")` 
+            backgroundImage: (profileData.bannerUrl || (currentUser as any)?.bannerUrl)
+              ? `url("${profileData.bannerUrl || (currentUser as any)?.bannerUrl}")`
               : `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fillRule='evenodd'%3E%3Cg fill='%23000000' fillOpacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
           }}
         >
@@ -227,9 +227,9 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
             {/* Profile Picture and Basic Info */}
             <div className="flex flex-col items-center md:items-start">
               <div className="w-24 h-24 md:w-32 md:h-32 bg-background rounded-full border-4 border-background shadow-lg flex items-center justify-center text-2xl md:text-4xl font-bold mb-3 overflow-hidden relative group">
-                {profileData.profilePhotoUrl ? (
+                {(profileData.profilePhotoUrl || (currentUser as any)?.profilePhotoUrl) ? (
                   <img 
-                    src={profileData.profilePhotoUrl} 
+                    src={profileData.profilePhotoUrl || (currentUser as any)?.profilePhotoUrl} 
                     alt={profileData.name}
                     className="w-full h-full object-cover"
                   />
