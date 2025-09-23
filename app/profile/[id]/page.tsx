@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PostCard } from "@/components/post-card"
 import { MapPin, MessageCircle, UserPlus, Calendar, Star, Award, Users, Lock, DollarSign, Clock } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import { Upload } from "lucide-react"
 
 const profileData = {
   id: "sarah-chen",
@@ -74,6 +75,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
   const [profileData, setProfileData] = useState<UserProfile | null>(null)
   const [userGroups, setUserGroups] = useState<UserGroup[]>([])
   const [loadingProfile, setLoadingProfile] = useState(true)
+  const [uploading, setUploading] = useState<{profile:boolean;banner:boolean}>({profile:false, banner:false})
 
   // Fetch user profile data
   useEffect(() => {
@@ -123,6 +125,45 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
     setIsConnected(!isConnected)
   }
 
+  const isOwnProfile = currentUser && String(currentUser.id) === String(params.id)
+
+  const uploadImage = async (file: File, type: 'profile' | 'banner') => {
+    if (!file) return
+    const allowedTypes = ['image/jpeg','image/jpg','image/png','image/gif','image/webp']
+    if (!allowedTypes.includes(file.type)) return
+    if (file.size > 5*1024*1024) return
+    try {
+      setUploading(prev => ({...prev, [type]: true}))
+      const form = new FormData()
+      form.append(type === 'profile' ? 'profilePhoto' : 'banner', file)
+      const res = await fetch(`/api/images/${type === 'profile' ? 'profile' : 'banner'}`, {
+        method: 'PUT',
+        body: form,
+        credentials: 'include'
+      })
+      if (!res.ok) throw new Error('Upload failed')
+      const data = await res.json()
+      // Merge into profileData so UI updates instantly
+      setProfileData(prev => prev ? ({
+        ...prev,
+        profilePhotoUrl: type === 'profile' ? data.user.profilePhotoUrl : prev.profilePhotoUrl,
+        bannerUrl: type === 'banner' ? data.user.bannerUrl : prev.bannerUrl,
+      }) : prev)
+    } finally {
+      setUploading(prev => ({...prev, [type]: false}))
+    }
+  }
+
+  const onProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) uploadImage(file, 'profile')
+  }
+
+  const onBannerInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) uploadImage(file, 'banner')
+  }
+
   if (loading || loadingProfile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -152,7 +193,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
       <div className="max-w-4xl mx-auto">
         {/* Cover Banner */}
         <div
-          className="h-32 md:h-48 bg-muted relative overflow-hidden"
+          className="h-32 md:h-48 bg-muted relative overflow-hidden group"
           style={{ 
             backgroundImage: profileData.bannerUrl 
               ? `url("${profileData.bannerUrl}")` 
@@ -160,6 +201,19 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent"></div>
+          {isOwnProfile && (
+            <>
+              <input id="bannerInput" type="file" accept="image/*" className="hidden" onChange={onBannerInputChange} />
+              <button
+                disabled={uploading.banner}
+                onClick={() => document.getElementById('bannerInput')?.click()}
+                className="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-xs px-3 py-1 rounded flex items-center gap-1"
+                aria-label="Change banner"
+              >
+                <Upload className="w-3 h-3" /> {uploading.banner ? 'Uploading…' : 'Change Banner'}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Profile Header */}
@@ -167,7 +221,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
           <div className="flex flex-col space-y-4 -mt-12 md:-mt-16 relative z-10">
             {/* Profile Picture and Basic Info */}
             <div className="flex flex-col items-center md:items-start">
-              <div className="w-24 h-24 md:w-32 md:h-32 bg-background rounded-full border-4 border-background shadow-lg flex items-center justify-center text-2xl md:text-4xl font-bold mb-3 overflow-hidden">
+              <div className="w-24 h-24 md:w-32 md:h-32 bg-background rounded-full border-4 border-background shadow-lg flex items-center justify-center text-2xl md:text-4xl font-bold mb-3 overflow-hidden relative group">
                 {profileData.profilePhotoUrl ? (
                   <img 
                     src={profileData.profilePhotoUrl} 
@@ -178,6 +232,19 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
                   <span className="text-primary">
                     {profileData.name?.charAt(0)?.toUpperCase() || 'U'}
                   </span>
+                )}
+                {isOwnProfile && (
+                  <>
+                    <input id="profileInput" type="file" accept="image/*" className="hidden" onChange={onProfileInputChange} />
+                    <button
+                      disabled={uploading.profile}
+                      onClick={() => document.getElementById('profileInput')?.click()}
+                      className="absolute inset-0 bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
+                      aria-label="Change profile photo"
+                    >
+                      <Upload className="w-3 h-3 mr-1" /> {uploading.profile ? 'Uploading…' : 'Change Photo'}
+                    </button>
+                  </>
                 )}
               </div>
 
