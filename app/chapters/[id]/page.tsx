@@ -380,8 +380,7 @@ export default function ChapterPage() {
             return [...prev, msg]
           })
         }
-        // drop id after a short window to prevent unbounded growth
-        setTimeout(() => processed.delete(msg.id), 60000)
+        // Keep processed IDs for the session to avoid any duplicate prints permanently
       })
       s.on('presence', (p: { count: number }) => {
         setOnlineCount(p?.count || 0)
