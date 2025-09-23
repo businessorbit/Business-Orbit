@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { cloudinary } from '@/lib/config/cloudinary';
 import pool from '@/lib/config/database';
 import { generateToken, setTokenCookie } from '@/lib/utils/auth';
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(arrayBuffer);
         
         const profilePhotoResult = await new Promise<any>((resolve, reject) => {
-          const uploadStream = cloudinary.v2.uploader.upload_stream(
+          const uploadStream = cloudinary.uploader.upload_stream(
             {
               folder: 'business-orbit',
               transformation: [
@@ -101,10 +102,14 @@ export async function POST(request: NextRequest) {
           uploadStream.end(buffer);
         });
         
-        profilePhotoUrl = profilePhotoResult.secure_url;
+        profilePhotoUrl = profilePhotoResult.secure_url || profilePhotoResult.url;
         profilePhotoId = profilePhotoResult.public_id;
       } catch (error) {
         console.error('Profile photo upload error:', error);
+        return NextResponse.json(
+          { error: 'Failed to upload profile photo' },
+          { status: 500 }
+        );
       }
     }
 
@@ -115,7 +120,7 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(arrayBuffer);
         
         const bannerResult = await new Promise<any>((resolve, reject) => {
-          const uploadStream = cloudinary.v2.uploader.upload_stream(
+          const uploadStream = cloudinary.uploader.upload_stream(
             {
               folder: 'business-orbit',
               transformation: [
@@ -136,10 +141,14 @@ export async function POST(request: NextRequest) {
           uploadStream.end(buffer);
         });
         
-        bannerUrl = bannerResult.secure_url;
+        bannerUrl = bannerResult.secure_url || bannerResult.url;
         bannerId = bannerResult.public_id;
       } catch (error) {
         console.error('Banner upload error:', error);
+        return NextResponse.json(
+          { error: 'Failed to upload banner image' },
+          { status: 500 }
+        );
       }
     }
 

@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest) {
     // Delete old banner from Cloudinary if it exists
     if (currentUser.rows[0].banner_id) {
       try {
-        await cloudinary.v2.uploader.destroy(currentUser.rows[0].banner_id);
+        await cloudinary.uploader.destroy(currentUser.rows[0].banner_id);
       } catch (error) {
         console.error('Error deleting old banner:', error);
         // Continue with upload even if deletion fails
@@ -74,7 +74,7 @@ export async function PUT(request: NextRequest) {
       const buffer = Buffer.from(arrayBuffer);
       
       const uploadResult = await new Promise<any>((resolve, reject) => {
-        const uploadStream = cloudinary.v2.uploader.upload_stream(
+        const uploadStream = cloudinary.uploader.upload_stream(
           {
             folder: 'business-orbit/banners',
             transformation: [
@@ -163,7 +163,7 @@ export async function DELETE(request: NextRequest) {
     // Delete banner from Cloudinary if it exists
     if (currentUser.rows[0].banner_id) {
       try {
-        await cloudinary.v2.uploader.destroy(currentUser.rows[0].banner_id);
+        await cloudinary.uploader.destroy(currentUser.rows[0].banner_id);
       } catch (error) {
         console.error('Error deleting banner:', error);
         // Continue with database update even if deletion fails

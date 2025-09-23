@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest) {
     // Delete old profile photo from Cloudinary if it exists
     if (currentUser.rows[0].profile_photo_id) {
       try {
-        await cloudinary.v2.uploader.destroy(currentUser.rows[0].profile_photo_id);
+        await cloudinary.uploader.destroy(currentUser.rows[0].profile_photo_id);
       } catch (error) {
         console.error('Error deleting old profile photo:', error);
         // Continue with upload even if deletion fails
@@ -74,7 +74,7 @@ export async function PUT(request: NextRequest) {
       const buffer = Buffer.from(arrayBuffer);
       
       const uploadResult = await new Promise<any>((resolve, reject) => {
-        const uploadStream = cloudinary.v2.uploader.upload_stream(
+        const uploadStream = cloudinary.uploader.upload_stream(
           {
             folder: 'business-orbit/profile-photos',
             transformation: [
@@ -163,7 +163,7 @@ export async function DELETE(request: NextRequest) {
     // Delete profile photo from Cloudinary if it exists
     if (currentUser.rows[0].profile_photo_id) {
       try {
-        await cloudinary.v2.uploader.destroy(currentUser.rows[0].profile_photo_id);
+        await cloudinary.uploader.destroy(currentUser.rows[0].profile_photo_id);
       } catch (error) {
         console.error('Error deleting profile photo:', error);
         // Continue with database update even if deletion fails
