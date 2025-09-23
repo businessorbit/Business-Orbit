@@ -125,7 +125,12 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
     setIsConnected(!isConnected)
   }
 
-  const isOwnProfile = currentUser && String(currentUser.id) === String(params.id)
+  const isOwnProfile = Boolean(
+    currentUser && (
+      String(currentUser.id) === String(params.id) ||
+      (profileData && String(currentUser.id) === String((profileData as any).id))
+    )
+  )
 
   const uploadImage = async (file: File, type: 'profile' | 'banner') => {
     if (!file) return
@@ -207,7 +212,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
               <button
                 disabled={uploading.banner}
                 onClick={() => document.getElementById('bannerInput')?.click()}
-                className="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-xs px-3 py-1 rounded flex items-center gap-1"
+                className="absolute right-3 bottom-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-black/60 text-white text-xs px-3 py-1 rounded flex items-center gap-1"
                 aria-label="Change banner"
               >
                 <Upload className="w-3 h-3" /> {uploading.banner ? 'Uploading…' : 'Change Banner'}
@@ -239,7 +244,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
                     <button
                       disabled={uploading.profile}
                       onClick={() => document.getElementById('profileInput')?.click()}
-                      className="absolute inset-0 bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
+                      className="absolute inset-0 bg-black/40 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
                       aria-label="Change profile photo"
                     >
                       <Upload className="w-3 h-3 mr-1" /> {uploading.profile ? 'Uploading…' : 'Change Photo'}
