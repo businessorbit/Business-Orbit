@@ -285,6 +285,14 @@ export default function ChapterPage() {
       }
     }
     load()
+    // Also refresh when tab regains focus to ensure latest persisted messages
+    const onFocus = () => load()
+    window.addEventListener('visibilitychange', onFocus)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.removeEventListener('visibilitychange', onFocus)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [params.id])
 
   // Connect websocket
@@ -423,43 +431,59 @@ export default function ChapterPage() {
     
     // Optimistic update
     setMessages(prev => [...prev, msg])
-    let rollback = false
-
-    // Try WebSocket first, with ack; fallback to HTTP
+    // Try WebSocket with ack; if no ack in 2s, force HTTP persist
     try {
       if (socketRef.current?.connected) {
-        socketRef.current.emit('sendMessage', msg, (ack?: { ok: boolean; message?: ChatMessage; error?: string }) => {
-          if (!ack?.ok || !ack.message) {
-            console.error('WS send ack error:', ack?.error)
-            rollback = true
-            setMessages(prev => prev.filter(m => m.id !== tempId))
-            toast.error(ack?.error || 'Failed to send message')
-            return
-          }
-          // Replace temp with DB message
-          setMessages(prev => prev.map(m => (m.id === tempId ? ack.message! : m)))
+        let acked = false
+        const wsPromise = new Promise<void>((resolve) => {
+          socketRef.current!.emit('sendMessage', msg, (ack?: { ok: boolean; message?: ChatMessage; error?: string }) => {
+            acked = true
+            if (!ack?.ok || !ack.message) {
+              console.error('WS send ack error:', ack?.error)
+              // remove optimistic and surface error; HTTP retry below will handle
+              setMessages(prev => prev.filter(m => m.id !== tempId))
+              toast.error(ack?.error || 'Failed to send message')
+              resolve()
+              return
+            }
+            setMessages(prev => prev.map(m => (m.id === tempId ? ack.message! : m)))
+            resolve()
+          })
         })
-        console.log('Message sent via WebSocket')
+
+        const timeout = new Promise<void>((resolve) => setTimeout(resolve, 2000))
+        await Promise.race([wsPromise, timeout])
+
+        if (!acked) {
+          // No ack received, persist via HTTP
+          const response = await fetch(`${CHAT_HTTP_URL}/messages/${params.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...msg, userId: String(user.id) })
+          })
+          if (response.ok) {
+            const data = await response.json()
+            if (data?.message) {
+              setMessages(prev => prev.map((m: any) => (m.id === tempId ? data.message : m)))
+            }
+          } else {
+            setMessages(prev => prev.filter(m => m.id !== tempId))
+            toast.error('Failed to send message')
+          }
+        }
       } else {
-        // Fallback to HTTP
+        // Not connected: HTTP persist
         const response = await fetch(`${CHAT_HTTP_URL}/messages/${params.id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...msg,
-            userId: String(user.id)
-          })
+          body: JSON.stringify({ ...msg, userId: String(user.id) })
         })
-        
         if (response.ok) {
           const data = await response.json()
-          console.log('Message sent via HTTP fallback:', data.message?.content)
-          // Replace temp with server message
           if (data?.message) {
             setMessages(prev => prev.map((m: any) => (m.id === tempId ? data.message : m)))
           }
         } else {
-          console.error('HTTP fallback failed:', response.status)
           setMessages(prev => prev.filter(m => m.id !== tempId))
           toast.error('Failed to send message')
         }
