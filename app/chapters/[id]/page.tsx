@@ -460,46 +460,19 @@ export default function ChapterPage() {
     
     // Optimistic update
     setMessages(prev => [...prev, msg])
-    // Try WebSocket with ack; if no ack in 2s, force HTTP persist
+    // Prefer WebSocket; only use HTTP when socket is not connected
     try {
       if (socketRef.current?.connected) {
-        let acked = false
-        const wsPromise = new Promise<void>((resolve) => {
-          socketRef.current!.emit('sendMessage', msg, (ack?: { ok: boolean; message?: ChatMessage; error?: string }) => {
-            acked = true
-            if (!ack?.ok || !ack.message) {
-              console.error('WS send ack error:', ack?.error)
-              // remove optimistic and surface error; HTTP retry below will handle
-              setMessages(prev => prev.filter(m => m.id !== tempId))
-              toast.error(ack?.error || 'Failed to send message')
-              resolve()
-              return
-            }
-            setMessages(prev => prev.map(m => (m.id === tempId ? ack.message! : m)))
-            resolve()
-          })
-        })
-
-        const timeout = new Promise<void>((resolve) => setTimeout(resolve, 2000))
-        await Promise.race([wsPromise, timeout])
-
-        if (!acked) {
-          // No ack received, persist via HTTP
-          const response = await fetch(`${CHAT_HTTP_URL}/messages/${params.id}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...msg, userId: String(user.id) })
-          })
-          if (response.ok) {
-            const data = await response.json()
-            if (data?.message) {
-              setMessages(prev => prev.map((m: any) => (m.id === tempId ? data.message : m)))
-            }
-          } else {
+        socketRef.current!.emit('sendMessage', msg, (ack?: { ok: boolean; message?: ChatMessage; error?: string }) => {
+          if (!ack?.ok || !ack.message) {
+            console.error('WS send ack error:', ack?.error)
+            // remove optimistic; do not HTTP-fallback to avoid duplicates
             setMessages(prev => prev.filter(m => m.id !== tempId))
-            toast.error('Failed to send message')
+            toast.error(ack?.error || 'Failed to send message')
+            return
           }
-        }
+          setMessages(prev => prev.map(m => (m.id === tempId ? ack.message! : m)))
+        })
       } else {
         // Not connected: HTTP persist
         const response = await fetch(`${CHAT_HTTP_URL}/messages/${params.id}`, {
