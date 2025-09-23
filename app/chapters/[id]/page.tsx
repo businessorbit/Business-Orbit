@@ -415,7 +415,8 @@ export default function ChapterPage() {
 
     // Only join room if we have a valid user ID
     if (user?.id && params.id) {
-      socketRef.current?.emit('joinRoom', { chapterId: String(params.id), userId: String(user.id) }, (res: any) => {
+      const userId = String(user!.id)
+      socketRef.current?.emit('joinRoom', { chapterId: String(params.id), userId }, (res: any) => {
         if (!res?.ok) {
           console.error('joinRoom denied:', res?.error)
           setConnectionError(res?.error || 'Join denied')
