@@ -1,4 +1,4 @@
-import cloudinary from 'cloudinary';
+import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
 import dotenv from 'dotenv';
@@ -10,15 +10,15 @@ if (process.env.VERCEL !== '1' && process.env.NODE_ENV !== 'production') {
 
 // Configure Cloudinary (prefer explicit vars; if missing, fall back to CLOUDINARY_URL string)
 if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-  cloudinary.v2.config({
+  cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
     secure: true,
   })
 } else if (process.env.CLOUDINARY_URL) {
-  cloudinary.v2.config(process.env.CLOUDINARY_URL)
-  cloudinary.v2.config({ secure: true })
+  cloudinary.config(process.env.CLOUDINARY_URL)
+  cloudinary.config({ secure: true })
 } else {
   // Helpful warning in non-prod envs
   if (process.env.NODE_ENV !== 'production') {
@@ -29,7 +29,7 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
 
 // Configure Cloudinary storage for multer
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary.v2,
+  cloudinary: cloudinary as any,
   params: {
     folder: 'business-orbit',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
@@ -38,7 +38,7 @@ const storage = new CloudinaryStorage({
       { quality: 'auto' } // Auto optimize quality
     ],
     resource_type: 'image',
-  },
+  } as any,
 });
 
 // Configure multer with Cloudinary storage
@@ -47,7 +47,7 @@ const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (req: any, file: any, cb: any) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedTypes.test(file.originalname.toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
