@@ -52,3 +52,13 @@ export const getUserFromToken = async (req: NextRequest) => {
     return null;
   }
 };
+
+// Lightweight token verifier for server actions and API routes that only need the user id
+export const verifyToken = (token: string): number | null => {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number };
+    return decoded.userId;
+  } catch (_err) {
+    return null;
+  }
+};

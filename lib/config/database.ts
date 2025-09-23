@@ -1,13 +1,19 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
+// In Vercel, envs are already injected. Locally, load from .env.local if present.
 dotenv.config({ path: '.env.local' });
 
 if (!process.env.DATABASE_URL) {
-  console.error('❌ DATABASE_URL environment variable is not set');
-  console.log('📋 Please create a .env.local file with your database configuration');
-  console.log('📋 Example: DATABASE_URL=postgresql://username:password@localhost:5432/database_name');
-  process.exit(1);
+  // Avoid crashing builds in environments where the DB is not needed at build step
+  if (process.env.VERCEL === '1' || process.env.NEXT_RUNTIME === 'edge') {
+    // Defer error to runtime when the route actually uses the DB
+    console.warn('⚠️ DATABASE_URL not set at build time. DB connections will fail at runtime.');
+  } else {
+    console.error('❌ DATABASE_URL environment variable is not set');
+    console.log('📋 Please create a .env.local file with your database configuration');
+    console.log('📋 Example: DATABASE_URL=postgresql://username:password@localhost:5432/database_name');
+  }
 }
 
 const pool = new Pool({
