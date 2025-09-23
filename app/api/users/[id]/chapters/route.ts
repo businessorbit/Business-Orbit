@@ -3,10 +3,10 @@ import pool from '@/lib/config/database'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: userId } = await params
+    const { id: userId } = params || ({} as any)
     
     // Validate user ID
     if (!userId || typeof userId !== 'string' || !/^\d+$/.test(userId)) {
@@ -35,7 +35,7 @@ export async function GET(
       count: result.rows.length
     })
   } catch (error: any) {
-    console.error('GET /api/users/[id]/chapters error:', error)
+    console.error('GET /api/users/[id]/chapters error:', error?.message || error)
     return NextResponse.json({ 
       success: false,
       error: 'Failed to fetch user chapters',
