@@ -341,6 +341,19 @@ export default function ChapterPage() {
         setConnecting(false); 
         setConnectionError("") 
         console.log('Socket connected successfully')
+        // Join room on every successful (re)connect
+        const uid = user?.id ? String(user.id) : ''
+        if (uid && params.id) {
+          s.emit('joinRoom', { chapterId: String(params.id), userId: uid }, (res: any) => {
+            if (!res?.ok) {
+              console.error('joinRoom denied on connect:', res?.error)
+              setConnectionError(res?.error || 'Join denied')
+            } else {
+              console.log('Successfully joined room after connect')
+              setConnectionError("")
+            }
+          })
+        }
       })
       s.off('disconnect').on('disconnect', () => {
         setConnecting(true)
@@ -396,6 +409,19 @@ export default function ChapterPage() {
           return newSet
         })
       })
+      // If already connected and we have credentials, attempt initial join once
+      const uid = user?.id ? String(user.id) : ''
+      if (uid && params.id && s.connected) {
+        s.emit('joinRoom', { chapterId: String(params.id), userId: uid }, (res: any) => {
+          if (!res?.ok) {
+            console.error('joinRoom denied:', res?.error)
+            setConnectionError(res?.error || 'Join denied')
+          } else {
+            console.log('Successfully joined room')
+            setConnectionError("")
+          }
+        })
+      }
     }
     // Cleanup: ensure we don't accumulate duplicate listeners across navigations
     return () => {
@@ -410,26 +436,6 @@ export default function ChapterPage() {
         s.off('connect_error')
       }
     }
-    // If not connected within 8s, show a hint
-    
-
-    // Only join room if we have a valid user ID
-    if (user?.id && params.id) {
-      const userId = String(user!.id)
-      socketRef.current?.emit('joinRoom', { chapterId: String(params.id), userId }, (res: any) => {
-        if (!res?.ok) {
-          console.error('joinRoom denied:', res?.error)
-          setConnectionError(res?.error || 'Join denied')
-        } else {
-          console.log('Successfully joined room')
-          setConnectionError("")
-        }
-      })
-    } else {
-      console.log('Cannot join room: missing user ID or chapter ID', { userId: user?.id, chapterId: params.id })
-      setConnectionError('Authentication required to join chat')
-    }
-    
   }, [params.id, user?.id, authLoading])
 
   const sendMessage = async () => {
