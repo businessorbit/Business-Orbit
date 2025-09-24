@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { PlusCircle, Sparkles } from "lucide-react"
+import LandingPage from "@/components/LandingPage"
 
 const samplePosts = [
   {
@@ -76,11 +77,17 @@ export default function HomePage() {
   const [video, setVideo] = useState<File | null>(null)
   const [scheduledAt, setScheduledAt] = useState("")
   const [status, setStatus] = useState<"idle" | "review">("idle")
+  const [showLanding, setShowLanding] = useState(true)
 
   useEffect(() => {
+    // Show landing page first, then handle authentication
     if (!loading && !user) {
-      window.location.href = '/auth'
+      // User not authenticated - show landing page
+      setShowLanding(true)
     } else if (!loading && user) {
+      // User is authenticated - hide landing page and show dashboard
+      setShowLanding(false)
+      
       // User is authenticated, check user type and flow
       if (isAdmin) {
         // Admin user: can access admin panel directly
@@ -125,9 +132,9 @@ export default function HomePage() {
     )
   }
 
-  // Redirect to auth if not authenticated
-  if (!user) {
-    return null
+  // Show landing page if user is not authenticated
+  if (showLanding && !user) {
+    return <LandingPage />
   }
 
   // Show loading if new regular user hasn't completed the flow yet
