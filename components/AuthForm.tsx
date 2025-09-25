@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { User, Mail, Phone, Lock, Eye, EyeOff, Upload, X, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface AuthFormProps {
   mode?: 'signin' | 'signup';
+  setMode?: (mode: 'signin' | 'signup') => void;
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin' }) => {
+const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -106,11 +108,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin' }) => {
       } else if (result.error === 'EMAIL_NOT_REGISTERED') {
         // Show specific message for unregistered email
         toast.error('Email not registered. Please create a new account.', {
-          duration: 5000,
-          action: {
-            label: 'Sign Up',
-            onClick: () => setMode('signup')
-          }
+          duration: 5000
         });
       }
     } else {

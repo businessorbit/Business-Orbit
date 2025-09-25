@@ -19,7 +19,7 @@ export default function InvitePage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      window.location.href = '/auth';
+      window.location.href = '/product/auth';
     }
   }, [user, loading]);
 
@@ -74,7 +74,7 @@ export default function InvitePage() {
         
         // Redirect to onboarding after successful invite
         setTimeout(() => {
-          window.location.href = '/onboarding';
+          window.location.href = '/product/onboarding';
         }, 1000);
       } else {
         const errorData = await response.json();
@@ -91,7 +91,7 @@ export default function InvitePage() {
   const handleSkipInvite = () => {
     toast.success('Skipping invite - proceeding to onboarding');
     markInviteSent();
-    window.location.href = '/onboarding';
+    window.location.href = '/product/onboarding';
   };
 
   // Show loading while checking authentication

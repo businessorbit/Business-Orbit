@@ -11,7 +11,7 @@ export default function LandingPage() {
 
   const handleJoinWaitlist = () => {
     console.log("Email submitted:", email);
-    window.location.href = '/auth';
+    window.location.href = '/product';
   };
 
   return (

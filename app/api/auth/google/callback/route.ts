@@ -9,11 +9,11 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
 
     if (error) {
-      return NextResponse.redirect(new URL('/auth?error=oauth_error', request.url));
+      return NextResponse.redirect(new URL('/product/auth?error=oauth_error', request.url));
     }
 
     if (!code) {
-      return NextResponse.redirect(new URL('/auth?error=no_code', request.url));
+      return NextResponse.redirect(new URL('/product/auth?error=no_code', request.url));
     }
 
     // Exchange code for access token
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       console.error('Token exchange failed:', await tokenResponse.text());
-      return NextResponse.redirect(new URL('/auth?error=token_exchange_failed', request.url));
+      return NextResponse.redirect(new URL('/product/auth?error=token_exchange_failed', request.url));
     }
 
     const tokenData = await tokenResponse.json();
@@ -48,14 +48,14 @@ export async function GET(request: NextRequest) {
 
     if (!userResponse.ok) {
       console.error('User info fetch failed:', await userResponse.text());
-      return NextResponse.redirect(new URL('/auth?error=user_info_failed', request.url));
+      return NextResponse.redirect(new URL('/product/auth?error=user_info_failed', request.url));
     }
 
     const googleUser = await userResponse.json();
     const { id: googleId, email, name, picture } = googleUser;
 
     if (!email) {
-      return NextResponse.redirect(new URL('/auth?error=no_email', request.url));
+      return NextResponse.redirect(new URL('/product/auth?error=no_email', request.url));
     }
 
     // Check if user exists by Google ID first, then by email
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     const token = generateToken(userData.id);
 
     // Check user's onboarding and invite status to determine redirect
-    let redirectUrl = '/auth';
+    let redirectUrl = '/product/auth';
     
     try {
       // Check if user has sent invites first
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       
       if (!hasSentInvites) {
         // User hasn't sent invites, go to invite page first
-        redirectUrl = '/invite';
+        redirectUrl = '/product/invite';
       } else {
         // Check if user has completed onboarding
         const prefsResponse = await pool.query(
@@ -120,16 +120,16 @@ export async function GET(request: NextRequest) {
         
         if (!hasCompletedOnboarding) {
           // User sent invites but hasn't completed onboarding
-          redirectUrl = '/onboarding';
+          redirectUrl = '/product/onboarding';
         } else {
           // User has completed everything
-          redirectUrl = '/profile';
+          redirectUrl = '/product/profile';
         }
       }
     } catch (error) {
       console.error('Error checking user state:', error);
       // Default to invite page if we can't determine state
-      redirectUrl = '/invite';
+      redirectUrl = '/product/invite';
     }
 
     // Create response with redirect
@@ -142,6 +142,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Google OAuth callback error:', error);
-    return NextResponse.redirect(new URL('/auth?error=server_error', request.url));
+    return NextResponse.redirect(new URL('/product/auth?error=server_error', request.url));
   }
 }

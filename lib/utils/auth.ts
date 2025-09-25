@@ -4,7 +4,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Helper function to generate JWT token
 export const generateToken = (userId: number): string => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not set');
+  }
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
 // Helper function to set JWT cookie
@@ -26,7 +29,10 @@ export const authenticateToken = async (req: NextRequest) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number };
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is not set');
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as { userId: number };
     
     // Get user from database
     const result = await pool.query(
@@ -56,7 +62,10 @@ export const getUserFromToken = async (req: NextRequest) => {
 // Lightweight token verifier for server actions and API routes that only need the user id
 export const verifyToken = (token: string): number | null => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number };
+    if (!process.env.JWT_SECRET) {
+      return null;
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as { userId: number };
     return decoded.userId;
   } catch (_err) {
     return null;

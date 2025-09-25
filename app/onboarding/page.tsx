@@ -39,7 +39,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      window.location.href = '/auth';
+      window.location.href = '/product/auth';
     }
   }, [user, loading]);
 
@@ -73,7 +73,7 @@ export default function OnboardingPage() {
           const data = await response.json();
           if (data.onboardingCompleted) {
             // Redirect to subscription page after onboarding completed
-            window.location.href = '/subscription';
+            window.location.href = '/product/subscription';
           }
         }
       } catch (error) {
@@ -185,7 +185,7 @@ export default function OnboardingPage() {
         
         // Small delay to ensure state updates
         setTimeout(() => {
-          window.location.href = '/subscription';
+          window.location.href = '/product/subscription';
         }, 100);
       } else {
         const errorData = await response.json();

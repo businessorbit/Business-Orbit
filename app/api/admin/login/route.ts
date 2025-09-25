@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { generateToken, setTokenCookie } from '@/lib/utils/auth';
+import pool from '@/lib/config/database';
 
-// Static admin credentials as requested
-const ADMIN_EMAIL = 'adminbusinessorbit@gmail.com';
-const ADMIN_PASSWORD = 'admin@123';
+// Admin credentials from environment variables with fallback
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'adminbusinessorbit@gmail.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin@123';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,17 +19,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid admin credentials' }, { status: 401 });
     }
 
-    const response = NextResponse.json({ success: true, isAdmin: true });
+    // Get or create admin user in database
+    let adminUser;
+    try {
+      // First, try to find existing admin user
+      const existingUser = await pool.query(
+        'SELECT id, name, email, is_admin FROM users WHERE email = $1 AND is_admin = true',
+        [ADMIN_EMAIL]
+      );
 
-    // Set a separate admin-only cookie so it never conflicts with user auth
-    response.cookies.set('admin_session', '1', {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      // Short session expiry; adjust as needed
-      maxAge: 60 * 60 * 4, // 4 hours
+      if (existingUser.rows.length > 0) {
+        adminUser = existingUser.rows[0];
+      } else {
+        // Create admin user if doesn't exist
+        const newUser = await pool.query(
+          'INSERT INTO users (name, email, is_admin, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id, name, email, is_admin',
+          ['Admin User', ADMIN_EMAIL, true]
+        );
+        adminUser = newUser.rows[0];
+      }
+      
+      // Ensure is_admin is true
+      if (!adminUser.is_admin) {
+        await pool.query(
+          'UPDATE users SET is_admin = true WHERE id = $1',
+          [adminUser.id]
+        );
+        adminUser.is_admin = true;
+      }
+    } catch (dbError) {
+      console.error('Database error during admin login:', dbError);
+      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    }
+
+    // Generate JWT token for admin user
+    const token = generateToken(adminUser.id);
+
+    // Create response with success
+    const response = NextResponse.json({ 
+      success: true, 
+      isAdmin: true,
+      user: {
+        id: adminUser.id,
+        name: adminUser.name,
+        email: adminUser.email,
+        is_admin: adminUser.is_admin
+      }
     });
+
+    // Set the JWT token cookie (same as regular user auth)
+    setTokenCookie(response, token);
 
     return response;
   } catch (error) {

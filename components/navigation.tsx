@@ -10,11 +10,11 @@ export function Navigation() {
 
   const tabs = [
     { name: "Feed", href: "/", icon: Home },
-    { name: "Navigator", href: "/navigator", icon: Compass },
-    { name: "Chapters", href: "/chapters", icon: Users },
-    { name: "Groups", href: "/groups", icon: Users },
-    { name: "Events", href: "/events", icon: Calendar },
-    { name: "Profile", href: "/profile", icon: User },
+    { name: "Navigator", href: "/product/navigator", icon: Compass },
+    { name: "Chapters", href: "/product/chapters", icon: Users },
+    { name: "Groups", href: "/product/groups", icon: Users },
+    { name: "Events", href: "/product/events", icon: Calendar },
+    { name: "Profile", href: "/product/profile", icon: User },
   ]
 
   return (

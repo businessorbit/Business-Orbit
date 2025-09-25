@@ -3,10 +3,10 @@ import pool from '@/lib/config/database'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: userId } = params || ({} as any)
+    const { id: userId } = await params
     
     // Validate user ID
     if (!userId || typeof userId !== 'string' || !/^\d+$/.test(userId)) {

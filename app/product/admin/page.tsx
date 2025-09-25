@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { MessageSquare, Calendar, Users, Settings, MapPinned } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface AdminStat {
   label: string;
@@ -21,7 +23,9 @@ interface AdminAction {
   color: string;
 }
 
-export default function AdminDashboard(): React.JSX.Element {
+export default function AdminDashboard(): React.JSX.Element | null {
+  const { user, loading: authLoading, isAdmin } = useAuth();
+  const router = useRouter();
   const [chatStats, setChatStats] = useState({
     totalMessages: 0,
     activeConversations: 0,
@@ -29,6 +33,22 @@ export default function AdminDashboard(): React.JSX.Element {
     totalChapters: 0
   });
   const [loading, setLoading] = useState(true);
+
+  // Check admin authentication
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        // Redirect to auth page if not authenticated
+        router.push('/product/auth?admin=true');
+        return;
+      }
+      if (user && !isAdmin) {
+        // If user is logged in but not admin, redirect to profile
+        router.push('/product/profile');
+        return;
+      }
+    }
+  }, [user, isAdmin, authLoading, router]);
 
   useEffect(() => {
     const fetchChatStats = async () => {
@@ -87,39 +107,56 @@ export default function AdminDashboard(): React.JSX.Element {
     {
       title: "Manage Chapters",
       description: "Create and manage chapters",
-      href: "/admin/chapters",
+      href: "/product/admin/chapters",
       icon: MapPinned,
       color: "bg-black",
     },
     {
       title: "Chat Management",
       description: "Monitor and manage chat analytics",
-      href: "/admin/chat",
+      href: "/product/admin/chat",
       icon: MessageSquare,
       color: "bg-black",
     },
     {
       title: "Create Event",
       description: "Create and manage events",
-      href: "/admin/events",
+      href: "/product/admin/events",
       icon: Calendar,
       color: "bg-black",
     },
     {
       title: "Review Members",
       description: "Approve and manage members",
-      href: "/admin/members",
+      href: "/product/admin/members",
       icon: Users,
       color: "bg-black",
     },
     {
       title: "Platform Settings",
       description: "Configure platform settings",
-      href: "/admin/settings",
+      href: "/product/admin/settings",
       icon: Settings,
       color: "bg-black",
     },
   ];
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!user || !isAdmin) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -204,31 +241,31 @@ export default function AdminDashboard(): React.JSX.Element {
           <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Button asChild className="h-auto p-4 flex flex-col items-center space-y-2">
-              <Link href="/admin/chapters">
+              <Link href="/product/admin/chapters">
                 <MapPinned className="w-6 h-6 text-black" />
                 <span>Manage Chapters</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-              <Link href="/admin/chat">
+              <Link href="/product/admin/chat">
                 <MessageSquare className="w-6 h-6 text-black" />
                 <span>Chat Management</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-              <Link href="/admin/events">
+              <Link href="/product/admin/events">
                 <Calendar className="w-6 h-6 text-black" />
                 <span>Create Event</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-              <Link href="/admin/members">
+              <Link href="/product/admin/members">
                 <Users className="w-6 h-6 text-black" />
                 <span>Review Members</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-              <Link href="/admin/settings">
+              <Link href="/product/admin/settings">
                 <Settings className="w-6 h-6 text-black" />
                 <span>Platform Settings</span>
               </Link>

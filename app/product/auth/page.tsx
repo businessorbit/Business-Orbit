@@ -121,7 +121,7 @@ export default function AuthPage() {
           body: JSON.stringify({ email, password }),
         });
         if (res.ok) {
-          // redirect to product admin page (not /admin)
+          // Direct redirect to admin dashboard after successful login
           window.location.href = '/product/admin';
           return;
         }
@@ -244,3 +244,4 @@ export default function AuthPage() {
     </div>
   );
 }
+

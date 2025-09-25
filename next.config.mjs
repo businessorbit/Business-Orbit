@@ -8,7 +8,9 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    domains: ['res.cloudinary.com'],
   },
+  serverExternalPackages: ['pg'],
 }
 
 export default nextConfig

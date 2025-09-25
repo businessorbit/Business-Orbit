@@ -130,7 +130,7 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Please log in to view your profile</h1>
-          <Button onClick={() => window.location.href = '/auth'}>
+          <Button onClick={() => window.location.href = '/product/auth'}>
             Go to Login
           </Button>
         </div>
@@ -146,7 +146,7 @@ export default function ProfilePage() {
     if (confirm('Are you sure you want to log out?')) {
       try {
         await logout()
-        router.push('/auth')
+        router.push('/product/auth')
       } catch (error) {
         console.error('Logout error:', error)
         toast.error('Failed to logout')

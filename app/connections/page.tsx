@@ -129,7 +129,7 @@ export default function ConnectionsPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      window.location.href = '/auth';
+      window.location.href = '/product/auth';
     }
   }, [user, loading]);
 

@@ -11,12 +11,12 @@ export function AdminSidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const adminTabs = [
-    { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { name: "Chapters", href: "/admin/chapters", icon: MapPinned },
-    { name: "Chat Management", href: "/admin/chat", icon: MessageSquare },
-    { name: "Create Event", href: "/admin/events", icon: Calendar },
-    { name: "Review Members", href: "/admin/members", icon: Users },
-    { name: "Platform Settings", href: "/admin/settings", icon: Settings },
+    { name: "Dashboard", href: "/product/admin", icon: LayoutDashboard },
+    { name: "Chapters", href: "/product/admin/chapters", icon: MapPinned },
+    { name: "Chat Management", href: "/product/admin/chat", icon: MessageSquare },
+    { name: "Create Event", href: "/product/admin/events", icon: Calendar },
+    { name: "Review Members", href: "/product/admin/members", icon: Users },
+    { name: "Platform Settings", href: "/product/admin/settings", icon: Settings },
   ]
 
   return (
@@ -50,7 +50,7 @@ export function AdminSidebar() {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-border">
-            <Link href="/admin" className="flex items-center group cursor-pointer">
+            <Link href="/product/admin" className="flex items-center group cursor-pointer">
               <div className="w-9 h-9 rounded-full border-2 border-foreground flex items-center justify-center transition-all group-hover:scale-105 group-hover:shadow-soft">
                 <div className="w-4 h-4 rounded-full border-2 border-foreground transition-all group-hover:bg-foreground"></div>
               </div>

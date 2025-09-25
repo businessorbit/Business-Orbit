@@ -71,6 +71,9 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
 CREATE INDEX IF NOT EXISTS idx_users_linkedin_id ON users(linkedin_id);
 
+-- Create index on is_admin for faster admin checks
+CREATE INDEX IF NOT EXISTS idx_users_is_admin ON users(is_admin);
+
 -- Create indexes for invites table
 CREATE INDEX IF NOT EXISTS idx_invites_sender_id ON invites(sender_id);
 CREATE INDEX IF NOT EXISTS idx_invites_recipient_email ON invites(recipient_email);

@@ -36,7 +36,9 @@ const pool = new Pool({
   min: process.env.NODE_ENV === 'production' ? 5 : 2,  
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
-  maxUses: 7500, 
+  maxUses: 7500,
+  // Add statement timeout to prevent long-running queries
+  statement_timeout: 30000,
 });
 
 pool.on('error', (err: any) => {

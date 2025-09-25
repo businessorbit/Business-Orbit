@@ -95,7 +95,7 @@ export default function ChapterPage() {
   const fetchingMembersRef = (globalThis as any).__fetchingMembersRef as { current: boolean } || { current: false }
   ;(globalThis as any).__fetchingMembersRef = fetchingMembersRef
   // Chat server endpoints: separate HTTP base and WS base
-  const CHAT_HTTP_URL = process.env.NEXT_PUBLIC_CHAT_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000')
+  const CHAT_HTTP_URL = process.env.NEXT_PUBLIC_CHAT_SOCKET_URL || 'http://localhost:4000'
   const CHAT_WS_URL = CHAT_HTTP_URL.replace(/^http/, 'ws')
   const [onlineCount, setOnlineCount] = useState<number>(0)
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set())
@@ -190,18 +190,18 @@ export default function ChapterPage() {
           })
         } else {
           toast.error('Chapter not found')
-          router.push('/chapters')
+          router.push('/product/chapters')
           return
         }
       } else {
         toast.error('Failed to load chapter data')
-        router.push('/chapters')
+        router.push('/product/chapters')
         return
       }
     } catch (error) {
       console.error('Error fetching chapter data:', error)
       toast.error('Failed to load chapter data')
-      router.push('/chapters')
+      router.push('/product/chapters')
     } finally {
       setLoading(false)
     }
@@ -269,28 +269,25 @@ export default function ChapterPage() {
     async function load() {
       if (!params.id) return
       try {
-        // Try app API first (auth-protected, membership aware)
+        // Use app API only (auth-protected, membership aware)
         const res = await fetch(`/api/chat/${params.id}/messages?limit=50`, { credentials: 'include' })
         if (res.ok) {
           const data = await res.json() as { success: boolean; messages: ChatMessage[]; nextCursor?: string | null }
           console.log('Loaded messages from API:', data.messages.length, 'messages')
-          if (data.success && data.messages.length) {
-            setMessages(data.messages)
+          if (data.success) {
+            setMessages(data.messages || [])
             setNextCursor(data.nextCursor || null)
             return
           }
         }
-        // Fallback: read directly from chat server history if app API returned none
-        const res2 = await fetch(`${CHAT_HTTP_URL}/messages/${params.id}?limit=50`)
-        if (res2.ok) {
-          const data2 = await res2.json() as { success: boolean; messages: ChatMessage[] }
-          if (data2.success) {
-            console.log('Loaded messages from ChatServer:', data2.messages.length, 'messages')
-            setMessages(data2.messages)
-          }
-        }
+        // If no messages found, initialize with empty array
+        setMessages([])
+        setNextCursor(null)
       } catch (e) {
         console.error('Load chat messages error', e)
+        // Initialize with empty array on error
+        setMessages([])
+        setNextCursor(null)
       }
     }
     load()
@@ -304,126 +301,120 @@ export default function ChapterPage() {
     }
   }, [params.id])
 
-  // Connect websocket
+  // Connect websocket (optional - only if chat server is available)
   useEffect(() => {
     if (!params.id || authLoading) return
     
-    console.log('WebSocket useEffect - User object:', { 
-      userId: user?.id, 
-      userName: user?.name, 
-      userType: typeof user?.id,
-      chapterId: params.id,
-      authLoading 
-    })
-    
-    if (!socketRef.current) {
-      // Test server connectivity first
-      console.log('Testing server connectivity to:', CHAT_HTTP_URL)
-      fetch(`${CHAT_HTTP_URL}/health`)
-        .then(res => res.json())
-        .then(data => console.log('Server health check:', data))
-        .catch(err => console.error('Server health check failed:', err))
-      
-      const s = io(CHAT_WS_URL, {
-        autoConnect: true,
-        withCredentials: true,
-        timeout: 20000,
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        transports: ['polling', 'websocket'],
-        upgrade: true,
-        rememberUpgrade: true
-      })
-      socketRef.current = s
-      s.off('connect').on('connect', () => { 
-        setConnecting(false); 
-        setConnectionError("") 
-        console.log('Socket connected successfully')
-        // Join room on every successful (re)connect
-        const uid = user?.id ? String(user.id) : ''
-        if (uid && params.id) {
-          s.emit('joinRoom', { chapterId: String(params.id), userId: uid }, (res: any) => {
-            if (!res?.ok) {
-              console.error('joinRoom denied on connect:', res?.error)
-              setConnectionError(res?.error || 'Join denied')
-            } else {
-              console.log('Successfully joined room after connect')
-              setConnectionError("")
-            }
-          })
-        }
-      })
-      s.off('disconnect').on('disconnect', () => {
-        setConnecting(true)
-        console.log('Socket disconnected')
-      })
-      s.off('connect_error').on('connect_error', (error: any) => {
-        console.error('Socket connection error:', error)
-        console.error('Error details:', {
-          message: error.message,
-          description: error.description,
-          context: error.context,
-          type: error.type
+    // Check if chat server is available first
+    const checkChatServer = async () => {
+      try {
+        const response = await fetch(`${CHAT_HTTP_URL}/health`, { 
+          method: 'GET',
+          signal: AbortSignal.timeout(3000) // 3 second timeout
         })
-        setConnectionError('Connection failed. Retrying...')
-      })
-      // Deduplicate socket deliveries using a global Set
-      ;(globalThis as any).__processedChatMsgIds = (globalThis as any).__processedChatMsgIds || new Set<string>()
-      const processed = (globalThis as any).__processedChatMsgIds as Set<string>
-      s.off('newMessage').on('newMessage', (msg: ChatMessage) => {
-        if (processed.has(msg.id)) return
-        processed.add(msg.id)
-        console.log('Received new message via socket:', msg.content)
-        if (String(msg.chapterId) === String(params.id)) {
-          setMessages(prev => {
-            const exists = prev.some(m => m.id === msg.id)
-            if (exists) return prev
-            const optimisticIndex = prev.findIndex(m => 
-              m.content === msg.content && 
-              m.senderId === msg.senderId && 
-              m.id.startsWith('tmp-')
-            )
-            if (optimisticIndex !== -1) {
-              const updated = [...prev]
-              updated[optimisticIndex] = msg
-              return updated
-            }
-            return [...prev, msg]
-          })
+        if (response.ok) {
+          console.log('Chat server available, connecting WebSocket...')
+          return true
         }
-        // Keep processed IDs for the session to avoid any duplicate prints permanently
-      })
-      s.off('presence').on('presence', (p: { count: number }) => {
-        setOnlineCount(p?.count || 0)
-      })
-      s.off('typing').on('typing', ({ userId }: { userId: string }) => {
-        if (String(userId) === String(user?.id)) return
-        setTypingUsers(prev => new Set([...prev, String(userId)]))
-      })
-      s.off('stopTyping').on('stopTyping', ({ userId }: { userId: string }) => {
-        setTypingUsers(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(String(userId))
-          return newSet
+      } catch (error) {
+        console.log('Chat server not available, using HTTP-only mode')
+        setConnecting(false)
+        setConnectionError('')
+        return false
+      }
+      return false
+    }
+
+    const initWebSocket = async () => {
+      const isAvailable = await checkChatServer()
+      if (!isAvailable) return
+
+      if (!socketRef.current) {
+        const s = io(CHAT_WS_URL, {
+          autoConnect: true,
+          withCredentials: true,
+          timeout: 5000,
+          reconnection: false, // Disable reconnection to avoid errors
+          transports: ['polling', 'websocket'],
+          upgrade: true,
+          rememberUpgrade: true
         })
-      })
-      // If already connected and we have credentials, attempt initial join once
-      const uid = user?.id ? String(user.id) : ''
-      if (uid && params.id && s.connected) {
-        s.emit('joinRoom', { chapterId: String(params.id), userId: uid }, (res: any) => {
-          if (!res?.ok) {
-            console.error('joinRoom denied:', res?.error)
-            setConnectionError(res?.error || 'Join denied')
-          } else {
-            console.log('Successfully joined room')
-            setConnectionError("")
+        socketRef.current = s
+        
+        s.off('connect').on('connect', () => { 
+          setConnecting(false)
+          setConnectionError("")
+          console.log('Socket connected successfully')
+          // Join room on successful connect
+          const uid = user?.id ? String(user.id) : ''
+          if (uid && params.id) {
+            s.emit('joinRoom', { chapterId: String(params.id), userId: uid }, (res: any) => {
+              if (!res?.ok) {
+                console.error('joinRoom denied on connect:', res?.error)
+                setConnectionError(res?.error || 'Join denied')
+              } else {
+                console.log('Successfully joined room after connect')
+                setConnectionError("")
+              }
+            })
           }
+        })
+        
+        s.off('disconnect').on('disconnect', () => {
+          setConnecting(true)
+          console.log('Socket disconnected')
+        })
+        
+        s.off('connect_error').on('connect_error', (error: any) => {
+          console.log('WebSocket connection failed, using HTTP-only mode')
+          setConnectionError('')
+          setConnecting(false)
+        })
+        
+        // Message handling
+        s.off('newMessage').on('newMessage', (msg: ChatMessage) => {
+          console.log('Received new message via socket:', msg.content)
+          if (String(msg.chapterId) === String(params.id)) {
+            setMessages(prev => {
+              const exists = prev.some(m => m.id === msg.id)
+              if (exists) return prev
+              const optimisticIndex = prev.findIndex(m => 
+                m.content === msg.content && 
+                m.senderId === msg.senderId && 
+                m.id.startsWith('tmp-')
+              )
+              if (optimisticIndex !== -1) {
+                const updated = [...prev]
+                updated[optimisticIndex] = msg
+                return updated
+              }
+              return [...prev, msg]
+            })
+          }
+        })
+        
+        s.off('presence').on('presence', (p: { count: number }) => {
+          setOnlineCount(p?.count || 0)
+        })
+        
+        s.off('typing').on('typing', ({ userId }: { userId: string }) => {
+          if (String(userId) === String(user?.id)) return
+          setTypingUsers(prev => new Set([...prev, String(userId)]))
+        })
+        
+        s.off('stopTyping').on('stopTyping', ({ userId }: { userId: string }) => {
+          setTypingUsers(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(String(userId))
+            return newSet
+          })
         })
       }
     }
-    // Cleanup: ensure we don't accumulate duplicate listeners across navigations
+
+    initWebSocket()
+
+    // Cleanup
     return () => {
       const s = socketRef.current
       if (s) {
@@ -437,6 +428,36 @@ export default function ChapterPage() {
       }
     }
   }, [params.id, user?.id, authLoading])
+
+  // Auto-refresh messages in HTTP-only mode
+  useEffect(() => {
+    if (socketRef.current?.connected) return // Don't auto-refresh if WebSocket is connected
+    
+    const interval = setInterval(() => {
+      // Only refresh if we're not currently loading and have messages
+      if (!loadingMore && messages.length > 0) {
+        loadMessages()
+      }
+    }, 5000) // Refresh every 5 seconds
+
+    return () => clearInterval(interval)
+  }, [socketRef.current?.connected, loadingMore, messages.length])
+
+  const loadMessages = async () => {
+    if (!params.id) return
+    try {
+      const res = await fetch(`/api/chat/${params.id}/messages?limit=50`, { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json() as { success: boolean; messages: ChatMessage[]; nextCursor?: string | null }
+        if (data.success) {
+          setMessages(data.messages || [])
+          setNextCursor(data.nextCursor || null)
+        }
+      }
+    } catch (e) {
+      console.error('Auto-refresh messages error', e)
+    }
+  }
 
   const sendMessage = async () => {
     const text = input.trim()
@@ -460,40 +481,51 @@ export default function ChapterPage() {
     
     // Optimistic update
     setMessages(prev => [...prev, msg])
-    // Prefer WebSocket; only use HTTP when socket is not connected
+    // Use app API by default, WebSocket if available
     try {
       if (socketRef.current?.connected) {
+        // WebSocket is available, use it for real-time delivery
         socketRef.current!.emit('sendMessage', msg, (ack?: { ok: boolean; message?: ChatMessage; error?: string }) => {
           if (!ack?.ok || !ack.message) {
             console.error('WS send ack error:', ack?.error)
-            // remove optimistic; do not HTTP-fallback to avoid duplicates
-            setMessages(prev => prev.filter(m => m.id !== tempId))
-            toast.error(ack?.error || 'Failed to send message')
+            // Fallback to app API
+            sendViaAppAPI()
             return
           }
           setMessages(prev => prev.map(m => (m.id === tempId ? ack.message! : m)))
         })
       } else {
-        // Not connected: HTTP persist
-        const response = await fetch(`${CHAT_HTTP_URL}/messages/${params.id}`, {
+        // WebSocket not available, use app API
+        sendViaAppAPI()
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
+      setMessages(prev => prev.filter(m => m.id !== tempId))
+      toast.error('Failed to send message')
+    }
+
+    async function sendViaAppAPI() {
+      try {
+        const appResponse = await fetch(`/api/chat/${params.id}/messages`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...msg, userId: String(user.id) })
+          credentials: 'include',
+          body: JSON.stringify({ content: text })
         })
-        if (response.ok) {
-          const data = await response.json()
-          if (data?.message) {
+        if (appResponse.ok) {
+          const data = await appResponse.json()
+          if (data?.success && data?.message) {
             setMessages(prev => prev.map((m: any) => (m.id === tempId ? data.message : m)))
           }
         } else {
           setMessages(prev => prev.filter(m => m.id !== tempId))
           toast.error('Failed to send message')
         }
+      } catch (error) {
+        console.error('App API send error:', error)
+        setMessages(prev => prev.filter(m => m.id !== tempId))
+        toast.error('Failed to send message')
       }
-    } catch (error) {
-      console.error('Error sending message:', error)
-      setMessages(prev => prev.filter(m => m.id !== tempId))
-      toast.error('Failed to send message')
     }
   }
 
@@ -623,7 +655,7 @@ export default function ChapterPage() {
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-2">Authentication Required</h2>
             <p className="text-muted-foreground mb-4">Please sign in to view this chapter.</p>
-            <Button onClick={() => router.push('/auth')}>
+            <Button onClick={() => router.push('/product/auth')}>
               Sign In
             </Button>
           </div>
@@ -640,7 +672,7 @@ export default function ChapterPage() {
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-2">Chapter Not Found</h2>
             <p className="text-muted-foreground mb-4">The chapter you're looking for doesn't exist.</p>
-            <Button onClick={() => router.push('/chapters')}>
+            <Button onClick={() => router.push('/product/chapters')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Chapters
             </Button>
@@ -663,7 +695,7 @@ export default function ChapterPage() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={() => router.push('/chapters')}
+                  onClick={() => router.push('/product/chapters')}
                   className="mr-2"
                 >
                   <ArrowLeft className="w-4 h-4" />
@@ -699,8 +731,12 @@ export default function ChapterPage() {
               <div className="px-4 py-3 border-b flex items-center justify-between">
                 <div className="font-semibold">Chapter Chat</div>
                 <div className="text-xs flex items-center gap-2">
-                  <span className={`${connecting ? 'text-muted-foreground' : 'text-green-600'}`}>{connecting ? 'Connecting...' : 'Live'}</span>
-                  <span className="text-muted-foreground">· {onlineCount} online</span>
+                  <span className={`${connecting ? 'text-muted-foreground' : 'text-green-600'}`}>
+                    {connecting ? 'Connecting...' : (socketRef.current?.connected ? 'Live' : 'HTTP Mode')}
+                  </span>
+                  {socketRef.current?.connected && (
+                    <span className="text-muted-foreground">· {onlineCount} online</span>
+                  )}
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-muted/20">
@@ -766,9 +802,6 @@ export default function ChapterPage() {
                     Send
                   </Button>
                 </div>
-                {!!connectionError && (
-                  <div className="text-xs text-red-600 mt-2">{connectionError}</div>
-                )}
               </div>
             </Card>
           </div>

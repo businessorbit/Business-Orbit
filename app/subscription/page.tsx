@@ -67,7 +67,7 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      window.location.href = '/auth';
+      window.location.href = '/product/auth';
     }
   }, [user, loading]);
 

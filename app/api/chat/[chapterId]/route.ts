@@ -4,10 +4,10 @@ import { getUserFromToken } from '@/lib/utils/auth'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { chapterId: string } }
+  { params }: { params: Promise<{ chapterId: string }> }
 ) {
   try {
-    const { chapterId } = params || ({} as any)
+    const { chapterId } = await params
     const url = new URL(request.url)
     const limitParam = url.searchParams.get('limit')
     const cursor = url.searchParams.get('cursor')

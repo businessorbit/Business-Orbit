@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 import { cloudinary } from '@/lib/config/cloudinary';
 import pool from '@/lib/config/database';
 import { generateToken, setTokenCookie } from '@/lib/utils/auth';
-export const runtime = 'nodejs'
+
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {

@@ -1,0 +1,33 @@
+# Cursor ignore file - only ignore specific files
+# This file tells Cursor which files to ignore for AI features
+
+# Environment files (ignore for security)
+.env
+.env.local
+
+# Node modules (ignore for performance)
+node_modules/
+
+# Build outputs (ignore for performance)
+.next/
+out/
+build/
+dist/
+
+# Log files (ignore for performance)
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# TypeScript build info
+*.tsbuildinfo
+next-env.d.ts
+
+# Vercel
+.vercel

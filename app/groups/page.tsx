@@ -45,7 +45,6 @@ const activeGroupData = {
   members: 89,
   admins: ["Sarah Chen", "Michael Rodriguez"],
 }
-
 const groupPosts = [
   {
     author: {
@@ -245,3 +244,4 @@ export default function GroupsPage() {
     </div>
   )
 }
+

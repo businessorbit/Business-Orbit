@@ -261,7 +261,7 @@ export default function ChapterDashboard() {
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-2">Authentication Required</h2>
             <p className="text-muted-foreground mb-4">Please sign in to view your chapters.</p>
-            <Button onClick={() => router.push('/auth')}>
+            <Button onClick={() => router.push('/product/auth')}>
               Sign In
             </Button>
           </div>
@@ -353,7 +353,7 @@ export default function ChapterDashboard() {
               <Card className="p-4 text-center">
                 <h3 className="text-lg font-semibold mb-2">Please log in</h3>
                 <p className="text-muted-foreground mb-4">You need to be logged in to view your chapters.</p>
-                <Button onClick={() => router.push('/auth')}>
+                <Button onClick={() => router.push('/product/auth')}>
                   Go to Login
                 </Button>
               </Card>
@@ -376,7 +376,7 @@ export default function ChapterDashboard() {
                 {userChapters.map((chapter) => (
                   <Card key={chapter.id} className="p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between">
-                      <Link href={`/chapters/${chapter.id}`} className="flex-1 cursor-pointer">
+                      <Link href={`/product/chapters/${chapter.id}`} className="flex-1 cursor-pointer">
                         <div className="flex-1">
                           <h3 className="font-semibold text-lg mb-1">{chapter.name}</h3>
                           <div className="flex items-center text-sm text-muted-foreground mb-2">

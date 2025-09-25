@@ -264,6 +264,7 @@
     "build": "next build",
     "start": "next start",
     "chat:dev": "tsx server/chat-server.ts",
+    "chat:start": "node scripts/start-chat-server.js",
     "lint": "next lint"
   },
   "keywords": [],
@@ -272,6 +273,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.5.1",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
