@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button'
 import { ChevronDown, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { safeApiCall } from '@/lib/utils/api'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface Chapter {
   id: string
   name: string
   location_city: string
-  description?: string
-  member_count?: number
+  member_count: number
 }
 
 interface ChaptersCardProps {
@@ -21,6 +21,7 @@ interface ChaptersCardProps {
 
 export default function ChaptersCard({ className = "" }: ChaptersCardProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -28,18 +29,20 @@ export default function ChaptersCard({ className = "" }: ChaptersCardProps) {
 
   useEffect(() => {
     const fetchChapters = async () => {
+      if (!user) return
+      
       try {
         setLoading(true)
         setError(null)
 
         const result = await safeApiCall(
-          () => fetch('/api/chapters', {
+          () => fetch(`/api/users/${user.id}/chapters`, {
             credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
             }
           }),
-          'Failed to fetch chapters'
+          'Failed to fetch user chapters'
         )
 
         if (result.success && result.data && typeof result.data === 'object' && result.data !== null) {
@@ -61,7 +64,7 @@ export default function ChaptersCard({ className = "" }: ChaptersCardProps) {
     }
 
     fetchChapters()
-  }, [])
+  }, [user])
 
   if (loading) {
     return (
