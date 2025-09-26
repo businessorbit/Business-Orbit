@@ -27,6 +27,8 @@ export async function setupDatabase() {
     console.log('   - chapter_messages');
     console.log('   - events');
     console.log('   - rsvps');
+    console.log('   - user_follows');
+    console.log('   - follow_requests');
     console.log('   - All indexes and triggers');
     
   } catch (error: any) {
@@ -49,7 +51,7 @@ export async function checkDatabaseConnection() {
 
 export async function checkTablesExist() {
   try {
-    const tables = ['users', 'invites', 'user_preferences', 'chapters', 'chapter_memberships', 'chapter_messages', 'events', 'rsvps'];
+    const tables = ['users', 'invites', 'user_preferences', 'chapters', 'chapter_memberships', 'chapter_messages', 'events', 'rsvps', 'user_follows', 'follow_requests'];
     const results = [];
     
     for (const table of tables) {

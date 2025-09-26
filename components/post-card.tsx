@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Heart, MessageCircle, Share2, MoreHorizontal, Calendar, MapPin, Sparkles } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface PostCardProps {
   author: {
@@ -119,6 +119,11 @@ interface EventCardProps {
 
 export function EventCard({ title, host, date, time, location, attendees, isJoined = false }: EventCardProps) {
   const [joined, setJoined] = useState(isJoined)
+  
+  // Update local state when prop changes
+  useEffect(() => {
+    setJoined(isJoined)
+  }, [isJoined])
 
   return (
     <Card className="p-6 border-l-4 border-l-foreground bg-gradient-to-r from-accent/30 to-accent/10 hover:shadow-elevated transition-all duration-300 gradient-border group">
@@ -141,7 +146,7 @@ export function EventCard({ title, host, date, time, location, attendees, isJoin
               : "bg-foreground hover:bg-foreground/90 shadow-soft hover:shadow-elevated"
           }`}
         >
-          {joined ? "✓ Joined" : "Join Event"}
+          {joined ? "✓ Registered" : "Join Event"}
         </Button>
       </div>
 

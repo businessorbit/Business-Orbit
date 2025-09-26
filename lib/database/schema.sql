@@ -74,6 +74,35 @@ CREATE INDEX IF NOT EXISTS idx_users_linkedin_id ON users(linkedin_id);
 -- Create index on is_admin for faster admin checks
 CREATE INDEX IF NOT EXISTS idx_users_is_admin ON users(is_admin);
 
+-- Create user_follows table for follow relationships
+CREATE TABLE IF NOT EXISTS user_follows (
+    id SERIAL PRIMARY KEY,
+    follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    following_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(follower_id, following_id)
+);
+
+-- Indexes for user_follows table
+CREATE INDEX IF NOT EXISTS idx_user_follows_follower_id ON user_follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_user_follows_following_id ON user_follows(following_id);
+
+-- Create follow_requests table for follow request system
+CREATE TABLE IF NOT EXISTS follow_requests (
+    id SERIAL PRIMARY KEY,
+    requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(requester_id, target_id)
+);
+
+-- Indexes for follow_requests table
+CREATE INDEX IF NOT EXISTS idx_follow_requests_requester_id ON follow_requests(requester_id);
+CREATE INDEX IF NOT EXISTS idx_follow_requests_target_id ON follow_requests(target_id);
+CREATE INDEX IF NOT EXISTS idx_follow_requests_status ON follow_requests(status);
+
 -- Create indexes for invites table
 CREATE INDEX IF NOT EXISTS idx_invites_sender_id ON invites(sender_id);
 CREATE INDEX IF NOT EXISTS idx_invites_recipient_email ON invites(recipient_email);

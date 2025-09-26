@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Universal cursor pointer for all buttons */
+button {
+  cursor: pointer;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

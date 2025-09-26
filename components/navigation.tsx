@@ -9,7 +9,7 @@ export function Navigation() {
   const pathname = usePathname()
 
   const tabs = [
-    { name: "Feed", href: "/", icon: Home },
+    { name: "Feed", href: "/product/feed", icon: Home },
     { name: "Navigator", href: "/product/navigator", icon: Compass },
     { name: "Chapters", href: "/product/chapters", icon: Users },
     { name: "Groups", href: "/product/groups", icon: Users },

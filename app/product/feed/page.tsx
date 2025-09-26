@@ -3,13 +3,19 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Navigation } from "@/components/navigation"
-import { LeftSidebar, RightSidebar } from "@/components/sidebar"
 import { PostCard, EventCard } from "@/components/post-card"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { PlusCircle, Sparkles } from "lucide-react"
+import ProfileCard from "@/components/ProfileCard"
+import ChaptersCard from "@/components/ChaptersCard"
+import SecretGroupsCard from "@/components/SecretGroupsCard"
+import IncomingRequestsCard from "@/components/IncomingRequestsCard"
+import SuggestedConnectionsCard from "@/components/SuggestedConnectionsCard"
+import UpcomingEventsCard from "@/components/UpcomingEventsCard"
+import DynamicEventsFeed from "@/components/DynamicEventsFeed"
 
 const samplePosts = [
   {
@@ -48,26 +54,6 @@ const samplePosts = [
   },
 ]
 
-const sampleEvents = [
-  {
-    title: "AI in Product Development Workshop",
-    host: "Tech Leaders Mumbai",
-    date: "Dec 28, 2024",
-    time: "6:00 PM",
-    location: "WeWork BKC, Mumbai",
-    attendees: 47,
-    isJoined: false,
-  },
-  {
-    title: "Startup Pitch Night",
-    host: "Bangalore Entrepreneurs",
-    date: "Jan 5, 2025",
-    time: "7:00 PM",
-    location: "91springboard Koramangala",
-    attendees: 89,
-    isJoined: true,
-  },
-]
 
 export default function FeedPage() {
   const { user, loading, onboardingCompleted, inviteSent, isNewUser, isAdmin } = useAuth()
@@ -149,8 +135,10 @@ export default function FeedPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 lg:pb-8">
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Left Sidebar */}
-          <div className="hidden lg:block">
-            <LeftSidebar />
+          <div className="hidden lg:block w-64 space-y-4">
+            <ProfileCard />
+            <ChaptersCard />
+            <SecretGroupsCard />
           </div>
 
           {/* Main Content */}
@@ -220,9 +208,8 @@ export default function FeedPage() {
             {/* Feed */}
             <div className="space-y-4 lg:space-y-6">
               <PostCard {...samplePosts[0]} />
-              <EventCard {...sampleEvents[0]} />
+              <DynamicEventsFeed />
               <PostCard {...samplePosts[1]} />
-              <EventCard {...sampleEvents[1]} />
 
               <PostCard
                 author={{
@@ -271,8 +258,10 @@ export default function FeedPage() {
           </div>
 
           {/* Right Sidebar */}
-          <div className="hidden lg:block">
-            <RightSidebar />
+          <div className="hidden lg:block w-64 space-y-4">
+            <IncomingRequestsCard />
+            <SuggestedConnectionsCard />
+            <UpcomingEventsCard />
           </div>
         </div>
       </div>
