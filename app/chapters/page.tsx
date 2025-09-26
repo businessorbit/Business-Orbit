@@ -54,17 +54,17 @@ export default function ChapterDashboard() {
 
   // Mock data for events, performers, and notes (can be replaced with real APIs later)
   const events: ChapterEvent[] = [
-    { chapter: "Bangalore Tech Chapter", title: "AI Workshop", date: "Dec 28", time: "6:00 PM" },
+    { chapter: "Bengaluru Tech Chapter", title: "AI Workshop", date: "Dec 28", time: "6:00 PM" },
     { chapter: "Delhi Founders Hub", title: "Startup Pitch Night", date: "Jan 5", time: "7:00 PM" },
   ];
 
   const topPerformers: TopPerformer[] = [
-    { chapter: "Bangalore Tech Chapter", name: "Rajesh Kumar", score: 95 },
+    { chapter: "Bengaluru Tech Chapter", name: "Rajesh Kumar", score: 95 },
     { chapter: "Delhi Founders Hub", name: "Ananya Gupta", score: 90 },
   ];
 
   const thankYouNotes: ThankYouNote[] = [
-    { id: 1, chapter: "Bangalore Tech Chapter", from: "Sarah Chen", message: "Thanks for your help with the workshop!" },
+    { id: 1, chapter: "Bengaluru Tech Chapter", from: "Sarah Chen", message: "Thanks for your help with the workshop!" },
     { id: 2, chapter: "Delhi Founders Hub", from: "Michael Rodriguez", message: "Appreciate your feedback on my pitch." },
   ];
 

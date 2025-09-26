@@ -79,7 +79,7 @@ export default function SubscriptionPage() {
     if (!selectedPlan) return;
     // Here you would integrate with payment gateway
     console.log('Selected plan:', selectedPlan);
-    window.location.href = '/connections';
+    window.location.href = '/product/connection';
   };
 
   // Show loading while checking authentication

@@ -10,6 +10,7 @@ type PageMapKey =
   | "onboarding"
   | "subscription"
   | "connections"
+  | "connection"
   | "navigator"
   | "chapters"
   | "groups"
@@ -24,6 +25,7 @@ const pageLoaders: Record<PageMapKey, () => Promise<{ default: React.ComponentTy
   onboarding: () => import("../../onboarding/page"),
   subscription: () => import("../../subscription/page"),
   connections: () => import("../../connections/page"),
+  connection: () => import("../../connections/page"),
   navigator: () => import("../../navigator/page"),
   chapters: () => import("../../chapters/page"),
   groups: () => import("../../groups/page"),

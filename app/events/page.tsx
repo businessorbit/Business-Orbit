@@ -36,7 +36,7 @@ const upcomingEvents = [
   {
     id: 2,
     title: "Startup Pitch Night",
-    host: "Bangalore Entrepreneurs",
+    host: "Bengaluru Entrepreneurs",
     hostAvatar: "BE",
     date: "Jan 5, 2025",
     time: "7:00 PM - 9:00 PM",

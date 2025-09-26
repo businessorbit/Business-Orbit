@@ -65,7 +65,7 @@ export function LeftSidebar() {
                   className="w-full justify-start p-1 h-auto text-xs"
                   onClick={() => router.push(`/chapters/1`)}
                 >
-                  Bangalore Chapter
+                  Bengaluru Chapter
                 </Button>
                 <Button
                   variant="ghost"

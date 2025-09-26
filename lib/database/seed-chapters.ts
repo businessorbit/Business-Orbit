@@ -2,26 +2,26 @@ import pool from '@/lib/config/database'
 
 // 20 predefined chapters based on major Indian cities
 const PREDEFINED_CHAPTERS = [
-  { name: "Mumbai Tech Innovators", location_city: "Mumbai" },
-  { name: "Delhi Startup Hub", location_city: "Delhi" },
-  { name: "Bangalore Tech Leaders", location_city: "Bangalore" },
-  { name: "Chennai Entrepreneurs", location_city: "Chennai" },
-  { name: "Hyderabad Tech Community", location_city: "Hyderabad" },
-  { name: "Pune Innovation Hub", location_city: "Pune" },
-  { name: "Kolkata Business Network", location_city: "Kolkata" },
-  { name: "Ahmedabad Startup Circle", location_city: "Ahmedabad" },
-  { name: "Jaipur Tech Professionals", location_city: "Jaipur" },
-  { name: "Kochi Digital Innovators", location_city: "Kochi" },
-  { name: "Chandigarh Tech Hub", location_city: "Chandigarh" },
-  { name: "Indore Business Leaders", location_city: "Indore" },
-  { name: "Coimbatore Tech Community", location_city: "Coimbatore" },
-  { name: "Vadodara Startup Network", location_city: "Vadodara" },
-  { name: "Bhubaneswar Tech Circle", location_city: "Bhubaneswar" },
-  { name: "Mysore Innovation Hub", location_city: "Mysore" },
-  { name: "Nagpur Tech Professionals", location_city: "Nagpur" },
-  { name: "Visakhapatnam Startup Hub", location_city: "Visakhapatnam" },
-  { name: "Thiruvananthapuram Tech Leaders", location_city: "Thiruvananthapuram" },
-  { name: "Surat Business Network", location_city: "Surat" }
+  { name: "Mumbai Chapter", location_city: "Mumbai" },
+  { name: "Delhi Chapter", location_city: "Delhi" },
+  { name: "Bengaluru Chapter", location_city: "Bengaluru" },
+  { name: "Chennai Chapter", location_city: "Chennai" },
+  { name: "Kolkata Chapter", location_city: "Kolkata" },
+  { name: "Hyderabad Chapter", location_city: "Hyderabad" },
+  { name: "Pune Chapter", location_city: "Pune" },
+  { name: "Ahmedabad Chapter", location_city: "Ahmedabad" },
+  { name: "Chandigarh Chapter", location_city: "Chandigarh" },
+  { name: "Indore Chapter", location_city: "Indore" },
+  { name: "Bhubaneswar Chapter", location_city: "Bhubaneswar" },
+  { name: "Noida Chapter", location_city: "Noida" },
+  { name: "Gurugram Chapter", location_city: "Gurugram" },
+  { name: "Jaipur Chapter", location_city: "Jaipur" },
+  { name: "Lucknow Chapter", location_city: "Lucknow" },
+  { name: "Kanpur Chapter", location_city: "Kanpur" },
+  { name: "Nagpur Chapter", location_city: "Nagpur" },
+  { name: "Visakhapatnam Chapter", location_city: "Visakhapatnam" },
+  { name: "Surat Chapter", location_city: "Surat" },
+  { name: "Vadodara Chapter", location_city: "Vadodara" }
 ]
 
 export async function seedChapters() {

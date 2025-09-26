@@ -48,26 +48,26 @@ export function generateChapterName(location: string, secretGroup: string): stri
 // Generate member count for chapters (location-based)
 export function generateChapterMemberCount(location: string): number {
   const baseCounts: Record<string, number> = {
-    'Chandigarh': 120,
     'Mumbai': 450,
     'Delhi': 380,
-    'Bangalore': 520,
+    'Bengaluru': 520,
     'Chennai': 280,
     'Kolkata': 200,
     'Hyderabad': 350,
     'Pune': 300,
     'Ahmedabad': 180,
+    'Chandigarh': 120,
+    'Indore': 130,
+    'Bhubaneswar': 120,
+    'Noida': 200,
+    'Gurugram': 250,
     'Jaipur': 150,
     'Lucknow': 160,
     'Kanpur': 140,
     'Nagpur': 170,
-    'Indore': 130,
-    'Bhopal': 120,
-    'Patna': 110,
-    'Ranchi': 100,
-    'Bhubaneswar': 120,
-    'Guwahati': 90,
-    'Shillong': 80
+    'Visakhapatnam': 120,
+    'Surat': 110,
+    'Vadodara': 100
   };
   
   const base = baseCounts[location] || 150;

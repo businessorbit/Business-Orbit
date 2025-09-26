@@ -57,7 +57,7 @@ export default function ConnectionsPage() {
       company: 'InnovateLab',
       avatar: 'MR',
       mutualConnections: 3,
-      location: 'Bangalore',
+      location: 'Bengaluru',
       skills: ['Entrepreneurship', 'Leadership', 'Strategy', 'Fundraising'],
       email: 'michael@innovatelab.com',
       bio: 'Serial entrepreneur building the next generation of AI-powered solutions. Always looking to connect with fellow innovators.',
@@ -246,7 +246,7 @@ export default function ConnectionsPage() {
   });
 
   const handleContinue = () => {
-    window.location.href = '/profile';
+    window.location.href = '/product/profile';
   };
 
   // Show loading while checking authentication

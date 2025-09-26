@@ -48,7 +48,7 @@ const sampleEvents = [
 
 async function seedEvents() {
   try {
-    console.log('🌱 Seeding events...');
+    console.log('Seeding events...');
     
     for (const event of sampleEvents) {
       const result = await pool.query(`

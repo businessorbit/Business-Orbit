@@ -4,10 +4,9 @@ import { getUserFromToken } from '@/lib/utils/auth';
 
 // Sample data for Chapters and Secret Groups
 const AVAILABLE_CHAPTERS = [
-  'Chandigarh', 'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 
-  'Kolkata', 'Hyderabad', 'Pune', 'Ahmedabad', 'Jaipur',
-  'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Bhopal',
-  'Patna', 'Ranchi', 'Bhubaneswar', 'Guwahati', 'Shillong'
+  "Mumbai", "Delhi", "Bengaluru", "Chennai", "Kolkata", "Hyderabad", "Pune", "Ahmedabad",
+  "Chandigarh", "Indore", "Bhubaneswar", "Noida", "Gurugram", "Jaipur", "Lucknow", "Kanpur", 
+  "Nagpur", "Visakhapatnam", "Surat", "Vadodara"
 ];
 
 const AVAILABLE_SECRET_GROUPS = [
