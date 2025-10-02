@@ -9,13 +9,27 @@ const AVAILABLE_CHAPTERS = [
   "Nagpur", "Visakhapatnam", "Surat", "Vadodara"
 ];
 
-const AVAILABLE_SECRET_GROUPS = [
+// Static fallback only; primary source is DB secret_groups
+const AVAILABLE_SECRET_GROUPS_FALLBACK = [
   'Tech Innovators', 'Creative Minds', 'Business Leaders', 'Startup Founders',
   'Digital Nomads', 'Art Enthusiasts', 'Fitness Freaks', 'Food Lovers',
   'Travel Buffs', 'Book Worms', 'Music Makers', 'Sports Champions',
   'Gaming Community', 'Photography Club', 'Design Thinkers', 'Marketing Gurus',
   'Finance Wizards', 'Healthcare Heroes', 'Education Pioneers', 'Social Impact'
 ];
+
+async function getAvailableSecretGroupsFromDB(): Promise<string[]> {
+  try {
+    const res = await pool.query(
+      `SELECT name FROM secret_groups ORDER BY created_at DESC`
+    );
+    const names = (res.rows || []).map((r: any) => String(r.name)).filter(Boolean);
+    // If DB has none, use fallback to keep onboarding usable
+    return names.length ? names : AVAILABLE_SECRET_GROUPS_FALLBACK;
+  } catch {
+    return AVAILABLE_SECRET_GROUPS_FALLBACK;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,8 +70,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validation: All secret groups must be from available list
-    const invalidGroups = secretGroups.filter((group: string) => !AVAILABLE_SECRET_GROUPS.includes(group));
+    // Validation: All secret groups must exist in DB (with fallback)
+    const dbGroups = await getAvailableSecretGroupsFromDB();
+    const invalidGroups = secretGroups.filter((group: string) => !dbGroups.includes(group));
     if (invalidGroups.length > 0) {
       return NextResponse.json(
         { error: `Invalid secret groups: ${invalidGroups.join(', ')}` },
@@ -111,9 +126,10 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
+    const secretGroups = await getAvailableSecretGroupsFromDB();
     return NextResponse.json({
       chapters: AVAILABLE_CHAPTERS,
-      secretGroups: AVAILABLE_SECRET_GROUPS
+      secretGroups
     });
   } catch (error: any) {
     console.error('Get onboarding data error:', error);

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Calendar, Trophy, MessageSquare, Users, Lock, Plus, MapPin, Loader2, Trash2 } from "lucide-react";
+import { Calendar, Trophy, MessageSquare, Users, Lock, Plus, MapPin, Loader2, Trash2, RefreshCw } from "lucide-react";
 import { Navigation } from "@/components/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { safeApiCall } from "@/lib/utils/api";
@@ -22,10 +22,16 @@ interface UserChapter {
 }
 
 interface ChapterEvent {
-  chapter: string;
+  id: number;
   title: string;
+  description?: string;
   date: string;
   time: string;
+  attendees: number;
+  is_registered: boolean;
+  event_type: string;
+  venue_address?: string;
+  chapter?: string;
 }
 
 interface TopPerformer {
@@ -52,11 +58,10 @@ export default function ChapterDashboard() {
   const [chaptersLoading, setChaptersLoading] = useState(true);
   const [deletingChapterId, setDeletingChapterId] = useState<string | null>(null);
 
-  // Mock data for events, performers, and notes (can be replaced with real APIs later)
-  const events: ChapterEvent[] = [
-    { chapter: "Bengaluru Tech Chapter", title: "AI Workshop", date: "Dec 28", time: "6:00 PM" },
-    { chapter: "Delhi Founders Hub", title: "Startup Pitch Night", date: "Jan 5", time: "7:00 PM" },
-  ];
+  // Events state
+  const [events, setEvents] = useState<ChapterEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [lastEventsUpdate, setLastEventsUpdate] = useState<Date | null>(null);
 
   const topPerformers: TopPerformer[] = [
     { chapter: "Bengaluru Tech Chapter", name: "Rajesh Kumar", score: 95 },
@@ -226,7 +231,33 @@ export default function ChapterDashboard() {
     console.log('Chapters page - User state:', { user, loading });
     if (user && !loading) {
       fetchUserChapters();
+      fetchUpcomingEvents();
     }
+  }, [user, loading]);
+
+  // Auto-refresh events every 3 minutes for dashboard
+  useEffect(() => {
+    if (!user || loading) return;
+
+    const interval = setInterval(() => {
+      fetchUpcomingEvents(false); // Silent refresh
+    }, 180000); // Refresh every 3 minutes
+
+    return () => clearInterval(interval);
+  }, [user, loading]);
+
+  // Refresh events when page regains focus
+  useEffect(() => {
+    if (!user || loading) return;
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchUpcomingEvents(false); // Silent refresh when tab regains focus
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [user, loading]);
 
   // Handle location selection
@@ -236,6 +267,117 @@ export default function ChapterDashboard() {
         ? prev.filter(l => l !== location)
         : [...prev, location]
     );
+  };
+
+  // Fetch upcoming events dynamically
+  const fetchUpcomingEvents = async (forceRefresh = false) => {
+    if (eventsLoading && !forceRefresh) return;
+    
+    setEventsLoading(true);
+    try {
+      console.log('Fetching upcoming events for chapters dashboard...');
+      
+      const url = user?.id ? `/api/events?userId=${user.id}&limit=6` : '/api/events?limit=6';
+      const response = await fetch(url, {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': forceRefresh ? 'no-cache' : 'default'
+        }
+      });
+      
+      if (response.ok) {
+        const eventsData = await response.json();
+        console.log('Events API response:', eventsData);
+        
+        // Filter upcoming events and format them
+        const now = new Date();
+        const upcomingEvents = eventsData
+          .filter((event: any) => {
+            if (!event.date) return false;
+            try {
+              const eventDate = new Date(event.date);
+              return eventDate >= now && event.status === 'approved';
+            } catch (error) {
+              console.error('Error filtering event date:', event.date, error);
+              return false;
+            }
+          })
+          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .slice(0, 4) // Show top 4 upcoming events for dashboard
+          .map((event: any) => {
+            const eventDate = new Date(event.date);
+            return {
+              id: event.id,
+              title: event.title,
+              description: event.description,
+              date: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              time: eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+              attendees: event.rsvp_count || 0,
+              is_registered: event.is_registered || false,
+              event_type: event.event_type,
+              venue_address: event.venue_address
+            };
+          });
+        
+        console.log('Processed upcoming events for dashboard:', upcomingEvents);
+        setEvents(upcomingEvents);
+        setLastEventsUpdate(new Date());
+        
+        if (forceRefresh) {
+          toast.success(`Events updated - ${upcomingEvents.length} upcoming event${upcomingEvents.length === 1 ? '' : 's'} found`);
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('Events API error:', errorData);
+        toast.error('Failed to load events: ' + (errorData.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast.error('Failed to load events');
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  // Manual refresh function for events
+  const handleRefreshEvents = () => {
+    fetchUpcomingEvents(true);
+  };
+
+  // Handle event RSVP functionality for dashboard
+  const handleEventRSVP = async (eventId: number, eventTitle: string) => {
+    if (!user) {
+      toast.error('Please sign in to RSVP to events');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/events/${eventId}/rsvp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: user.id,
+          userEmail: user.email,
+          userName: user.name
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success(`Successfully RSVP'd to ${eventTitle}`);
+        // Refresh events to update RSVP status
+        setTimeout(() => fetchUpcomingEvents(true), 1000);
+      } else {
+        toast.error(data.message || 'Failed to RSVP to event');
+      }
+    } catch (error) {
+      console.error('Error RSVPing to event:', error);
+      toast.error('Failed to RSVP to event');
+    }
   };
 
   // Handle reply to thank you notes
@@ -442,18 +584,109 @@ export default function ChapterDashboard() {
 
           {/* Upcoming Events */}
           <section className="space-y-4">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <Calendar className="h-5 w-5 text-primary" /> Upcoming Events
-            </h2>
-            <div className="space-y-3">
-              {events.map((ev, idx) => (
-                <Card key={idx} className="p-4">
-                  <p className="font-medium">{ev.title}</p>
-                  <p className="text-sm text-muted-foreground">{ev.date} • {ev.time}</p>
-                  <p className="text-xs text-muted-foreground">{ev.chapter}</p>
-                </Card>
-              ))}
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <h2 className="flex items-center gap-2 text-lg font-semibold">
+                  <Calendar className="h-5 w-5 text-primary" /> 
+                  Upcoming Events
+                  {eventsLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                </h2>
+                {lastEventsUpdate && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last updated: {lastEventsUpdate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefreshEvents}
+                disabled={eventsLoading}
+                className="text-xs px-2"
+              >
+                <RefreshCw className={`w-3 h-3 ${eventsLoading ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
+            <div className="space-y-3">
+              {eventsLoading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading events...</p>
+                </div>
+              ) : events.length === 0 ? (
+                <Card className="p-6 text-center">
+                  <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No upcoming events found.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Check back later for new events!</p>
+                </Card>
+              ) : (
+                events.map((event) => (
+                  <Card key={event.id} className="p-4 hover:shadow-md transition-shadow">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between">
+                        <h3 className="font-medium text-sm">{event.title}</h3>
+                        <div className="flex items-center gap-1">
+                          {event.is_registered && (
+                            <Badge variant="secondary" className="text-xs">
+                              Registered
+                            </Badge>
+                          )}
+                          {event.event_type === 'online' && (
+                            <span className="text-xs text-blue-600 font-medium">🌐</span>
+                          )}
+                          
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span className="flex items-center">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {event.date} • {event.time}
+                          </span>
+                          <span className="flex items-center">
+                            <Users className="w-3 h-3 mr-1" />
+                            {event.attendees} attending
+                          </span>
+                        </div>
+                        
+                        {event.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {event.description}
+                          </p>
+                        )}
+                        
+                        {event.venue_address && event.event_type === 'physical' && (
+                          <div className="flex items-start text-xs text-muted-foreground">
+                            <MapPin className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
+                            <span className="line-clamp-2">{event.venue_address}</span>
+                          </div>
+                        )}
+                        
+                        {user && !event.is_registered && (
+                          <Button
+                            size="sm"
+                            className="text-xs h-6 mt-2 w-full"
+                            onClick={() => handleEventRSVP(event.id, event.title)}
+                          >
+                            RSVP Now
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+            {events.length > 0 && (
+              <Button 
+                variant="outline" 
+                className="w-full text-sm"
+                onClick={() => router.push('/events')}
+              >
+                View All Events
+              </Button>
+            )}
           </section>
 
           {/* Top Performers */}

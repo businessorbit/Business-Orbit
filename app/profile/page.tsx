@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, MessageCircle, UserPlus, Calendar, Star, Award, Users, Lock, DollarSign, Clock, Edit, Settings, LogOut, Heart, Share2 } from "lucide-react"
+import { MapPin, MessageCircle, UserPlus, Calendar, Star, Award, Users, Lock, DollarSign, Clock, Edit, Settings, LogOut, Heart, Share2, RefreshCw } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import ImageManager from "@/components/ImageManager"
 import MembersCard from "@/components/MembersCard"
 import RequestsCard from "@/components/RequestsCard"
-import { toast } from "sonner"
+import toast from 'react-hot-toast';
 
 // Default activity data
 const defaultActivityPosts = [
@@ -68,52 +68,93 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [userGroups, setUserGroups] = useState<UserGroup[]>(defaultGroups)
   const [userPosts] = useState(defaultActivityPosts)
+  const [groupsLoading, setGroupsLoading] = useState(false)
 
-  // Fetch user's joined chapters via memberships
-  useEffect(() => {
-    const fetchUserChapters = async () => {
-      if (!user) return
+  // Function to fetch user groups (chapters + secret groups)
+  const fetchUserGroups = async (showLoading = false) => {
+    if (!user) return
+    
+    if (showLoading) setGroupsLoading(true)
+    
+    try {
+      console.log('Profile: Fetching groups for user:', user.id);
       
-      try {
-        console.log('Profile: Fetching chapters for user:', user.id);
-        
-        const result = await safeApiCall(
-          () => fetch(`/api/users/${user.id}/chapters`, { 
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          }),
-          'Failed to fetch user chapters'
-        )
-        
-        console.log('Profile: API response:', result);
-        
-        if (result.success && result.data && typeof result.data === 'object' && result.data !== null) {
-          const data = result.data as any
-          if (data.success && Array.isArray(data.chapters)) {
-            console.log('Profile: Found chapters:', data.chapters);
-            const actualGroups: UserGroup[] = data.chapters.map((c: any) => ({
-              name: c.name,
-              type: 'chapter' as const,
-              members: Number(c.member_count || 0)
-            }))
-            setUserGroups(actualGroups)
-          } else {
-            console.log('Profile: No chapters found for user, data:', data)
-            setUserGroups([])
+      // Fetch chapters
+      const chaptersResult = await safeApiCall(
+        () => fetch(`/api/users/${user.id}/chapters`, { 
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
           }
-        } else {
-          console.error('Error fetching user chapters:', result.error)
-          setUserGroups([])
+        }),
+        'Failed to fetch user chapters'
+      )
+      
+      // Fetch secret groups
+      const secretGroupsResult = await safeApiCall(
+        () => fetch(`/api/users/${user.id}/secret-groups`, { 
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }),
+        'Failed to fetch user secret groups'
+      )
+      
+      console.log('Profile: Chapters API response:', chaptersResult);
+      console.log('Profile: Secret Groups API response:', secretGroupsResult);
+      
+      let allGroups: UserGroup[] = []
+      
+      // Process chapters
+      if (chaptersResult.success && chaptersResult.data && typeof chaptersResult.data === 'object' && chaptersResult.data !== null) {
+        const chaptersData = chaptersResult.data as any
+        if (chaptersData.success && Array.isArray(chaptersData.chapters)) {
+          console.log('Profile: Found chapters:', chaptersData.chapters);
+          const chapterGroups: UserGroup[] = chaptersData.chapters.map((c: any) => ({
+            name: c.name,
+            type: 'chapter' as const,
+            members: Number(c.member_count || 0)
+          }))
+          allGroups = [...allGroups, ...chapterGroups]
         }
-      } catch (error) {
-        console.error('Error fetching user chapters:', error)
-        setUserGroups([])
       }
+      
+      // Process secret groups
+      if (secretGroupsResult.success && secretGroupsResult.data && typeof secretGroupsResult.data === 'object' && secretGroupsResult.data !== null) {
+        const secretGroupsData = secretGroupsResult.data as any
+        if (Array.isArray(secretGroupsData.groups)) {
+          console.log('Profile: Found secret groups:', secretGroupsData.groups);
+          const secretGroups: UserGroup[] = secretGroupsData.groups.map((g: any) => ({
+            name: g.name,
+            type: 'secret' as const,
+            members: Number(g.member_count || 0)
+          }))
+          allGroups = [...allGroups, ...secretGroups]
+        }
+      }
+      
+      console.log('Profile: All groups combined:', allGroups);
+      setUserGroups(allGroups)
+      
+      if (showLoading) {
+        toast.success('Groups updated successfully!')
+      }
+      
+    } catch (error) {
+      console.error('Error fetching user groups:', error)
+      setUserGroups([])
+      if (showLoading) {
+        toast.error('Failed to refresh groups')
+      }
+    } finally {
+      if (showLoading) setGroupsLoading(false)
     }
+  }
 
-    fetchUserChapters()
+  // Fetch user's joined chapters and secret groups on component mount
+  useEffect(() => {
+    fetchUserGroups()
   }, [user])
 
   if (loading) {
@@ -347,26 +388,75 @@ export default function ProfilePage() {
                 <TabsContent value="groups" className="space-y-4 mt-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">Groups & Chapters</h3>
-                    <Badge variant="outline">{userGroups.length} groups</Badge>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline">{userGroups.length} groups</Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => fetchUserGroups(true)}
+                        disabled={groupsLoading}
+                        className="h-8 w-8 p-0"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${groupsLoading ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {userGroups.map((group) => (
-                      <Card key={group.name} className="p-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                            {group.type === "chapter" ? <Users className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium">{group.name}</h4>
-                            <p className="text-sm text-muted-foreground">{group.members} members</p>
-                            <Badge variant="outline" className="text-xs mt-1">
-                              {group.type === "chapter" ? "Chapter" : "Secret Group"}
-                            </Badge>
-                          </div>
+                  
+                  {userGroups.length === 0 ? (
+                    <Card className="p-8 text-center">
+                      <div className="flex flex-col items-center space-y-3">
+                        <Users className="w-12 h-12 text-muted-foreground" />
+                        <div>
+                          <h4 className="font-medium text-lg">No Groups Yet</h4>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Join chapters and secret groups to see them here
+                          </p>
                         </div>
-                      </Card>
-                    ))}
-                  </div>
+                        <Button 
+                          onClick={() => window.location.href = '/product/groups'}
+                          className="mt-2"
+                        >
+                          Browse Groups
+                        </Button>
+                      </div>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {userGroups.map((group) => (
+                        <Card key={`${group.type}-${group.name}`} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => {
+                          if (group.type === 'secret') {
+                            window.location.href = `/product/groups/${encodeURIComponent(group.name)}`
+                          } else {
+                            window.location.href = `/chapters/${encodeURIComponent(group.name)}`
+                          }
+                        }}>
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                              group.type === "chapter" 
+                                ? "bg-gray-100 text-gray-600" 
+                                : "bg-gray-100 text-gray-600"
+                            }`}>
+                              {group.type === "chapter" ? <Users className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium text-base">{group.name}</h4>
+                              <p className="text-sm text-muted-foreground">{group.members} members</p>
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs mt-1 ${
+                                  group.type === "chapter" 
+                                    ? "border-gray-200 text-gray-700 bg-gray-50" 
+                                    : "border-gray-200 text-gray-700 bg-gray-50"
+                                }`}
+                              >
+                                {group.type === "chapter" ? "Chapter" : "Secret Group"}
+                              </Badge>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="consultation" className="space-y-6 mt-6">

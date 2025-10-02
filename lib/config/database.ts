@@ -29,17 +29,30 @@ const shouldUseSsl = Boolean(
   )
 );
 
-const pool = new Pool({
+// Ensure a single pool instance across HMR/route reloads in Next.js
+declare global {
+  // eslint-disable-next-line no-var
+  var __PG_POOL__: any;
+}
+
+const pool = global.__PG_POOL__ ?? new Pool({
   connectionString: databaseUrl,
   ssl: shouldUseSsl || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: process.env.NODE_ENV === 'production' ? 20 : 10, 
-  min: process.env.NODE_ENV === 'production' ? 5 : 2,  
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-  maxUses: 7500,
+  // Keep dev pool small to avoid exhausting server connection slots during HMR
+  max: process.env.NODE_ENV === 'production' ? 20 : 5,
+  min: process.env.NODE_ENV === 'production' ? 5 : 0,
+  idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 5_000,
+  maxUses: 7_500,
   // Add statement timeout to prevent long-running queries
-  statement_timeout: 30000,
+  statement_timeout: 30_000,
+  // Keep TCP connection alive to reduce ECONNRESET in some environments
+  keepAlive: true,
 });
+
+if (!global.__PG_POOL__) {
+  global.__PG_POOL__ = pool;
+}
 
 pool.on('error', (err: any) => {
   console.error('❌ Database connection error:', err.message);
@@ -59,7 +72,7 @@ pool.on('connect', (client: any) => {
 
 
 
-const testConnection = async (retries = 3) => {
+const testConnection = async (retries = process.env.NODE_ENV === 'production' ? 3 : 1) => {
   for (let i = 0; i < retries; i++) {
     try {
       const result = await pool.query('SELECT NOW() as current_time, version() as version');
@@ -72,9 +85,7 @@ const testConnection = async (retries = 3) => {
       if (i === retries - 1) {
         console.log('📋 Please ensure PostgreSQL is installed and running');
         console.log('📋 Check your DATABASE_URL in .env.local file');
-        if (process.env.NODE_ENV === 'production') {
-          process.exit(1);
-        }
+        // Do not exit the process in dev; let API routes handle runtime errors gracefully
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }

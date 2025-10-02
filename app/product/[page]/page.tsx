@@ -30,7 +30,7 @@ const pageLoaders: Record<PageMapKey, () => Promise<{ default: React.ComponentTy
   chapters: () => import("../../chapters/page"),
   groups: () => import("../../groups/page"),
   events: () => import("../../events/page"),
-  profile: () => import("../../profile/page"),
+  profile: () => import("../../profile/page").catch(() => ({ default: () => <div>Loading...</div> })),
   consultation: () => import("../../consultation/page"),
   rewards: () => import("../../rewards/page"),
 };
@@ -44,6 +44,9 @@ export default function ProductAliasPage() {
     notFound();
   }
 
-  const Component = dynamic(loader, { ssr: false });
+  const Component = dynamic(loader, { 
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center min-h-screen">Loading...</div>
+  });
   return <Component />;
 }

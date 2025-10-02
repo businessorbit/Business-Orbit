@@ -3,6 +3,8 @@ import http from 'http'
 import { Server } from 'socket.io'
 import cors from 'cors'
 import pool from '../lib/config/database'
+import { chatService } from '../lib/services/chat-service'
+import { groupChatService } from '../lib/services/group-chat-service'
 
 type ChatMessage = {
   id: string
@@ -26,7 +28,7 @@ app.get('/health', (_req: any, res: any) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-// HTTP send fallback: persist to DB and broadcast
+// HTTP send fallback: persist to PostgreSQL and broadcast
 app.post('/messages/:chapterId', async (req: any, res: any) => {
   try {
     const { chapterId } = req.params as { chapterId: string }
@@ -46,20 +48,14 @@ app.post('/messages/:chapterId', async (req: any, res: any) => {
       const senderName = userRes.rows[0]?.name || 'User'
       const senderAvatarUrl = userRes.rows[0]?.profile_photo_url || null
 
-      const insert = await client.query(
-        'INSERT INTO chapter_messages (chapter_id, sender_id, content) VALUES ($1, $2, $3) RETURNING id, created_at',
-        [chapterId, senderIdNum, text]
-      )
-
-      const saved: ChatMessage = {
-        id: String(insert.rows[0].id),
+      // Store message in PostgreSQL
+      const saved = await chatService.storeMessage({
         chapterId: String(chapterId),
         senderId: String(senderIdNum),
         senderName,
         senderAvatarUrl,
         content: text,
-        timestamp: new Date(insert.rows[0].created_at).toISOString(),
-      }
+      })
 
       const room = `chapter-${chapterId}`
       io.to(room).emit('newMessage', saved)
@@ -80,28 +76,59 @@ app.get('/messages/:chapterId', async (req: any, res: any) => {
     const { chapterId } = req.params as { chapterId: string }
     const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100)
     if (!chapterId) return res.status(400).json({ success: false, error: 'chapterId required' })
-    const { rows } = await pool.query(
-      `SELECT m.id::text, m.chapter_id::text as chapter_id, m.sender_id::text as sender_id, m.content, m.created_at,
-              u.name as sender_name, u.profile_photo_url as sender_avatar_url
-         FROM chapter_messages m
-         JOIN users u ON u.id = m.sender_id
-        WHERE m.chapter_id = $1
-        ORDER BY m.created_at DESC
-        LIMIT $2`,
-      [chapterId, limit]
-    )
-    const messages = rows.map((r: any) => ({
-      id: String(r.id),
-      chapterId: String(r.chapter_id),
-      senderId: String(r.sender_id),
-      senderName: r.sender_name || 'User',
-      senderAvatarUrl: r.sender_avatar_url || null,
-      content: r.content,
-      timestamp: new Date(r.created_at).toISOString(),
-    })).reverse()
-    res.json({ success: true, messages })
+    
+    // Get messages from PostgreSQL
+    const result = await chatService.getMessages(chapterId, limit)
+    res.json({ success: true, messages: result.messages })
   } catch (e) {
     console.error('HTTP GET /messages error', e)
+    res.status(500).json({ success: false, error: 'internal error' })
+  }
+})
+
+// ----- Secret Group Chat (mirrors chapter chat flow) -----
+
+// HTTP send for groups
+app.post('/groups/:groupId/messages', async (req: any, res: any) => {
+  try {
+    const { groupId } = req.params as { groupId: string }
+    const { userId, content } = req.body as { userId?: string | number; content?: string }
+    const senderIdNum = Number(userId)
+    const text = String(content || '').trim()
+    if (!groupId || !senderIdNum) return res.status(400).json({ success: false, error: 'groupId and userId required' })
+    if (!text) return res.status(400).json({ success: false, error: 'Message cannot be empty' })
+    if (text.length > 4000) return res.status(400).json({ success: false, error: 'Message too long' })
+
+    const client = await pool.connect()
+    try {
+      const mem = await client.query('SELECT 1 FROM secret_group_memberships WHERE user_id = $1 AND group_id = $2 LIMIT 1', [senderIdNum, groupId])
+      if (mem.rowCount === 0) return res.status(403).json({ success: false, error: 'not a member of this group' })
+
+      await groupChatService.ensureTable()
+      const saved = await groupChatService.storeMessage({ groupId: String(groupId), senderId: String(senderIdNum), content: text })
+      const room = `group-${groupId}`
+      io.to(room).emit('group:newMessage', saved)
+      res.json({ success: true, message: saved })
+    } finally {
+      client.release()
+    }
+  } catch (e) {
+    console.error('HTTP /groups/:groupId/messages error', e)
+    res.status(500).json({ success: false, error: 'internal error' })
+  }
+})
+
+// HTTP history for groups
+app.get('/groups/:groupId/messages', async (req: any, res: any) => {
+  try {
+    const { groupId } = req.params as { groupId: string }
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100)
+    if (!groupId) return res.status(400).json({ success: false, error: 'groupId required' })
+    await groupChatService.ensureTable()
+    const result = await groupChatService.getMessages(groupId, limit)
+    res.json({ success: true, messages: result.messages })
+  } catch (e) {
+    console.error('HTTP GET /groups/:groupId/messages error', e)
     res.status(500).json({ success: false, error: 'internal error' })
   }
 })
@@ -197,7 +224,7 @@ io.on('connection', (socket) => {
       return
     }
 
-    // Insert into Postgres
+    // Insert into PostgreSQL
     try {
       const client = await pool.connect()
       try {
@@ -215,20 +242,14 @@ io.on('connection', (socket) => {
         const senderName = userRes.rows[0]?.name || message.senderName || 'User'
         const senderAvatarUrl = userRes.rows[0]?.profile_photo_url || message.senderAvatarUrl || null
 
-        const insert = await client.query(
-          'INSERT INTO chapter_messages (chapter_id, sender_id, content) VALUES ($1, $2, $3) RETURNING id, created_at',
-          [chapterId, senderIdNum, content]
-        )
-
-        const saved: ChatMessage = {
-          id: String(insert.rows[0].id),
+        // Store message in PostgreSQL
+        const saved = await chatService.storeMessage({
           chapterId,
           senderId: String(senderIdNum),
           senderName,
           senderAvatarUrl,
           content,
-          timestamp: new Date(insert.rows[0].created_at).toISOString(),
-        }
+        })
 
         const room = `chapter-${chapterId}`
         io.to(room).emit('newMessage', saved)
@@ -236,9 +257,40 @@ io.on('connection', (socket) => {
       } finally {
         client.release()
       }
-    } catch (e: any) {
-      // eslint-disable-next-line no-console
-      console.error('sendMessage DB error', e)
+    } catch (error) {
+      console.error('Error storing message:', error)
+      ack?.({ ok: false, error: 'failed to save message' })
+    }
+  })
+
+  // Group join
+  socket.on('group:join', async ({ groupId, userId }: { groupId: string; userId: string }, ack?: (res: { ok: boolean; error?: string }) => void) => {
+    try {
+      if (!groupId || !userId) { ack?.({ ok: false, error: 'groupId and userId required' }); return }
+      const mem = await pool.query('SELECT 1 FROM secret_group_memberships WHERE user_id = $1 AND group_id = $2 LIMIT 1', [Number(userId), groupId])
+      if (mem.rowCount === 0) { ack?.({ ok: false, error: 'not a member of this group' }); return }
+      const room = `group-${groupId}`
+      socket.join(room)
+      ack?.({ ok: true })
+    } catch (e) {
+      console.error('group:join error', e)
+      ack?.({ ok: false, error: 'internal join error' })
+    }
+  })
+
+  // Group send message
+  socket.on('group:send', async (payload: { id: string; groupId: string; senderId: string; content: string }, ack?: (res: { ok: boolean; error?: string }) => void) => {
+    try {
+      const { groupId, senderId, content } = payload
+      const mem = await pool.query('SELECT 1 FROM secret_group_memberships WHERE user_id = $1 AND group_id = $2 LIMIT 1', [Number(senderId), groupId])
+      if (mem.rowCount === 0) { ack?.({ ok: false, error: 'not a member of this group' }); return }
+      await groupChatService.ensureTable()
+      const saved = await groupChatService.storeMessage({ groupId: String(groupId), senderId: String(senderId), content: String(content || '').trim() })
+      const room = `group-${groupId}`
+      io.to(room).emit('group:newMessage', saved)
+      ack?.({ ok: true })
+    } catch (e) {
+      console.error('group:send error', e)
       ack?.({ ok: false, error: 'internal error' })
     }
   })

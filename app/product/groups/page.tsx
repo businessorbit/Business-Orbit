@@ -5,8 +5,7 @@ import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { PostCard } from "@/components/post-card"
-import { Lock, Users, Crown, Plus, Hash, Settings, Calendar, MapPin, RefreshCw, Search, X } from "lucide-react"
+import { Lock, Users, Crown, Plus, Calendar, MapPin, RefreshCw, Search, X } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import React from "react"
 
@@ -18,98 +17,11 @@ type GroupItem = {
   pattern: string
 }
 
-// Default placeholders
-const userGroupsDefault: GroupItem[] = [
-  {
-    id: "ai-ml",
-    name: "AI/ML Enthusiasts",
-    members: 89,
-    unread: 3,
-    pattern:
-      "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fillOpacity='0.1'%3E%3Cpath d='M20 20c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10zm10 0c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10z'/%3E%3C/g%3E%3C/svg%3E",
-  },
-  {
-    id: "startup-founders",
-    name: "Startup Founders",
-    members: 156,
-    unread: 0,
-    pattern:
-      "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fillOpacity='0.1'%3E%3Cpath d='M0 0h20v20H0V0zm20 20h20v20H20V20z'/%3E%3C/g%3E%3C/svg%3E",
-  },
-  {
-    id: "women-tech",
-    name: "Women in Tech",
-    members: 234,
-    unread: 1,
-    pattern:
-      "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fillOpacity='0.1'%3E%3Cpath d='M20 0l20 20-20 20L0 20z'/%3E%3C/g%3E%3C/svg%3E",
-  },
-  {
-    id: "dl-research",
-    name: "Deep Learning Research",
-    members: 67,
-    unread: 0,
-    pattern:
-      "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fillOpacity='0.1'%3E%3Ccircle cx='10' cy='10' r='8'/%3E%3Ccircle cx='30' cy='30' r='8'/%3E%3C/g%3E%3C/svg%3E",
-  },
-  {
-    id: "nlp-community",
-    name: "NLP Community",
-    members: 98,
-    unread: 2,
-    pattern:
-      "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fillOpacity='0.1'%3E%3Crect x='5' y='5' width='12' height='12'/%3E%3Crect x='23' y='23' width='12' height='12'/%3E%3C/g%3E%3C/svg%3E",
-  },
-]
-
-const activeGroupData = {
-  id: "ai-ml",
-  name: "AI/ML Enthusiasts",
-  description: "Discussing the latest in artificial intelligence and machine learning",
-  members: 89,
-  admins: ["Sarah Chen", "Michael Rodriguez"],
-}
-const groupPosts = [
-  {
-    author: {
-      name: "David Kim",
-      role: "ML Engineer",
-      avatar: "DK",
-      rewardScore: 91,
-    },
-    content:
-      "Just published a paper on transformer architectures for time series forecasting. The results are promising - 15% improvement over traditional LSTM approaches. Would love to get feedback from the community!",
-    timestamp: "2h ago",
-    engagement: {
-      likes: 28,
-      comments: 12,
-      shares: 5,
-    },
-  },
-  {
-    author: {
-      name: "Lisa Zhang",
-      role: "Data Scientist",
-      avatar: "LZ",
-      rewardScore: 87,
-    },
-    content:
-      "Question for the group: What's your preferred approach for handling imbalanced datasets in production? I've been experimenting with SMOTE vs focal loss and curious about your experiences.",
-    timestamp: "5h ago",
-    engagement: {
-      likes: 19,
-      comments: 8,
-      shares: 2,
-    },
-  },
-]
-
-export default function GroupsPage() {
-  const [activeGroup, setActiveGroup] = useState("ai-ml")
-  const [sidebarExpanded, setSidebarExpanded] = useState(true)
+export default function ProductGroupsPage() {
+  const [activeGroup, setActiveGroup] = useState("")
   const { user } = useAuth()
 
-  // Left: user’s joined groups
+  // Left: user's joined groups
   const [joinedGroups, setJoinedGroups] = React.useState<GroupItem[]>([])
   // Suggested: all groups minus joined
   const [suggestedGroups, setSuggestedGroups] = React.useState<GroupItem[]>([])
@@ -128,7 +40,7 @@ export default function GroupsPage() {
     { id: "5", name: "Daniel Martinez" },
   ], [])
 
-  const currentGroup = joinedGroups.find((g) => g.id === activeGroup) || joinedGroups[0] || userGroupsDefault[0]
+  const currentGroup = joinedGroups.find((g) => g.id === activeGroup) || joinedGroups[0]
 
   const mapRow = (row: { id: string | number; name: string; member_count?: number | string }): GroupItem => ({
     id: String(row.id),
@@ -414,8 +326,6 @@ export default function GroupsPage() {
             </div>
           </div>
 
-          {/* Middle content removed to keep page in two parts only */}
-
           {/* Right Sidebar */}
           <div className="w-full lg:w-1/2 space-y-4 lg:space-y-6">
             {/* Upcoming Events (dynamic) */}
@@ -480,20 +390,15 @@ export default function GroupsPage() {
                 Group Admins
               </h3>
               <div className="space-y-3">
-                {activeGroupData.admins.map((admin, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-xs font-semibold">
-                      {admin
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{admin}</p>
-                      <p className="text-xs text-muted-foreground">Admin</p>
-                    </div>
+                {currentGroup ? (
+                  <div className="text-sm text-muted-foreground">
+                    Select a group to view admins
                   </div>
-                ))}
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    No groups joined yet
+                  </div>
+                )}
               </div>
             </Card>
 
@@ -603,6 +508,4 @@ export default function GroupsPage() {
     </div>
   )
 }
-
-
 

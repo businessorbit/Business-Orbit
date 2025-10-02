@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PostCard } from "@/components/post-card"
-import { Users, Calendar, Trophy, MapPin, Plus, Loader2, ArrowLeft, Smile, Paperclip, Send, Copy, Trash2 } from "lucide-react"
+import { Users, Calendar, Trophy, MapPin, Plus, Loader2, ArrowLeft, Smile, Paperclip, Send, Copy, Trash2, UserPlus, Lock } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { io, Socket } from "socket.io-client"
 import { useAuth } from "@/contexts/AuthContext"
@@ -47,10 +47,15 @@ interface ChapterPost {
 }
 
 interface ChapterEvent {
+  id: number
   title: string
+  description?: string
   date: string
   time: string
   attendees: number
+  is_registered: boolean
+  event_type: string
+  venue_address?: string
 }
 
 interface TopContributor {
@@ -99,6 +104,15 @@ export default function ChapterPage() {
   const CHAT_WS_URL = CHAT_HTTP_URL.replace(/^http/, 'ws')
   const [onlineCount, setOnlineCount] = useState<number>(0)
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set())
+  
+  // Follow functionality state
+  const [followStatus, setFollowStatus] = useState<Record<number, 'following' | 'pending' | 'not-following'>>({})
+  const [followLoading, setFollowLoading] = useState<Record<number, boolean>>({})
+  
+  // Events state
+  const [upcomingEvents, setUpcomingEvents] = useState<ChapterEvent[]>([])
+  const [eventsLoading, setEventsLoading] = useState(false)
+  const [lastEventsUpdate, setLastEventsUpdate] = useState<Date | null>(null)
 
   // Mock data for posts, events, and contributors (can be replaced with real APIs later)
   const chapterPosts: ChapterPost[] = [
@@ -134,26 +148,6 @@ export default function ChapterPage() {
   },
 ]
 
-  const upcomingEvents: ChapterEvent[] = [
-  {
-    title: "AI Workshop",
-    date: "Dec 28",
-    time: "6:00 PM",
-    attendees: 32,
-  },
-  {
-    title: "Startup Pitch Night",
-    date: "Jan 5",
-    time: "7:00 PM",
-    attendees: 67,
-  },
-  {
-    title: "Tech Talk: Blockchain",
-    date: "Jan 12",
-    time: "6:30 PM",
-    attendees: 28,
-  },
-]
 
   const topContributors: TopContributor[] = [
   { name: "Sarah Chen", role: "Product Manager", score: 95, avatar: "SC" },
@@ -245,6 +239,188 @@ export default function ChapterPage() {
     }
   }
 
+  // Follow functionality
+  const handleFollow = async (memberId: number, memberName: string) => {
+    if (!user || user.id === memberId) return
+    
+    setFollowLoading(prev => ({ ...prev, [memberId]: true }))
+    
+    try {
+      const response = await fetch('/api/follow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          targetUserId: memberId,
+          action: 'follow'
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setFollowStatus(prev => ({ ...prev, [memberId]: 'pending' }))
+        toast.success(data.message || `Follow request sent to ${memberName}`)
+      } else {
+        toast.error(data.error || 'Failed to send follow request')
+      }
+    } catch (error) {
+      console.error('Error sending follow request:', error)
+      toast.error('Failed to send follow request')
+    } finally {
+      setFollowLoading(prev => ({ ...prev, [memberId]: false }))
+    }
+  }
+
+  const handleUnfollow = async (memberId: number, memberName: string) => {
+    if (!user || user.id === memberId) return
+    
+    setFollowLoading(prev => ({ ...prev, [memberId]: true }))
+    
+    try {
+      const response = await fetch('/api/follow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          targetUserId: memberId,
+          action: 'unfollow'
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setFollowStatus(prev => ({ ...prev, [memberId]: 'not-following' }))
+        toast.success(data.message || `Unfollowed ${memberName}`)
+      } else {
+        toast.error(data.error || 'Failed to unfollow')
+      }
+    } catch (error) {
+      console.error('Error unfollowing:', error)
+      toast.error('Failed to unfollow')
+    } finally {
+      setFollowLoading(prev => ({ ...prev, [memberId]: false }))
+    }
+  }
+
+  const handleCreateSecretGroup = (memberId: number, memberName: string) => {
+    // Placeholder functionality - can be implemented later
+    toast.info(`Create Secret Group with ${memberName} - Feature coming soon!`)
+  }
+
+  // Check follow status for all members
+  const checkFollowStatus = async () => {
+    if (!user || chapterMembers.length === 0) return
+
+    try {
+      const memberIds = chapterMembers
+        .filter(member => member.id !== user.id)
+        .map(member => member.id)
+        .join(',')
+
+      if (memberIds) {
+        const response = await fetch(`/api/follow?checkStatus=true&userIds=${memberIds}`, {
+          credentials: 'include'
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.followStatus) {
+            setFollowStatus(data.followStatus)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking follow status:', error)
+    }
+  }
+
+  // Fetch upcoming events with enhanced filtering and caching
+  const fetchUpcomingEvents = async (forceRefresh = false) => {
+    // Skip refresh if already loading and not forced
+    if (eventsLoading && !forceRefresh) return
+    
+    setEventsLoading(true)
+    try {
+      console.log('Fetching upcoming events...')
+      
+      // Include user ID in query for better filtering (RSVP status)
+      const url = user?.id ? `/api/events?userId=${user.id}&limit=8` : '/api/events?limit=8'
+      const response = await fetch(url, {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': forceRefresh ? 'no-cache' : 'default'
+        }
+      })
+      
+      console.log('Events API response status:', response.status)
+      
+      if (response.ok) {
+        const events = await response.json()
+        console.log('Events API response:', events)
+        
+        // Filter upcoming events, sort by date, and limit to 5 (showing more relevant events)
+        const now = new Date()
+        const upcoming = events
+          .filter((event: any) => {
+            if (!event.date) return false
+            try {
+              const eventDate = new Date(event.date)
+              // Include events starting from now onwards (including today)
+              return eventDate >= now && event.status === 'approved'
+            } catch (error) {
+              console.error('Error parsing event date:', event.date, error)
+              return false
+            }
+          })
+          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .slice(0, 5) // Show top 5 upcoming events instead of just 3
+          .map((event: any) => {
+            const eventDate = new Date(event.date)
+            return {
+              id: event.id,
+              title: event.title,
+              description: event.description,
+              date: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              time: eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+              attendees: event.rsvp_count || 0,
+              is_registered: event.is_registered || false,
+              event_type: event.event_type,
+              venue_address: event.venue_address
+            }
+          })
+        
+        console.log('Processed upcoming events:', upcoming)
+        setUpcomingEvents(upcoming)
+        setLastEventsUpdate(new Date())
+        
+        // Show a subtle success message only for manual refreshes
+        if (forceRefresh) {
+          toast.success(`Events updated - ${upcoming.length} upcoming event${upcoming.length === 1 ? '' : 's'} found`)
+        }
+      } else {
+        const errorData = await response.json()
+        console.error('Events API error:', errorData)
+        toast.error('Failed to load events: ' + (errorData.error || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Error fetching events:', error)
+      toast.error('Failed to load events')
+    } finally {
+      setEventsLoading(false)
+    }
+  }
+
+  // Manual refresh function for events
+  const handleRefreshEvents = () => {
+    fetchUpcomingEvents(true)
+  }
+
   useEffect(() => {
     if (!authLoading && user) {
       console.log('Fetching chapter data for ID:', params.id);
@@ -263,6 +439,92 @@ export default function ChapterPage() {
       return () => clearTimeout(timeoutId)
     }
   }, [chapterData?.id]) // Only depend on chapterData.id to avoid infinite loops
+
+  // Check follow status when members are loaded
+  useEffect(() => {
+    if (chapterMembers.length > 0 && user) {
+      checkFollowStatus()
+    }
+  }, [chapterMembers, user])
+
+  // Periodic refresh of follow status (every 30 seconds)
+  useEffect(() => {
+    if (!user || chapterMembers.length === 0) return
+
+    const interval = setInterval(() => {
+      checkFollowStatus()
+    }, 30000) // Check every 30 seconds
+
+    return () => clearInterval(interval)
+  }, [user, chapterMembers])
+
+  // Fetch events when page loads
+  useEffect(() => {
+    if (!authLoading && user) {
+      fetchUpcomingEvents()
+    }
+  }, [authLoading, user])
+
+  // Auto-refresh events every 2 minutes for better real-time updates
+  useEffect(() => {
+    if (!user || authLoading) return
+
+    const interval = setInterval(() => {
+      fetchUpcomingEvents(false) // Silent refresh, no toast notification
+    }, 120000) // Refresh every 2 minutes
+
+    return () => clearInterval(interval)
+  }, [user, authLoading])
+
+  // Refresh events when page regains focus (when user comes back to tab)
+  useEffect(() => {
+    if (!user || authLoading) return
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchUpcomingEvents(false) // Silent refresh when tab regains focus
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [user, authLoading])
+
+  // Handle event RSVP functionality
+  const handleEventRSVP = async (eventId: number, eventTitle: string) => {
+    if (!user) {
+      toast.error('Please sign in to RSVP to events')
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/events/${eventId}/rsvp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: user.id,
+          userEmail: user.email,
+          userName: user.name
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        toast.success(`Successfully RSVP'd to ${eventTitle}`)
+        // Refresh events to update RSVP status
+        setTimeout(() => fetchUpcomingEvents(true), 1000)
+      } else {
+        toast.error(data.message || 'Failed to RSVP to event')
+      }
+    } catch (error) {
+      console.error('Error RSVPing to event:', error)
+      toast.error('Failed to RSVP to event')
+    }
+  }
 
   // Load initial messages
   useEffect(() => {
@@ -836,6 +1098,64 @@ export default function ChapterPage() {
                         <p className="text-sm font-medium">{member.name}</p>
                         <p className="text-xs text-muted-foreground">{member.email}</p>
                       </div>
+                      {/* Action buttons - only show if not current user */}
+                      {user && user.id !== member.id && (
+                        <div className="flex flex-col gap-1">
+                          {/* Follow/Unfollow button */}
+                          {followStatus[member.id] === 'following' ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs px-2 py-1 h-auto"
+                              onClick={() => handleUnfollow(member.id, member.name)}
+                              disabled={followLoading[member.id]}
+                            >
+                              {followLoading[member.id] ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                'Following'
+                              )}
+                            </Button>
+                          ) : followStatus[member.id] === 'pending' ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="text-xs px-2 py-1 h-auto"
+                              disabled={true}
+                            >
+                              Pending
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="text-xs px-2 py-1 h-auto"
+                              onClick={() => handleFollow(member.id, member.name)}
+                              disabled={followLoading[member.id]}
+                            >
+                              {followLoading[member.id] ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <UserPlus className="w-3 h-3 mr-1" />
+                                  Follow
+                                </>
+                              )}
+                            </Button>
+                          )}
+                          
+                          {/* Create Secret Group button */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs px-2 py-1 h-auto"
+                            onClick={() => handleCreateSecretGroup(member.id, member.name)}
+                          >
+                            <Lock className="w-3 h-3 mr-1" />
+                            Secret Group
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -844,24 +1164,130 @@ export default function ChapterPage() {
 
             {/* Upcoming Events */}
             <Card className="p-4 lg:p-6">
-              <h3 className="font-semibold mb-4 flex items-center text-sm lg:text-base">
-                <Calendar className="w-4 h-4 lg:w-5 lg:h-5 mr-2" />
-                Upcoming Events
-              </h3>
-              <div className="space-y-3 lg:space-y-4">
-                {upcomingEvents.map((event, index) => (
-                  <div key={index} className="border-l-2 border-muted pl-3 lg:pl-4">
-                    <h4 className="font-medium text-sm">{event.title}</h4>
-                    <p className="text-xs text-muted-foreground">
-                      {event.date} at {event.time}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col">
+                  <h3 className="font-semibold flex items-center text-sm lg:text-base">
+                    <Calendar className="w-4 h-4 lg:w-5 lg:h-5 mr-2" />
+                    Upcoming Events
+                    {eventsLoading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+                  </h3>
+                  {lastEventsUpdate && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Last updated: {lastEventsUpdate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                     </p>
-                    <p className="text-xs text-muted-foreground">{event.attendees} attending</p>
-                  </div>
-                ))}
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefreshEvents}
+                  disabled={eventsLoading}
+                  className="text-xs p-1"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </Button>
               </div>
-              <Button variant="outline" className="w-full mt-4 bg-transparent text-sm lg:text-base">
-                View All Events
-              </Button>
+              <div className="space-y-3 lg:space-y-4">
+                {eventsLoading ? (
+                  <div className="text-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading events...</p>
+                  </div>
+                ) : upcomingEvents.length === 0 ? (
+                  <div className="text-center py-4">
+                    <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No upcoming events found.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Check back later for new events!</p>
+                  </div>
+                ) : (
+                  upcomingEvents.map((event) => (
+                    <div key={event.id} className="border-l-2 border-primary/20 pl-3 lg:pl-4 pb-3 border-b border-muted/30 last:border-b-0">
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between">
+                          <h4 className="font-medium text-sm lg:text-base pr-2">{event.title}</h4>
+                          {event.is_registered && (
+                            <Badge variant="secondary" className="text-xs">
+                              Registered
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {event.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {event.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex flex-col space-y-1">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span className="flex items-center">
+                              <Calendar className="w-3 h-3 mr-1" />
+                              {event.date} • {event.time}
+                            </span>
+                            <span className="flex items-center">
+                              <Users className="w-3 h-3 mr-1" />
+                              {event.attendees} attending
+                            </span>
+                          </div>
+                          
+                          {event.venue_address && event.event_type === 'physical' && (
+                            <div className="flex items-start text-xs text-muted-foreground">
+                              <MapPin className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
+                              <span className="line-clamp-2">{event.venue_address}</span>
+                            </div>
+                          )}
+                          
+                          {event.event_type === 'online' && (
+                            <span className="text-xs text-blue-600 font-medium">
+                              Online Event
+                            </span>
+                          )}
+                          
+                          {event.event_type === 'physical' && (
+                            <span className="text-xs text-green-600 font-medium">
+                              Physical Event
+                            </span>
+                          )}
+                        </div>
+                        
+                        {user && !event.is_registered && (
+                          <Button
+                            size="sm"
+                            className="text-xs h-7 mt-2"
+                            onClick={() => handleEventRSVP(event.id, event.title)}
+                          >
+                            RSVP Now
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="flex space-x-2 mt-4">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 bg-transparent text-sm lg:text-base"
+                  onClick={() => router.push('/events')}
+                >
+                  View All Events
+                </Button>
+                {upcomingEvents.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRefreshEvents}
+                    disabled={eventsLoading}
+                    className="px-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </Button>
+                )}
+              </div>
             </Card>
 
             {/* Top Contributors */}

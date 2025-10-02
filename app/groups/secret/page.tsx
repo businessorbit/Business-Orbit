@@ -1,109 +1,299 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PostCard } from "@/components/post-card"
-import { Lock, Users, Crown, Plus, Hash, Settings, X } from "lucide-react"
+import { Lock, Users, Crown, Plus, X, Calendar, MapPin } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import React from "react"
 
-const userGroups = [
-  {
-    id: "ai-ml",
-    name: "AI/ML Enthusiasts",
-    members: 89,
-    unread: 3,
-    active: true,
-    pattern:
-      "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fillOpacity='0.1'%3E%3Cpath d='M20 20c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10zm10 0c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10z'/%3E%3C/g%3E%3C/svg%3E",
-  },
-  {
-    id: "startup-founders",
-    name: "Startup Founders",
-    members: 156,
-    unread: 0,
-    active: false,
-    pattern:
-      "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fillOpacity='0.1'%3E%3Cpath d='M0 0h20v20H0V0zm20 20h20v20H20V20z'/%3E%3C/g%3E%3C/svg%3E",
-  },
-  {
-    id: "women-tech",
-    name: "Women in Tech",
-    members: 234,
-    unread: 1,
-    active: false,
-    pattern:
-      "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fillOpacity='0.1'%3E%3Cpath d='M20 0l20 20-20 20L0 20z'/%3E%3C/g%3E%3C/svg%3E",
-  },
-]
-
-const activeGroupData = {
-  id: "ai-ml",
-  name: "AI/ML Enthusiasts",
-  description: "Discussing the latest in artificial intelligence and machine learning",
-  members: 89,
-  admins: ["Sarah Chen", "Michael Rodriguez"],
+interface SecretGroupMeta {
+  id: string
+  name: string
+  description?: string | null
+  created_at?: string
+  member_count: number
 }
 
-const groupPosts = [
-  {
-    author: {
-      name: "David Kim",
-      role: "ML Engineer",
-      avatar: "DK",
-      rewardScore: 91,
-    },
-    content:
-      "Just published a paper on transformer architectures for time series forecasting. The results are promising - 15% improvement over traditional LSTM approaches. Would love to get feedback from the community!",
-    timestamp: "2h ago",
-    engagement: {
-      likes: 28,
-      comments: 12,
-      shares: 5,
-    },
-  },
-  {
-    author: {
-      name: "Lisa Zhang",
-      role: "Data Scientist",
-      avatar: "LZ",
-      rewardScore: 87,
-    },
-    content:
-      "Question for the group: What's your preferred approach for handling imbalanced datasets in production? I've been experimenting with SMOTE vs focal loss and curious about your experiences.",
-    timestamp: "5h ago",
-    engagement: {
-      likes: 19,
-      comments: 8,
-      shares: 2,
-    },
-  },
-]
-
-const suggestedGroups = [
-  { name: "Deep Learning Research", members: 67, description: "Latest research in deep learning" },
-  { name: "Computer Vision", members: 123, description: "CV applications and techniques" },
-  { name: "NLP Community", members: 98, description: "Natural language processing discussions" },
-]
+interface SimpleUser { id: number; name: string; email: string }
 
 export default function GroupsSecretPage() {
-  const [activeGroup, setActiveGroup] = useState("ai-ml")
+  const router = useRouter()
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [newGroupName, setNewGroupName] = useState("")
-  const [inviteEmails, setInviteEmails] = useState("")
+  const [groupDescription, setGroupDescription] = useState("")
   const [chatMessages, setChatMessages] = useState<{ user: string; text: string }[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [inviteEmail, setInviteEmail] = useState("")
+  const { user } = useAuth()
 
-  const currentGroup = userGroups.find((g) => g.id === activeGroup) || userGroups[0]
+  // Server data
+  const [allGroups, setAllGroups] = useState<SecretGroupMeta[]>([])
+  const [myGroups, setMyGroups] = useState<SecretGroupMeta[]>([])
+  const [suggested, setSuggested] = useState<SecretGroupMeta[]>([])
 
-  const handleCreateGroup = () => {
-    console.log("New Group:", newGroupName)
-    console.log("Invite Emails:", inviteEmails)
+  // Invite connections data (only real users from DB)
+  const [allUsers, setAllUsers] = useState<SimpleUser[]>([])
+  const [usersLoading, setUsersLoading] = useState(false)
+  const [inviteSearch, setInviteSearch] = useState("")
+  const [selectedInviteeIds, setSelectedInviteeIds] = useState<Set<number>>(new Set())
+
+  // Add Members modal state
+  const [showAddMembers, setShowAddMembers] = useState(false)
+  const [targetGroup, setTargetGroup] = useState<SecretGroupMeta | null>(null)
+  const [inviteSearchAdd, setInviteSearchAdd] = useState("")
+  const [selectedInviteeIdsAdd, setSelectedInviteeIdsAdd] = useState<Set<number>>(new Set())
+  const [inviteEmailsAdd, setInviteEmailsAdd] = useState("")
+
+  // Events state (single-load, no loader/refresh)
+  const [events, setEvents] = useState<Array<any>>([])
+
+  // Load groups and user's memberships
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const res = await fetch('/api/admin/secret-groups', { credentials: 'include' })
+        if (res.ok) {
+          const data = await res.json()
+          const groups: SecretGroupMeta[] = Array.isArray(data?.groups) ? data.groups.map((g: any) => ({
+            id: String(g.id),
+            name: g.name,
+            description: g.description,
+            created_at: g.created_at,
+            member_count: Number(g.member_count || 0)
+          })) : []
+          setAllGroups(groups)
+        } else {
+          setAllGroups([])
+        }
+      } catch {
+        setAllGroups([])
+      }
+
+      try {
+        if (user?.id) {
+          const res2 = await fetch(`/api/users/${user.id}/secret-groups`, { credentials: 'include' })
+          if (res2.ok) {
+            const data2 = await res2.json()
+            const mine: SecretGroupMeta[] = Array.isArray(data2?.groups) ? data2.groups.map((g: any) => ({
+              id: String(g.id),
+              name: g.name,
+              description: g.description,
+              created_at: g.created_at,
+              member_count: Number(g.member_count || 0)
+            })) : []
+            setMyGroups(mine)
+          } else {
+            setMyGroups([])
+          }
+        } else {
+          setMyGroups([])
+        }
+      } catch {
+        setMyGroups([])
+      }
+    })()
+  }, [user?.id])
+
+  // Fetch real users when Create Group or Add Members modal opens
+  useEffect(() => {
+    if (!showCreateGroup && !showAddMembers) return
+    ;(async () => {
+      try {
+        setUsersLoading(true)
+        const res = await fetch('/api/members', { credentials: 'include' })
+        if (res.ok) {
+          const data = await res.json()
+          const members = Array.isArray(data?.members) ? (data.members as any[]).map((m) => ({ id: Number(m.id), name: String(m.name || ''), email: String(m.email || '') })) : []
+          setAllUsers(members)
+        } else {
+          setAllUsers([])
+        }
+      } finally {
+        setUsersLoading(false)
+      }
+    })()
+  }, [showCreateGroup, showAddMembers])
+
+  // Compute suggested when allGroups/myGroups change
+  useEffect(() => {
+    const mySet = new Set(myGroups.map(g => g.id))
+    setSuggested(allGroups.filter(g => !mySet.has(g.id)))
+  }, [allGroups, myGroups])
+
+  const fetchUpcomingEvents = async () => {
+    try {
+      const url = user?.id ? `/api/events?userId=${user.id}&limit=6` : `/api/events?limit=6`
+      const res = await fetch(url, { credentials: 'include' })
+      if (!res.ok) { setEvents([]); return }
+      const data = await res.json()
+      const now = new Date()
+      const upcoming = (data || [])
+        .filter((e: any) => {
+          if (!e?.date) return false
+          const d = new Date(e.date)
+          return d >= now && e.status === 'approved'
+        })
+        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(0, 3)
+        .map((e: any) => {
+          const d = new Date(e.date)
+          return {
+            id: e.id,
+            title: e.title,
+            dateText: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            timeText: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+            attendees: Number(e.rsvp_count || 0) || 0,
+            event_type: e.event_type,
+            venue_address: e.venue_address,
+            is_registered: Boolean(e.is_registered),
+          }
+        })
+      setEvents(upcoming)
+    } catch (_) {
+      setEvents([])
+    }
+  }
+
+  React.useEffect(() => { fetchUpcomingEvents() }, [user?.id])
+
+  // Actions
+  const handleCreateGroup = async () => {
+    const name = newGroupName.trim()
+    if (!name) return
+    try {
+      const res = await fetch('/api/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, description: groupDescription || undefined })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const created: SecretGroupMeta | undefined = data?.group ? {
+          id: String(data.group.id),
+          name: data.group.name,
+          description: data.group.description,
+          created_at: data.group.created_at,
+          member_count: Number(data.group.member_count || 0)
+        } : undefined
+        if (created) {
+          setAllGroups(prev => [created, ...prev])
+          // Auto-join creator if logged in
+          if (created.id) {
+            try { await fetch(`/api/secret-groups/${created.id}/membership`, { method: 'POST', credentials: 'include' }) } catch {}
+          }
+          // Best-effort: email invites to selected existing users
+          if (selectedInviteeIds.size > 0 && allUsers.length > 0) {
+            const idSet = new Set(selectedInviteeIds)
+            const toInvite = allUsers.filter(u => idSet.has(u.id))
+            for (const u of toInvite) {
+              try {
+                await fetch('/api/invites/send', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ recipient_email: u.email, message: `You are invited to join secret group "${created.name}".` })
+                })
+              } catch {}
+            }
+          }
+          // refresh my groups
+          if (user?.id) {
+            try {
+              const res2 = await fetch(`/api/users/${user.id}/secret-groups`, { credentials: 'include' })
+              const data2 = await res2.json()
+              const mine: SecretGroupMeta[] = Array.isArray(data2?.groups) ? data2.groups.map((g: any) => ({
+                id: String(g.id), name: g.name, description: g.description, created_at: g.created_at, member_count: Number(g.member_count || 0)
+              })) : []
+              setMyGroups(mine)
+            } catch {}
+          }
+        }
+      }
+    } finally {
     setNewGroupName("")
-    setInviteEmails("")
+      setGroupDescription("")
+      setSelectedInviteeIds(new Set())
+      setInviteSearch("")
     setShowCreateGroup(false)
+    }
+  }
+
+  const joinGroup = async (groupId: string) => {
+    try {
+      await fetch(`/api/secret-groups/${groupId}/membership`, { method: 'POST', credentials: 'include' })
+      // move from suggested to myGroups
+      const g = allGroups.find(g => g.id === groupId)
+      if (g) {
+        setMyGroups(prev => [{ ...g, member_count: (g.member_count || 0) + 1 }, ...prev.filter(x => x.id !== groupId)])
+        setSuggested(prev => prev.filter(x => x.id !== groupId))
+      }
+    } catch {}
+  }
+
+  // Add Members modal helpers
+  const filteredUsersAdd = allUsers.filter(u => {
+    const q = inviteSearchAdd.trim().toLowerCase()
+    if (!q) return true
+    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+  })
+
+  const toggleInviteeAdd = (id: number) => {
+    setSelectedInviteeIdsAdd(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const openAddMembers = (group: SecretGroupMeta) => {
+    setTargetGroup(group)
+    setInviteSearchAdd("")
+    setSelectedInviteeIdsAdd(new Set())
+    setInviteEmailsAdd("")
+    setShowAddMembers(true)
+  }
+
+  const sendAddMembersInvites = async () => {
+    if (!targetGroup) return
+    // selected existing users
+    if (selectedInviteeIdsAdd.size > 0 && allUsers.length > 0) {
+      const idSet = new Set(selectedInviteeIdsAdd)
+      const toInvite = allUsers.filter(u => idSet.has(u.id))
+      for (const u of toInvite) {
+        try {
+          await fetch('/api/invites/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ recipient_email: u.email, message: `You are invited to join secret group "${targetGroup.name}".` })
+          })
+        } catch {}
+      }
+    }
+    // arbitrary emails
+    if (inviteEmailsAdd.trim()) {
+      const emails = inviteEmailsAdd.split(',')
+      for (const em of emails) {
+        const email = em.trim()
+        if (!email) continue
+        try {
+          await fetch('/api/invites/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ recipient_email: email, message: `You are invited to join secret group "${targetGroup.name}".` })
+          })
+        } catch {}
+      }
+    }
+    setShowAddMembers(false)
   }
 
   const handleSendMessage = () => {
@@ -118,6 +308,21 @@ export default function GroupsSecretPage() {
     setInviteEmail("")
   }
 
+  const filteredUsers = allUsers.filter(u => {
+    const q = inviteSearch.trim().toLowerCase()
+    if (!q) return true
+    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+  })
+
+  const toggleInvitee = (id: number) => {
+    setSelectedInviteeIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -125,7 +330,7 @@ export default function GroupsSecretPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6 pb-20 lg:pb-6 flex flex-col lg:flex-row gap-4">
 
         {/* Left Sidebar */}
-        <div className="w-full lg:w-64 space-y-4 flex flex-col">
+        <div className="w-full lg:w-1/2 space-y-4 flex flex-col">
           {/* Groups List */}
           <Card className="p-3 lg:p-4">
             <div className="flex items-center justify-between mb-2">
@@ -135,28 +340,22 @@ export default function GroupsSecretPage() {
               </Button>
             </div>
             <div className="flex lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
-              {userGroups.map((group) => (
-                <button
-                  key={group.id}
-                  onClick={() => setActiveGroup(group.id)}
-                  className={`flex-shrink-0 lg:flex-shrink lg:w-full flex items-center space-x-2 lg:space-x-3 p-2 lg:p-3 rounded-lg transition-colors min-w-[200px] lg:min-w-0 ${activeGroup === group.id ? "bg-accent" : "hover:bg-accent/50"
-                    }`}
-                >
-                  <div
-                    className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundImage: `url("${group.pattern}")` }}
-                  >
-                    <Lock className="w-4 h-4 lg:w-5 lg:h-5" />
+              {myGroups.length === 0 ? (
+                <div className="text-xs text-muted-foreground px-1">You haven't joined any secret groups yet.</div>
+              ) : (
+                myGroups.map((group) => (
+                  <div key={group.id} className={`flex-shrink-0 lg:flex-shrink lg:w-full flex items-center space-x-3 p-2 lg:p-3 rounded-lg transition-colors min-w-[260px] lg:min-w-0 hover:bg-accent/50`}>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-accent">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 text-left cursor-pointer" onClick={() => router.push(`/product/groups/${group.id}`)}>
+                      <p className="text-sm font-medium">{group.name}</p>
+                      <p className="text-xs text-muted-foreground">{group.member_count} members</p>
                   </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-xs lg:text-sm font-medium">{group.name}</p>
-                    <p className="text-xs text-muted-foreground">{group.members} members</p>
+                    <Button size="sm" variant="outline" className="h-7 px-2 text-xs bg-transparent" onClick={() => openAddMembers(group)}>+ Add Members</Button>
                   </div>
-                  {group.unread > 0 && (
-                    <Badge className="bg-foreground text-background text-xs flex-shrink-0">{group.unread}</Badge>
+                ))
                   )}
-                </button>
-              ))}
             </div>
           </Card>
 
@@ -200,94 +399,87 @@ export default function GroupsSecretPage() {
           </div>
         </div>
 
-        {/* Main Feed */}
-        <div className="flex-1 space-y-4 lg:space-y-6">
-          {/* Group Header */}
-          <Card className="p-4 lg:p-6">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
-              <div className="flex items-center space-x-3 lg:space-x-4">
-                <div
-                  className="w-12 h-12 lg:w-16 lg:h-16 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundImage: `url("${currentGroup.pattern}")` }}
-                >
-                  <Lock className="w-6 h-6 lg:w-8 lg:h-8" />
-                </div>
-                <div>
-                  <h1 className="text-xl lg:text-2xl font-bold mb-1">{activeGroupData.name}</h1>
-                  <p className="text-muted-foreground mb-2 text-sm lg:text-base">{activeGroupData.description}</p>
-                  <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center">
-                      <Users className="w-4 h-4 mr-1" />{activeGroupData.members} members
-                    </div>
-                    <div className="flex items-center">
-                      <Crown className="w-4 h-4 mr-1" />{activeGroupData.admins.length} admins
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" className="w-full lg:w-auto bg-transparent">
-                <Settings className="w-4 h-4 mr-2" />Settings
-              </Button>
-            </div>
-          </Card>
-
-          {/* Create Post */}
-          <Card className="p-3 lg:p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-muted rounded-full flex items-center justify-center font-semibold text-xs lg:text-sm">JD</div>
-              <Button
-                variant="outline"
-                className="flex-1 justify-start text-muted-foreground hover:bg-accent bg-transparent text-sm lg:text-base"
-              >
-                <Hash className="w-4 h-4 mr-2" />
-                <span className="truncate">Share with {activeGroupData.name}...</span>
-              </Button>
-              <Button size="sm">Post</Button>
-            </div>
-          </Card>
-
-          {/* Group Posts */}
-          <div className="space-y-4">
-            {groupPosts.map((post, index) => <PostCard key={index} {...post} />)}
-          </div>
-        </div>
-
         {/* Right Sidebar */}
-        <div className="w-full lg:w-80 space-y-4 lg:space-y-6">
-          {/* Group Admins */}
-          <Card className="p-4 lg:p-6">
-            <h3 className="font-semibold mb-4 flex items-center text-sm lg:text-base">
-              <Crown className="w-4 h-4 lg:w-5 lg:h-5 mr-2" />Group Admins
-            </h3>
-            <div className="space-y-3">
-              {activeGroupData.admins.map((admin, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-xs font-semibold">
-                    {admin.split(" ").map((n) => n[0]).join("")}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{admin}</p>
-                    <p className="text-xs text-muted-foreground">Admin</p>
-                  </div>
-                </div>
-              ))}
+        <div className="w-full lg:w-1/2 space-y-4 lg:space-y-6">
+          {/* Upcoming Events - single-load, no loader/refresh */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-lg font-semibold">
+              <Calendar className="h-5 w-5 text-primary" /> 
+              Upcoming Events
             </div>
-          </Card>
+            <div className="space-y-3">
+              {events.length === 0 ? (
+                <Card className="p-6 text-center">
+                  <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No upcoming events found.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Check back later for new events!</p>
+                </Card>
+              ) : (
+                events.map((ev) => (
+                  <Card key={ev.id} className="p-4 hover:shadow-md transition-shadow">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between">
+                        <h3 className="font-medium text-sm">{ev.title}</h3>
+                        <div className="flex items-center gap-1">
+                          {ev.is_registered && (
+                            <Badge variant="secondary" className="text-xs">
+                              Registered
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span className="flex items-center">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {ev.dateText} • {ev.timeText}
+                          </span>
+                          <span className="flex items-center">
+                            <Users className="w-3 h-3 mr-1" />
+                            {ev.attendees} attending
+                          </span>
+                        </div>
+                        {ev.venue_address && (
+                          <div className="flex items-start text-xs text-muted-foreground">
+                            <MapPin className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
+                            <span className="line-clamp-2">{ev.venue_address}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+            {events.length > 0 && (
+              <Button 
+                variant="outline" 
+                className="w-full text-sm"
+                onClick={() => window.location.href = '/events'}
+              >
+                View All Events
+              </Button>
+            )}
+          </section>
 
           {/* Suggested Groups */}
           <Card className="p-4 lg:p-6">
             <h3 className="font-semibold mb-4 text-sm lg:text-base">Suggested Groups</h3>
             <div className="space-y-4">
-              {suggestedGroups.map((group, index) => (
-                <div key={index} className="space-y-2">
+              {suggested.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No suggestions right now.</div>
+              ) : (
+                suggested.map((group) => (
+                  <div key={group.id} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-sm">{group.name}</h4>
-                    <Button size="sm" variant="outline" className="h-6 px-2 text-xs bg-transparent">Join</Button>
+                      <Button size="sm" variant="outline" className="h-6 px-2 text-xs bg-transparent" onClick={() => joinGroup(group.id)}>Join</Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{group.description || 'Private secret group'}</p>
+                    <p className="text-xs text-muted-foreground">{group.member_count} members</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">{group.description}</p>
-                  <p className="text-xs text-muted-foreground">{group.members} members</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </Card>
         </div>
@@ -312,14 +504,86 @@ export default function GroupsSecretPage() {
                 className="border p-2 rounded w-full"
                 placeholder="Enter group name"
               />
+
+              <label className="text-sm font-medium">Invite Connections</label>
+              <input
+                type="text"
+                value={inviteSearch}
+                onChange={(e) => setInviteSearch(e.target.value)}
+                placeholder="Search connections..."
+                className="border p-2 rounded w-full"
+              />
+              <div className="border rounded p-2 h-40 overflow-y-auto space-y-2">
+                {usersLoading ? (
+                  <div className="text-sm text-muted-foreground">Loading users...</div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No users found.</div>
+                ) : (
+                  filteredUsers.map(u => (
+                    <label key={u.id} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={selectedInviteeIds.has(u.id)} onChange={() => toggleInvitee(u.id)} />
+                      <span className="font-medium">{u.name}</span>
+                      <span className="text-xs text-muted-foreground">{u.email}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+
               <label className="text-sm font-medium">Invite by Email</label>
               <textarea
-                value={inviteEmails}
-                onChange={(e) => setInviteEmails(e.target.value)}
+                value={groupDescription}
+                onChange={(e) => setGroupDescription(e.target.value)}
+                className="border p-2 rounded w-full"
+                placeholder="Enter a short description (optional)"
+              />
+              <Button onClick={handleCreateGroup} className="mt-2">Create Group</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Add Members Modal */}
+      {showAddMembers && targetGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="p-6 w-full max-w-md relative">
+            <X
+              className="w-5 h-5 absolute top-4 right-4 cursor-pointer"
+              onClick={() => setShowAddMembers(false)}
+            />
+            <h2 className="text-xl font-bold mb-4">Add Members to {targetGroup.name}</h2>
+            <div className="flex flex-col space-y-3">
+              <label className="text-sm font-medium">Invite Connections</label>
+              <input
+                type="text"
+                value={inviteSearchAdd}
+                onChange={(e) => setInviteSearchAdd(e.target.value)}
+                placeholder="Search connections..."
+                className="border p-2 rounded w-full"
+              />
+              <div className="border rounded p-2 h-40 overflow-y-auto space-y-2">
+                {usersLoading ? (
+                  <div className="text-sm text-muted-foreground">Loading users...</div>
+                ) : filteredUsersAdd.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No users found.</div>
+                ) : (
+                  filteredUsersAdd.map(u => (
+                    <label key={u.id} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={selectedInviteeIdsAdd.has(u.id)} onChange={() => toggleInviteeAdd(u.id)} />
+                      <span className="font-medium">{u.name}</span>
+                      <span className="text-xs text-muted-foreground">{u.email}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+
+              <label className="text-sm font-medium">Invite by Email</label>
+              <textarea
+                value={inviteEmailsAdd}
+                onChange={(e) => setInviteEmailsAdd(e.target.value)}
                 className="border p-2 rounded w-full"
                 placeholder="Enter email addresses separated by commas"
               />
-              <Button onClick={handleCreateGroup} className="mt-2">Create Group</Button>
+              <Button onClick={sendAddMembersInvites} className="mt-2">Send Invites</Button>
             </div>
           </Card>
         </div>

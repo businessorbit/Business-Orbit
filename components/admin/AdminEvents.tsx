@@ -76,7 +76,9 @@ export default function AdminEvents() {
     try {
       const res = await fetch("/api/admin/events");
       const data = await res.json();
-      setEvents(data);
+      // Hide cancelled events from the dashboard list
+      const visible = Array.isArray(data) ? data.filter((e: Event) => String(e.status).toLowerCase() !== 'cancelled') : [];
+      setEvents(visible);
     } catch (err) {
       console.error("Failed to fetch events", err);
     }
@@ -263,6 +265,9 @@ export default function AdminEvents() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ id: event.id, title: event.title, description: event.description, date: event.date, event_type: event.event_type, meeting_link: event.meeting_link, venue_address: event.venue_address, status: 'cancelled' }),
                       });
+                      // Optimistically remove from current list
+                      setEvents(prev => prev.filter(e => e.id !== event.id));
+                      // Then refresh from server (which we also filter in fetchEvents)
                       await fetchEvents();
                       setSuccessMessage('Event cancelled and attendees notified.');
                       setTimeout(() => setSuccessMessage(''), 3000);

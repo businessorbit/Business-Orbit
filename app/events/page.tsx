@@ -87,7 +87,8 @@ export default function EventsPage() {
         if (searchQuery) params.set('search', searchQuery);
         if (searchDate) params.set('date', searchDate);
         if (user?.id) params.set('userId', String(user.id));
-        const res = await fetch(`/api/events${params.toString() ? `?${params.toString()}` : ''}`, { signal: controller.signal });
+        params.set('limit', '20'); // Events page shows more events
+        const res = await fetch(`/api/events?${params.toString()}`, { signal: controller.signal });
         if (!res.ok) return;
         const data = await res.json();
         const transformedEvents = (data || []).map((event: any) => {
