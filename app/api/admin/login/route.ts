@@ -3,8 +3,8 @@ import { generateToken, setTokenCookie } from '@/lib/utils/auth';
 import pool from '@/lib/config/database';
 
 // Admin credentials from environment variables with fallback
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'adminbusinessorbit@gmail.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin@123';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 export async function POST(request: NextRequest) {
   try {
