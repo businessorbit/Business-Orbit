@@ -1,14 +1,27 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MessageSquare, Calendar, Users, Settings, Menu, X, LayoutDashboard, MapPinned } from "lucide-react"
+import { MessageSquare, Calendar, Users, Settings, Menu, X, LayoutDashboard, MapPinned, LogOut } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const adminTabs = [
     { name: "Dashboard", href: "/product/admin", icon: LayoutDashboard },
@@ -19,6 +32,31 @@ export function AdminSidebar() {
     { name: "Review Members", href: "/product/admin/members", icon: Users },
     { name: "Platform Settings", href: "/product/admin/settings", icon: Settings },
   ]
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      const response = await fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      
+      if (response.ok) {
+        // Redirect to product auth page
+        router.push('/product/auth')
+      } else {
+        console.error('Logout failed')
+        // Still redirect even if logout API fails
+        router.push('/product/auth')
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Still redirect even if logout API fails
+      router.push('/product/auth')
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
 
   return (
     <>
@@ -46,7 +84,7 @@ export function AdminSidebar() {
       <aside className={`
         fixed top-0 left-0 h-full w-64 bg-background border-r border-border z-50 transform transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:h-screen
+        lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -90,13 +128,40 @@ export function AdminSidebar() {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-border">
+          <div className="px-4 pt-6 pb-4 border-t border-border space-y-4">
             <Link href="/" className="cursor-pointer">
-              <Button variant="outline" className="w-full justify-start cursor-pointer">
+              <Button variant="outline" className="w-full mb-6 justify-start cursor-pointer">
                 <Settings className="w-4 h-4 mr-2" />
                 Back to Main App
               </Button>
             </Link>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  className="w-full justify-start cursor-pointer"
+                  disabled={isLoggingOut}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  {isLoggingOut ? 'Logging out...' : 'Log Out'}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to log out? You will need to sign in again to access the admin panel.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleLogout} disabled={isLoggingOut}>
+                    {isLoggingOut ? 'Logging out...' : 'Yes, Log Out'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </aside>
