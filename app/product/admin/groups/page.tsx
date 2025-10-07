@@ -175,13 +175,8 @@ export default function AdminGroupsPage() {
   return (
     <div className="min-h-screen bg-background flex">
       <AdminSidebar />
-<<<<<<< HEAD
       <div className="flex-1 ml-20">
         <div className="px-4 sm:px-6 lg:px-8 lg:-ml-10 py-4 sm:py-8 pb-20 lg:pb-8">
-=======
-      <div className="flex-1 lg:ml-0">
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 lg:pb-8">
->>>>>>> 649a8ee70940ded062149a7f53fe0b2bb41c55b2
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold">Secret Groups</h1>
