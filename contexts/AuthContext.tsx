@@ -14,6 +14,7 @@ interface User {
   bannerId?: string;
   skills?: string[];
   description?: string;
+  profession?: string;
   createdAt: string;
   isAdmin?: boolean;
 }
@@ -99,9 +100,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setInviteSent(false);
         }
       } else {
-        // User is not authenticated, which is normal for new visitors
+        // User is not authenticated
         setOnboardingCompleted(false);
         setInviteSent(false);
+        if (typeof window !== 'undefined') {
+          const path = window.location.pathname || '';
+          const publicProductPaths = ['/product', '/product/', '/product/auth'];
+          const isProduct = path.startsWith('/product');
+          const isPublic = publicProductPaths.some(p => path.startsWith(p));
+          if (isProduct && !isPublic) {
+            window.location.href = '/product/auth';
+          }
+        }
       }
     } catch (error) {
       console.error('Auth check error:', error);
@@ -203,6 +213,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setOnboardingCompleted(false);
       setInviteSent(false);
       toast.success('Logged out successfully!');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/product/auth';
+      }
     } catch (error) {
       console.error('Logout error:', error);
     }

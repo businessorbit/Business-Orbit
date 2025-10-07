@@ -13,6 +13,7 @@ export function AdminSidebar() {
   const adminTabs = [
     { name: "Dashboard", href: "/product/admin", icon: LayoutDashboard },
     { name: "Chapters", href: "/product/admin/chapters", icon: MapPinned },
+    { name: "Groups", href: "/product/admin/groups", icon: Users },
     { name: "Chat Management", href: "/product/admin/chat", icon: MessageSquare },
     { name: "Create Event", href: "/product/admin/events", icon: Calendar },
     { name: "Review Members", href: "/product/admin/members", icon: Users },

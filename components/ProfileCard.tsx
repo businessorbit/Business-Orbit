@@ -39,7 +39,7 @@ export default function ProfileCard({ className = "" }: ProfileCardProps) {
             name: user.name,
             email: user.email,
             profile_photo_url: user.profilePhotoUrl,
-            role: 'Professional', // Default role since it's not in User type
+            role: user.profession || 'Professional',
             reward_score: 85, // Default score since it's not in User type
             created_at: user.createdAt || new Date().toISOString()
           })
@@ -62,7 +62,7 @@ export default function ProfileCard({ className = "" }: ProfileCardProps) {
               name: data.name,
               email: data.email,
               profile_photo_url: data.profile_photo_url,
-              role: data.role || 'Professional',
+              role: data.profession || data.role || 'Professional',
               reward_score: data.reward_score || 85,
               created_at: data.created_at || new Date().toISOString()
             })

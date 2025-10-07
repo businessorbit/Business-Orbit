@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
     const confirmPassword = formData.get('confirmPassword') as string;
     const skills = formData.get('skills') as string;
     const description = formData.get('description') as string;
+    const profession = formData.get('profession') as string;
     const profilePhoto = formData.get('profilePhoto') as File;
     const banner = formData.get('banner') as File;
 
@@ -166,10 +167,10 @@ export async function POST(request: NextRequest) {
 
     // Insert user into database
     const result = await pool.query(
-      `INSERT INTO users (name, email, phone, password_hash, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, created_at`,
-      [name, email, phone, passwordHash, profilePhotoUrl, profilePhotoId, bannerUrl, bannerId, skillsArray, description]
+      `INSERT INTO users (name, email, phone, password_hash, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, created_at`,
+      [name, email, phone, passwordHash, profilePhotoUrl, profilePhotoId, bannerUrl, bannerId, skillsArray, description, profession]
     );
 
     const user = result.rows[0];
@@ -189,6 +190,7 @@ export async function POST(request: NextRequest) {
         bannerUrl: user.banner_url,
         skills: user.skills,
         description: user.description,
+        profession: user.profession,
         createdAt: user.created_at
       }
     }, { status: 201 });

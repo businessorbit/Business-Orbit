@@ -177,6 +177,46 @@ export default function OnboardingPage() {
       console.log('Successfully created chapter memberships:', chapterData);
       toast.success(`Successfully joined ${chapterData.memberships} chapters!`);
 
+      // Join selected secret groups
+      let joinedGroupsCount = 0;
+      for (const groupName of onboardingData.secretGroups) {
+        try {
+          // First, find the group by name
+          const groupsResponse = await fetch('/api/admin/secret-groups', {
+            credentials: 'include'
+          });
+          
+          if (groupsResponse.ok) {
+            const groupsData = await groupsResponse.json();
+            const group = groupsData.groups.find((g: any) => g.name === groupName);
+            
+            if (group) {
+              // Join the group
+              const joinResponse = await fetch(`/api/secret-groups/${encodeURIComponent(group.id)}/membership`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+              });
+              
+              if (joinResponse.ok) {
+                joinedGroupsCount++;
+                console.log(`Successfully joined group: ${groupName}`);
+              } else {
+                console.error(`Failed to join group: ${groupName}`);
+              }
+            } else {
+              console.error(`Group not found: ${groupName}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Error joining group ${groupName}:`, error);
+        }
+      }
+
+      if (joinedGroupsCount > 0) {
+        toast.success(`Successfully joined ${joinedGroupsCount} secret groups!`);
+      }
+
       if (response.ok) {
         // Update the onboarding status in context
         completeOnboarding();

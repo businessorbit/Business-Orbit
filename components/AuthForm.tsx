@@ -18,6 +18,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
     password: '',
     confirmPassword: '',
     description: '',
+    profession: '',
   });
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState('');
@@ -41,7 +42,47 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
     'Artificial Intelligence', 'Blockchain', 'Cybersecurity'
   ];
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const professionOptions = [
+    'Senior Data Analyst',
+    'DevOps Engineer',
+    'Chief Technology Officer',
+    'Blockchain Architect',
+    'Data Scientist',
+    'Director of Architect',
+    'Director of Operations',
+    'Devops Consultant',
+    'Full Stack Developer',
+    'Senior Product Manager',
+    'CTO',
+    'Enterprise Architect',
+    'VP of Engineering',
+    'Business Analyst',
+    'Cybersecurity Director',
+    'Principal Scientist',
+    'AI Ethics Specialist',
+    'UX Designer',
+    'Blockchain Consultant',
+    'Senior Consultant',
+    'Software Engineer',
+    'AI Researcher',
+    'Principal Engineer',
+    'Chief Architect',
+    'Chief officer',
+    'Lead UX Designer',
+    'CFO',
+    'Scrum Master',
+    'VP of Marketing',
+    'Product Designer',
+    'Quantum Computing Lead',
+    'Cloud Architect',
+    'Chief Innovation Officer',
+    'Director of AI Research',
+    'Principal Researcher',
+    'Director of Research',
+    'Project Director'
+  ];
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -125,6 +166,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
       submitData.append('password', formData.password);
       submitData.append('confirmPassword', formData.confirmPassword);
       submitData.append('description', formData.description);
+      submitData.append('profession', formData.profession);
       submitData.append('skills', JSON.stringify(skills));
 
       if (profilePhoto) {
@@ -180,6 +222,42 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
                 className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
                 placeholder="Enter your full name"
               />
+            </div>
+          </div>
+        )}
+
+        {/* Profession field - only for signup */}
+        {!isSignIn && (
+          <div>
+            <label htmlFor="profession" className="block text-sm font-medium text-gray-700 mb-1">
+              Profession
+            </label>
+            <div className="relative">
+              <select
+                id="profession"
+                name="profession"
+                value={formData.profession}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 appearance-none bg-white cursor-pointer text-black"
+                style={{
+                  colorScheme: 'light',
+                  backgroundColor: 'white',
+                  color: 'black'
+                }}
+              >
+                <option value="">Select your profession</option>
+                {professionOptions.map((profession) => (
+                  <option key={profession} value={profession}>
+                    {profession}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
           </div>
         )}

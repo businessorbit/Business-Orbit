@@ -265,6 +265,8 @@
     "start": "next start",
     "chat:dev": "tsx server/chat-server.ts",
     "chat:start": "node scripts/start-chat-server.js",
+    "test:chat": "tsx scripts/test-chat-system.ts",
+    "test:db": "node scripts/test-database-connection.js",
     "lint": "next lint"
   },
   "keywords": [],

@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
         bannerId: user.banner_id,
         skills: user.skills,
         description: user.description,
+        profession: user.profession,
         createdAt: user.created_at,
         isAdmin: user.is_admin || false
       }

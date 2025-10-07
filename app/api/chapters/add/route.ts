@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/config/database'
 import { getUserFromToken } from '@/lib/utils/auth'
 
+// Typed result row shapes
+interface ChapterRow {
+  id: number
+  name: string
+  location_city: string
+}
+
+interface CityRow {
+  location_city: string
+}
+
 // POST: Add user to chapters by location names (no limit on number of locations)
 export async function POST(request: NextRequest) {
   try {
@@ -50,11 +61,13 @@ export async function POST(request: NextRequest) {
       'SELECT id, name, location_city FROM chapters WHERE LOWER(location_city) = ANY($1::text[])',
       [sanitizedLocations.map(loc => loc.toLowerCase())]
     )
+    const chapterRows = result.rows as ChapterRow[]
     
-    if (result.rows.length === 0) {
+    if (chapterRows.length === 0) {
       // Get all available chapters to show in error message
       const allChaptersResult = await pool.query('SELECT DISTINCT location_city FROM chapters ORDER BY location_city')
-      const availableCities = allChaptersResult.rows.map(row => row.location_city)
+      const cityRows = allChaptersResult.rows as CityRow[]
+      const availableCities = cityRows.map((row: CityRow) => row.location_city)
       
       return NextResponse.json({ 
         success: false,
@@ -74,7 +87,7 @@ export async function POST(request: NextRequest) {
       await client.query('BEGIN')
       
       let insertedCount = 0
-      for (const row of result.rows) {
+      for (const row of chapterRows) {
         const insertResult = await client.query(
           `INSERT INTO chapter_memberships (user_id, chapter_id)
            VALUES ($1, $2)
@@ -93,7 +106,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: `Successfully joined ${insertedCount} chapters`,
         memberships: insertedCount,
-        chapters: result.rows.map(row => ({
+        chapters: chapterRows.map((row: ChapterRow) => ({
           id: row.id,
           name: row.name,
           location_city: row.location_city
