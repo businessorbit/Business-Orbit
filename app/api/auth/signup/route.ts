@@ -8,6 +8,8 @@ export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Signup request received');
+    
     // Preflight check for Cloudinary credentials in production
     if (!process.env.CLOUDINARY_URL && (
       !process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET
@@ -166,11 +168,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert user into database
+    console.log('Signup data:', { name, email, profession, skillsArray });
+    
     const result = await pool.query(
       `INSERT INTO users (name, email, phone, password_hash, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, created_at`,
-      [name, email, phone, passwordHash, profilePhotoUrl, profilePhotoId, bannerUrl, bannerId, skillsArray, description, profession]
+      [name, email, phone, passwordHash, profilePhotoUrl, profilePhotoId, bannerUrl, bannerId, skillsArray, description, profession || null]
     );
 
     const user = result.rows[0];
