@@ -6,8 +6,9 @@ export async function GET(request: NextRequest) {
     const user = await getUserFromToken(request);
 
     if (!user) {
+      console.log('No valid user found - token may be invalid or expired');
       return NextResponse.json(
-        { error: 'Access token required' },
+        { error: 'Access token required or invalid. Please log in again.' },
         { status: 401 }
       );
     }
