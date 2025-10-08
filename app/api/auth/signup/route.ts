@@ -170,6 +170,19 @@ export async function POST(request: NextRequest) {
     // Insert user into database
     console.log('Signup data:', { name, email, profession, skillsArray });
     
+    // First, try to add the profession column if it doesn't exist
+    try {
+      await pool.query(`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS profession VARCHAR(255)
+      `);
+      console.log('✅ Profession column ensured');
+    } catch (columnError: any) {
+      // Column might already exist, that's okay
+      if (columnError.code !== '42701') { // 42701 = duplicate column
+        console.warn('⚠️ Could not ensure profession column:', columnError.message);
+      }
+    }
+    
     const result = await pool.query(
       `INSERT INTO users (name, email, phone, password_hash, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -226,6 +239,51 @@ export async function POST(request: NextRequest) {
         { error: 'Database table not found. Please run the database setup.' },
         { status: 500 }
       );
+    }
+    
+    if (error.code === '42703') {
+      // Column doesn't exist - try to add it and retry
+      try {
+        await pool.query(`ALTER TABLE users ADD COLUMN profession VARCHAR(255)`);
+        console.log('✅ Added profession column, retrying signup...');
+        
+        // Retry the insert without profession for now
+        const result = await pool.query(
+          `INSERT INTO users (name, email, phone, password_hash, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, created_at`,
+          [name, email, phone, passwordHash, profilePhotoUrl, profilePhotoId, bannerUrl, bannerId, skillsArray, description]
+        );
+        
+        const user = result.rows[0];
+        const token = generateToken(user.id);
+        
+        const response = NextResponse.json({
+          message: 'User created successfully',
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            profilePhotoUrl: user.profile_photo_url,
+            bannerUrl: user.banner_url,
+            skills: user.skills,
+            description: user.description,
+            profession: profession || null,
+            createdAt: user.created_at
+          }
+        }, { status: 201 });
+        
+        setTokenCookie(response, token);
+        return response;
+        
+      } catch (retryError: any) {
+        console.error('Retry failed:', retryError);
+        return NextResponse.json(
+          { error: 'Database schema issue. Please contact support.' },
+          { status: 500 }
+        );
+      }
     }
     
     if (error.code === 'ECONNREFUSED') {
