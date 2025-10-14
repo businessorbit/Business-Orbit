@@ -1,7 +1,6 @@
-"use client"
+﻿"use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
@@ -18,11 +17,13 @@ interface Professional {
   avatar: string
   rewardScore: number
   expertise: string[]
+  matchScore: number
   location: string
+  experience: string
   content: string
 }
 
-export default function NavigatorPage() {
+export default function ProductNavigatorPage() {
   const [query, setQuery] = useState("")
   const [messages, setMessages] = useState<Array<{ type: "user" | "ai"; content: string }>>([])
   const [showResults, setShowResults] = useState(false)
@@ -192,6 +193,9 @@ export default function NavigatorPage() {
                           <Badge variant="secondary" className="text-xs">
                             Score: {professional.rewardScore}
                           </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Match: {professional.matchScore}%
+                          </Badge>
                         </div>
                         <p className="text-muted-foreground mb-2">{professional.role}</p>
                         <p className="text-sm text-muted-foreground mb-3">{professional.location}</p>
@@ -258,6 +262,7 @@ export default function NavigatorPage() {
                       <p className="text-sm text-muted-foreground">{selectedProfessional.location}</p>
                       <div className="flex items-center space-x-4 mt-2">
                         <Badge variant="secondary">Score: {selectedProfessional.rewardScore}</Badge>
+                        <Badge variant="outline">Match: {selectedProfessional.matchScore}%</Badge>
                       </div>
                     </div>
                   </div>
@@ -270,6 +275,13 @@ export default function NavigatorPage() {
                           {skill}
                         </Badge>
                       ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Experience</h4>
+                    <div className="bg-muted p-4 rounded-lg">
+                      <p className="text-sm whitespace-pre-wrap">{selectedProfessional.experience}</p>
                     </div>
                   </div>
                   
@@ -296,3 +308,4 @@ export default function NavigatorPage() {
     </div>
   )
 }
+

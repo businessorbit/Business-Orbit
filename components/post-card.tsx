@@ -23,7 +23,7 @@ interface PostCardProps {
   isLiked?: boolean
 }
 
-export function PostCard({ author, content, timestamp, engagement, isLiked = false }: PostCardProps) {
+export function DisplayPostCard({ author, content, timestamp, engagement, isLiked = false }: PostCardProps) {
   const [liked, setLiked] = useState(isLiked)
   const [likeCount, setLikeCount] = useState(engagement.likes)
 

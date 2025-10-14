@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { seedChapters, getChapterStats } from '@/lib/database/seed-chapters'
 
-// POST: Seed predefined chapters (admin only)
+// : Seed predefined chapters (admin only)
 export async function POST(request: NextRequest) {
   try {
     const result = await seedChapters()

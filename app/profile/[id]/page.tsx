@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PostCard } from "@/components/post-card"
+import { DisplayPostCard } from "@/components/post-card"
 import { MapPin, MessageCircle, UserPlus, Calendar, Star, Award, Users, Lock, DollarSign, Clock } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Upload } from "lucide-react"
@@ -365,7 +365,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
                 <Badge variant="outline">{userPosts.length} posts</Badge>
               </div>
               {userPosts.map((post, index) => (
-                <PostCard key={index} {...post} />
+                <DisplayPostCard key={index} {...post} />
               ))}
             </TabsContent>
 

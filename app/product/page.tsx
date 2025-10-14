@@ -15,12 +15,9 @@ export default function ProductPage() {
           </div>
 
           {/* Centered logo at top */}
-          <div className="flex justify-center items-center gap-3 mb-8">
-            <div className="w-24 h-24 relative">
-              <Image src="/logo.png" alt="Business Orbit Logo" width={120} height={120} className="w-full h-full object-contain" />
-            </div>
-            <div className="text-white leading-tight">
-              <div className="text-3xl md:text-4xl font-bold">Business Orbit</div>
+          <div className="flex justify-center items-center mb-1 sm:mb-4 md:mb-6">
+            <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 xl:w-64 xl:h-64 relative">
+              <Image src="/logo.png" alt="Business Orbit Logo" width={256} height={256} className="w-full h-full object-contain" />
             </div>
           </div>
 

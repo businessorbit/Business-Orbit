@@ -4,14 +4,29 @@ import pool from '@/lib/config/database'
 // GET: list all chapters (admin or public)
 export async function GET() {
   try {
-    const result = await pool.query(
-      'SELECT id, name, location_city, created_at FROM chapters ORDER BY location_city, name'
-    )
+    const result = await pool.query(`
+      SELECT 
+        c.id, 
+        c.name, 
+        c.location_city, 
+        c.created_at,
+        COUNT(cm.user_id) as member_count
+      FROM chapters c
+      LEFT JOIN chapter_memberships cm ON c.id = cm.chapter_id
+      GROUP BY c.id, c.name, c.location_city, c.created_at
+      ORDER BY c.location_city, c.name
+    `)
+    
+    // Convert member_count to number
+    const chapters = result.rows.map(row => ({
+      ...row,
+      member_count: parseInt(row.member_count) || 0
+    }))
     
     return NextResponse.json({ 
       success: true,
-      chapters: result.rows,
-      count: result.rows.length
+      chapters,
+      count: chapters.length
     })
   } catch (error: any) {
     console.error('GET /api/chapters error:', error)

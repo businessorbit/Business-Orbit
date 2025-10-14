@@ -198,3 +198,79 @@ CREATE TRIGGER update_events_updated_at
     BEFORE UPDATE ON events 
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();
+
+-- Feed system tables
+CREATE TABLE IF NOT EXISTS posts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL CHECK (char_length(content) > 0 AND char_length(content) <= 2000),
+    scheduled_at TIMESTAMP WITH TIME ZONE,
+    published_at TIMESTAMP WITH TIME ZONE,
+    status VARCHAR(20) DEFAULT 'published' CHECK (status IN ('draft', 'scheduled', 'published', 'cancelled')),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS post_media (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    media_type VARCHAR(20) NOT NULL CHECK (media_type IN ('image', 'video', 'document')),
+    cloudinary_public_id VARCHAR(255) NOT NULL,
+    cloudinary_url VARCHAR(500) NOT NULL,
+    file_name VARCHAR(255),
+    file_size INTEGER,
+    mime_type VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS post_engagements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    engagement_type VARCHAR(20) NOT NULL CHECK (engagement_type IN ('like', 'comment', 'share')),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE(post_id, user_id, engagement_type)
+);
+
+CREATE TABLE IF NOT EXISTS post_comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL CHECK (char_length(content) > 0 AND char_length(content) <= 1000),
+    parent_comment_id UUID REFERENCES post_comments(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Indexes for feed system tables
+CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
+CREATE INDEX IF NOT EXISTS idx_posts_status ON posts(status);
+CREATE INDEX IF NOT EXISTS idx_posts_published_at ON posts(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_scheduled_at ON posts(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_post_media_post_id ON post_media(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_media_type ON post_media(media_type);
+
+CREATE INDEX IF NOT EXISTS idx_post_engagements_post_id ON post_engagements(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_engagements_user_id ON post_engagements(user_id);
+CREATE INDEX IF NOT EXISTS idx_post_engagements_type ON post_engagements(engagement_type);
+
+CREATE INDEX IF NOT EXISTS idx_post_comments_post_id ON post_comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_comments_user_id ON post_comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_post_comments_parent_id ON post_comments(parent_comment_id);
+CREATE INDEX IF NOT EXISTS idx_post_comments_created_at ON post_comments(created_at DESC);
+
+-- Trigger to automatically update updated_at for posts
+DROP TRIGGER IF EXISTS update_posts_updated_at ON posts;
+CREATE TRIGGER update_posts_updated_at 
+    BEFORE UPDATE ON posts 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger to automatically update updated_at for post_comments
+DROP TRIGGER IF EXISTS update_post_comments_updated_at ON post_comments;
+CREATE TRIGGER update_post_comments_updated_at 
+    BEFORE UPDATE ON post_comments 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();

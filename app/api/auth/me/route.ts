@@ -30,6 +30,17 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Get user error:', error);
+    
+    // If it's a token-related error, return 401 to trigger re-authentication
+    if (error.message === 'Access token required' || 
+        error.message === 'Invalid token' || 
+        error.message === 'User not found') {
+      return NextResponse.json(
+        { error: 'Invalid or expired token' },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

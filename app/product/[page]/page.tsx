@@ -20,7 +20,7 @@ type PageMapKey =
   | "rewards";
 
 const pageLoaders: Record<PageMapKey, () => Promise<{ default: React.ComponentType<any> }>> = {
-  auth: () => import("../../auth/page"),
+  auth: () => import("../../product/auth/page"),
   invite: () => import("../../invite/page"),
   onboarding: () => import("../../onboarding/page"),
   subscription: () => import("../../subscription/page"),

@@ -54,6 +54,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [inviteSent, setInviteSent] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
 
+  // Helper function to clear token cookie
+  const clearTokenCookie = () => {
+    if (typeof window !== 'undefined') {
+      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+  };
+
+  // Helper function to check if token exists in cookies
+  const hasToken = () => {
+    if (typeof window === 'undefined') return false;
+    return document.cookie.split(';').some(cookie => cookie.trim().startsWith('token='));
+  };
+
   useEffect(() => {
     checkAuth();
   }, []);
@@ -99,23 +112,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setInviteSent(false);
         }
       } else {
-        // User is not authenticated
+        // User is not authenticated - clear user state and handle redirects
+        setUser(null);
         setOnboardingCompleted(false);
         setInviteSent(false);
+        
+        // Clear any invalid token from cookies
+        clearTokenCookie();
+        
         if (typeof window !== 'undefined') {
           const path = window.location.pathname || '';
           const publicProductPaths = ['/product', '/product/', '/product/auth'];
           const isProduct = path.startsWith('/product');
           const isPublic = publicProductPaths.some(p => path.startsWith(p));
+          
+          // If on product pages and not public, redirect to auth
           if (isProduct && !isPublic) {
             window.location.href = '/product/auth';
           }
+          // If on home page and not authenticated, stay on landing page
+          // (don't redirect to auth from home page)
         }
       }
     } catch (error) {
       console.error('Auth check error:', error);
+      // On error, clear user state and clear cookies
+      setUser(null);
       setOnboardingCompleted(false);
       setInviteSent(false);
+      
+      // Clear the token cookie on error
+      clearTokenCookie();
     } finally {
       setLoading(false);
     }
@@ -211,12 +238,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null);
       setOnboardingCompleted(false);
       setInviteSent(false);
-      toast.success('Logged out successfully!');
+      
+      // Clear token cookie on client side as well
+      clearTokenCookie();
       if (typeof window !== 'undefined') {
+        toast.success('Logged out successfully!');
         window.location.href = '/product/auth';
       }
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if server logout fails, clear client state and cookies
+      setUser(null);
+      setOnboardingCompleted(false);
+      setInviteSent(false);
+      
+      clearTokenCookie();
+      if (typeof window !== 'undefined') {
+        toast.success('Logged out successfully!');
+        window.location.href = '/product/auth';
+      }
     }
   };
 

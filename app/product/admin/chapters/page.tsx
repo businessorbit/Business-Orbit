@@ -45,6 +45,7 @@ export default function AdminChaptersPage() {
   const [members, setMembers] = useState<ChapterMember[]>([]);
   const [seeding, setSeeding] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
   const [stats, setStats] = useState<{
     total_chapters: number; 
     unique_cities: number; 
@@ -132,6 +133,9 @@ export default function AdminChaptersPage() {
         const data = await res.json();
         console.log('Members loaded:', data);
         setMembers(data.members || []);
+        
+        // Refresh chapters to update member counts
+        await loadChapters();
       } else {
         const errorData = await res.json();
         console.error('Failed to load members:', errorData);
@@ -192,6 +196,35 @@ export default function AdminChaptersPage() {
       }
     } catch (error) {
       console.error('Error loading stats:', error);
+    }
+  };
+
+  const addTestMembers = async () => {
+    setTesting(true);
+    try {
+      const res = await fetch('/api/admin/test-members', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Test members added successfully!');
+        await loadChapters();
+        await loadStats();
+      } else {
+        console.error('Failed to add test members:', data);
+        toast.error(data.error || 'Failed to add test members');
+      }
+    } catch (error) {
+      console.error('Error adding test members:', error);
+      toast.error('Failed to add test members');
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -257,6 +290,42 @@ export default function AdminChaptersPage() {
                     <div>Memberships: {stats.total_memberships}</div>
                   </div>
                 )}
+                <Button 
+                  onClick={loadChapters} 
+                  disabled={loading} 
+                  variant="outline"
+                  className="cursor-pointer"
+                >
+                  {loading ? (
+                    <>
+                      <Database className="w-4 h-4 mr-2 animate-spin" />
+                      Refreshing...
+                    </>
+                  ) : (
+                    <>
+                      <Database className="w-4 h-4 mr-2" />
+                      Refresh
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  onClick={addTestMembers} 
+                  disabled={testing} 
+                  variant="outline"
+                  className="cursor-pointer"
+                >
+                  {testing ? (
+                    <>
+                      <Users className="w-4 h-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Users className="w-4 h-4 mr-2" />
+                      Add Test Members
+                    </>
+                  )}
+                </Button>
                 <Button 
                   onClick={seedChapters} 
                   disabled={seeding} 
@@ -379,9 +448,9 @@ export default function AdminChaptersPage() {
                           <MapPin className="w-4 h-4 mr-2" /> 
                           {chapter.location_city}
                         </div>
-                        <div className="flex items-center text-sm text-muted-foreground">
+                        <div className="flex items-center text-sm font-medium text-black">
                           <Users className="w-4 h-4 mr-2" />
-                          {chapter.member_count || 0} members
+                          {chapter.member_count || 0} member{(chapter.member_count || 0) !== 1 ? 's' : ''}
                         </div>
                       </div>
                       <div className="ml-3 flex items-center space-x-2">

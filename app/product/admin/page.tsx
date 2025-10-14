@@ -32,6 +32,11 @@ export default function AdminDashboard(): React.JSX.Element | null {
     totalUsers: 0,
     totalChapters: 0
   });
+  const [memberStats, setMemberStats] = useState({
+    totalMembers: 0,
+    pendingApprovals: 0,
+    activeEvents: 0
+  });
   const [loading, setLoading] = useState(true);
 
   // Check admin authentication
@@ -51,51 +56,83 @@ export default function AdminDashboard(): React.JSX.Element | null {
   }, [user, isAdmin, authLoading, router]);
 
   useEffect(() => {
-    const fetchChatStats = async () => {
+    const fetchAllStats = async () => {
       try {
-        const response = await fetch('/api/admin/chat-analytics?days=30', {
+        // Fetch chat analytics
+        const chatResponse = await fetch('/api/admin/chat-analytics?days=30', {
           credentials: 'include'
         });
         
-        if (response.ok) {
-          const data = await response.json();
+        if (chatResponse.ok) {
+          const chatData = await chatResponse.json();
           setChatStats({
-            totalMessages: data.data.totalMessages,
-            activeConversations: data.data.activeConversations,
-            totalUsers: data.data.performance.totalUsers,
-            totalChapters: data.data.performance.totalChapters
-          });
-        } else {
-          const errorData = await response.json();
-          console.error('Failed to fetch chat stats:', errorData);
-          // Set default values when not authorized
-          setChatStats({
-            totalMessages: 0,
-            activeConversations: 0,
-            totalUsers: 0,
-            totalChapters: 0
+            totalMessages: chatData.data.totalMessages,
+            activeConversations: chatData.data.activeConversations,
+            totalUsers: chatData.data.performance.totalUsers,
+            totalChapters: chatData.data.performance.totalChapters
           });
         }
-      } catch (error) {
-        console.error('Failed to fetch chat stats:', error);
-        setChatStats({
-          totalMessages: 0,
-          activeConversations: 0,
-          totalUsers: 0,
-          totalChapters: 0
+
+        // Fetch member statistics
+        const statsResponse = await fetch('/api/admin/chapter-stats', {
+          credentials: 'include'
         });
+        
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          if (statsData.success) {
+            setMemberStats(prev => ({
+              ...prev,
+              totalMembers: statsData.stats.totalMembers
+            }));
+          }
+        }
+
+        // Fetch events count
+        const eventsResponse = await fetch('/api/admin/events', {
+          credentials: 'include'
+        });
+        
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json();
+          const activeEvents = Array.isArray(eventsData) 
+            ? eventsData.filter((event: any) => 
+                event.status !== 'cancelled' && 
+                event.status !== 'completed'
+              ).length 
+            : 0;
+          setMemberStats(prev => ({
+            ...prev,
+            activeEvents
+          }));
+        }
+
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchChatStats();
+    fetchAllStats();
   }, []);
 
   const adminStats: AdminStat[] = [
-    { label: "Total Members", value: "1,234", icon: Users },
-    { label: "Pending Approvals", value: "23", icon: Users },
-    { label: "Active Events", value: "8", icon: Calendar },
+    { 
+      label: "Total Members", 
+      value: loading ? "..." : memberStats.totalMembers.toLocaleString(), 
+      icon: Users 
+    },
+    { 
+      label: "Pending Approvals", 
+      value: loading ? "..." : memberStats.pendingApprovals.toLocaleString(), 
+      icon: Users 
+    },
+    { 
+      label: "Active Events", 
+      value: loading ? "..." : memberStats.activeEvents.toLocaleString(), 
+      icon: Calendar 
+    },
     { 
       label: "Chat Messages", 
       value: loading ? "..." : chatStats.totalMessages.toLocaleString(), 
