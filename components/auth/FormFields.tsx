@@ -11,11 +11,11 @@ interface FormFieldsProps {
     phone: string;
     password: string;
     confirmPassword: string;
-    description: string;
+    profession: string;
   };
   showPassword: boolean;
   showConfirmPassword: boolean;
-  onFieldChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onFieldChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   onTogglePassword: () => void;
   onToggleConfirmPassword: () => void;
 }

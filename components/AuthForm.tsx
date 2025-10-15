@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { FormFields } from './auth/FormFields';
 import { OAuthButtons } from './auth/OAuthButtons';
-import { SkillsSection } from './auth/SkillsSection';
 import { FileUploadSection } from './auth/FileUploadSection';
 import toast from 'react-hot-toast';
 
@@ -20,10 +19,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
     phone: '',
     password: '',
     confirmPassword: '',
-    description: '',
+    profession: '',
   });
-  const [skills, setSkills] = useState<string[]>([]);
-  const [skillInput, setSkillInput] = useState('');
+  const [selectedSkill, setSelectedSkill] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [banner, setBanner] = useState<File | null>(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
@@ -32,6 +30,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login, signup } = useAuth();
+
+  const professions = [
+    'Senior Data Analyst', 'DevOps Engineer', 'Chief Technology Officer', 'Blockchain Architect', 'Data Scientist', 'Director of Architect', 'Director of Operations', 'Devops Consultant', 'Full Stack Developer', 'Senior Product Manager', 'CTO', 'Enterprise Architect', 'VP of Engineering', 'Business Analyst', 'Cybersecurity Director', 'Principal Scientist', 'AI Ethics Specialist', 'UX Designer', 'Blockchain Consultant', 'Senior Consultant', 'Software Engineer', 'AI Researcher', 'Principal Engineer', 'Chief Architect', 'Chief officer', 'Lead UX Designer', 'CFO', 'Scrum Master', 'VP of Marketing', 'Product Designer', 'Quantum Computing Lead', 'Cloud Architect', 'Chief Innovation Officer', 'Director of AI Research', 'Principal Researcher', 'Director of Research', 'Project Director', 'Cloud Architect'
+  ];
 
   const availableSkills = [
     'JavaScript', 'React', 'Node.js', 'Python', 'Java', 'C++', 'C#', 'PHP',
@@ -44,33 +46,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
     'Artificial Intelligence', 'Blockchain', 'Cybersecurity'
   ];
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleSkillAdd = (skill: string) => {
-    if (skill && !skills.includes(skill)) {
-      setSkills([...skills, skill]);
-      setSkillInput('');
-    }
-  };
-
-  const handleSkillRemove = (skillToRemove: string) => {
-    setSkills(skills.filter(skill => skill !== skillToRemove));
-  };
-
-  const handleSkillInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSkillInput(e.target.value);
-  };
-
-  const handleSkillInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSkillAdd(skillInput);
-    }
+  const handleSkillChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedSkill(e.target.value);
   };
 
   const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,8 +117,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
       submitData.append('phone', formData.phone);
       submitData.append('password', formData.password);
       submitData.append('confirmPassword', formData.confirmPassword);
-      submitData.append('description', formData.description);
-      submitData.append('skills', JSON.stringify(skills));
+      submitData.append('profession', formData.profession);
+      submitData.append('skill', selectedSkill);
 
       if (profilePhoto) {
         submitData.append('profilePhoto', profilePhoto);
@@ -180,35 +164,49 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
           onToggleConfirmPassword={() => setShowConfirmPassword(!showConfirmPassword)}
         />
 
-        {/* Description field - only for signup */}
+        {/* Profession field - only for signup */}
         {!isSignIn && (
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Bio
+            <label htmlFor="profession" className="block text-sm font-medium text-gray-700 mb-1">
+              Profession
             </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
+            <select
+              id="profession"
+              name="profession"
+              value={formData.profession}
               onChange={handleChange}
-              rows={3}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
-              placeholder="Tell us about yourself"
-            />
+            >
+              <option value="">Select your profession</option>
+              {professions.map((profession) => (
+                <option key={profession} value={profession}>
+                  {profession}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
         {/* Skills section - only for signup */}
         {!isSignIn && (
-          <SkillsSection
-            skills={skills}
-            skillInput={skillInput}
-            availableSkills={availableSkills}
-            onSkillAdd={handleSkillAdd}
-            onSkillRemove={handleSkillRemove}
-            onSkillInputChange={handleSkillInputChange}
-            onSkillInputKeyPress={handleSkillInputKeyPress}
-          />
+          <div>
+            <label htmlFor="skill" className="block text-sm font-medium text-gray-700 mb-1">
+              Primary Skill
+            </label>
+            <select
+              id="skill"
+              value={selectedSkill}
+              onChange={handleSkillChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
+            >
+              <option value="">Select your primary skill</option>
+              {availableSkills.map((skill) => (
+                <option key={skill} value={skill}>
+                  {skill}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
 
         {/* File upload section - only for signup */}
@@ -235,23 +233,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
         </button>
       </form>
 
-      {/* OAuth buttons */}
-      <OAuthButtons onOAuthLogin={handleOAuthLogin} />
+      {/* OAuth buttons - only for signin */}
+      {isSignIn && <OAuthButtons onOAuthLogin={handleOAuthLogin} />}
 
-      {/* Mode toggle */}
-      {setMode && (
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            {isSignIn ? "Don't have an account?" : "Already have an account?"}
-          </p>
-          <button
-            onClick={() => setMode(isSignIn ? 'signup' : 'signin')}
-            className="text-black hover:underline font-medium text-sm mt-1"
-          >
-            {isSignIn ? 'Sign up here' : 'Sign in here'}
-          </button>
-        </div>
-      )}
     </div>
   );
 };
