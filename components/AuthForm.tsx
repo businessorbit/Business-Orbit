@@ -264,6 +264,24 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
           </div>
         )}
 
+        {/* Profile Description field - only for signup */}
+        {!isSignIn && (
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Profile Description
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 resize-none"
+              placeholder="Tell us about yourself..."
+            />
+          </div>
+        )}
+
         {/* File upload section - only for signup */}
         {!isSignIn && (
           <FileUploadSection
