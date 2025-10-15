@@ -23,7 +23,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
     description: '',
     profession: '',
   });
-  const [selectedSkill, setSelectedSkill] = useState('');
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [newSkill, setNewSkill] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [banner, setBanner] = useState<File | null>(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
@@ -33,9 +34,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
   const [loading, setLoading] = useState(false);
   const { login, signup } = useAuth();
 
-  const professions = [
-    'Senior Data Analyst', 'DevOps Engineer', 'Chief Technology Officer', 'Blockchain Architect', 'Data Scientist', 'Director of Architect', 'Director of Operations', 'Devops Consultant', 'Full Stack Developer', 'Senior Product Manager', 'CTO', 'Enterprise Architect', 'VP of Engineering', 'Business Analyst', 'Cybersecurity Director', 'Principal Scientist', 'AI Ethics Specialist', 'UX Designer', 'Blockchain Consultant', 'Senior Consultant', 'Software Engineer', 'AI Researcher', 'Principal Engineer', 'Chief Architect', 'Chief officer', 'Lead UX Designer', 'CFO', 'Scrum Master', 'VP of Marketing', 'Product Designer', 'Quantum Computing Lead', 'Cloud Architect', 'Chief Innovation Officer', 'Director of AI Research', 'Principal Researcher', 'Director of Research', 'Project Director', 'Cloud Architect'
-  ];
+
 
   const availableSkills = [
     'JavaScript', 'React', 'Node.js', 'Python', 'Java', 'C++', 'C#', 'PHP',
@@ -94,8 +93,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
     });
   };
 
-  const handleSkillChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedSkill(e.target.value);
+  const handleAddSkill = () => {
+    if (newSkill.trim() && !selectedSkills.includes(newSkill.trim())) {
+      setSelectedSkills([...selectedSkills, newSkill.trim()]);
+      setNewSkill('');
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setSelectedSkills(selectedSkills.filter(skill => skill !== skillToRemove));
+  };
+
+  const handleSkillKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSkill();
+    }
   };
 
   const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,7 +173,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
       submitData.append('confirmPassword', formData.confirmPassword);
       submitData.append('description', formData.description);
       submitData.append('profession', formData.profession);
-      submitData.append('skill', selectedSkill);
+      submitData.append('skills', JSON.stringify(selectedSkills));
 
       if (profilePhoto) {
         submitData.append('profilePhoto', profilePhoto);
@@ -245,22 +258,77 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
         {/* Skills section - only for signup */}
         {!isSignIn && (
           <div>
-            <label htmlFor="skill" className="block text-sm font-medium text-gray-700 mb-1">
-              Primary Skill
+            <label htmlFor="skills" className="block text-sm font-medium text-gray-700 mb-1">
+              Skills
             </label>
-            <select
-              id="skill"
-              value={selectedSkill}
-              onChange={handleSkillChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
-            >
-              <option value="">Select your primary skill</option>
-              {availableSkills.map((skill) => (
-                <option key={skill} value={skill}>
-                  {skill}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-3">
+              {/* Add skill input */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  id="newSkill"
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  onKeyPress={handleSkillKeyPress}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
+                  placeholder="Add a skill"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddSkill}
+                  className="px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                >
+                  Add
+                </button>
+              </div>
+              
+              {/* Selected skills display */}
+              {selectedSkills.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedSkills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
+                    >
+                      {skill}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="text-gray-500 hover:text-red-500 transition-colors duration-200"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              
+              {/* Available skills suggestions */}
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Popular skills:</p>
+                <div className="flex flex-wrap gap-2">
+                  {availableSkills.slice(0, 10).map((skill) => (
+                    <button
+                      key={skill}
+                      type="button"
+                      onClick={() => {
+                        if (!selectedSkills.includes(skill)) {
+                          setSelectedSkills([...selectedSkills, skill]);
+                        }
+                      }}
+                      disabled={selectedSkills.includes(skill)}
+                      className={`px-3 py-1 text-sm rounded-full border transition-colors duration-200 ${
+                        selectedSkills.includes(skill)
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                      }`}
+                    >
+                      {skill}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
