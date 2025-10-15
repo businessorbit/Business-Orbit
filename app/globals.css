@@ -230,4 +230,40 @@ button {
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask-composite: xor;
   }
+
+  /* Custom select dropdown styling to override browser defaults */
+  select {
+    color: black !important;
+    background-color: white !important;
+  }
+
+  select option {
+    color: black !important;
+    background-color: white !important;
+  }
+
+  select option:hover {
+    color: white !important;
+    background-color: black !important;
+  }
+
+  select option:checked {
+    color: white !important;
+    background-color: black !important;
+  }
+
+  select option:checked:hover {
+    color: white !important;
+    background-color: black !important;
+  }
+
+  select:focus {
+    color: black !important;
+    background-color: white !important;
+  }
+
+  select:focus option:hover {
+    color: white !important;
+    background-color: black !important;
+  }
 }

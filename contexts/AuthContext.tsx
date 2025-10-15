@@ -14,6 +14,7 @@ interface User {
   bannerId?: string;
   skills?: string[];
   description?: string;
+  profession?: string;
   createdAt: string;
   isAdmin?: boolean;
 }

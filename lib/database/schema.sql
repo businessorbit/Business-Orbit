@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     banner_id VARCHAR(255),
     skills TEXT[], -- Array of skills
     description TEXT,
+    profession VARCHAR(255), -- User's profession
     google_id VARCHAR(255),
     linkedin_id VARCHAR(255),
     is_admin BOOLEAN DEFAULT FALSE,

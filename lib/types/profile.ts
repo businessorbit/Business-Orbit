@@ -8,6 +8,7 @@ export interface UserProfile {
   bannerUrl?: string;
   skills: string[];
   description?: string;
+  profession?: string;
   createdAt: string;
 }
 

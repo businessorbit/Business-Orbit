@@ -60,14 +60,14 @@ export async function GET(request: NextRequest) {
 
     // Check if user exists by Google ID first, then by email
     let user = await pool.query(
-      'SELECT id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, created_at FROM users WHERE google_id = $1',
+      'SELECT id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, created_at FROM users WHERE google_id = $1',
       [googleId]
     );
 
     if (user.rows.length === 0) {
       // Check by email for existing users without Google ID
       user = await pool.query(
-        'SELECT id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, created_at FROM users WHERE email = $1',
+        'SELECT id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, created_at FROM users WHERE email = $1',
         [email]
       );
 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
         const newUser = await pool.query(
           `INSERT INTO users (name, email, google_id, profile_photo_url, created_at)
            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-           RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, created_at`,
+           RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, created_at`,
           [name, email, googleId, picture]
         );
         user = newUser;

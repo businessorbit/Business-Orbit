@@ -238,7 +238,7 @@ export default function ProfilePage() {
 
                   <div className="text-center md:text-left space-y-2 bg-background/80 backdrop-blur-sm rounded-lg p-4 md:bg-transparent md:backdrop-blur-none md:p-0">
                     <h1 className="text-2xl md:text-3xl font-bold">{user.name}</h1>
-                    <p className="text-base md:text-lg text-muted-foreground">{(user as any).title || "Professional"}</p>
+                    <p className="text-base md:text-lg text-muted-foreground">{user.profession || "Professional"}</p>
 
                     <div className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4 text-sm text-muted-foreground">
                       {(user as any).location && (

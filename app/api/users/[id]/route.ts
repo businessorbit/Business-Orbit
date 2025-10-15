@@ -30,7 +30,7 @@ export async function GET(
     // Get user basic info
     const userResult = await pool.query(
       `SELECT id, name, email, phone, profile_photo_url, profile_photo_id, 
-              banner_url, banner_id, skills, description, created_at
+              banner_url, banner_id, skills, description, profession, created_at
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -69,6 +69,7 @@ export async function GET(
         bannerUrl: userData.banner_url,
         skills: userData.skills || [],
         description: userData.description,
+        profession: userData.profession,
         createdAt: userData.created_at
       },
       groups: {
@@ -114,7 +115,7 @@ export async function PATCH(
     }
 
     const result = await pool.query(
-      'UPDATE users SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, name, email, phone, profile_photo_url, banner_url, skills, description, created_at',
+      'UPDATE users SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, name, email, phone, profile_photo_url, banner_url, skills, description, profession, created_at',
       [name, userId]
     )
     const row = result.rows[0]
@@ -128,6 +129,7 @@ export async function PATCH(
         bannerUrl: row.banner_url,
         skills: row.skills || [],
         description: row.description,
+        profession: row.profession,
         createdAt: row.created_at,
       }
     })

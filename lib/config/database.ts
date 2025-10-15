@@ -6,16 +6,9 @@ if (process.env.VERCEL !== '1' && process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: '.env.local' });
 }
 
-if (!process.env.DATABASE_URL) {
-  // Avoid crashing builds in environments where the DB is not needed at build step
-  if (process.env.VERCEL === '1' || process.env.NEXT_RUNTIME === 'edge') {
-    // Defer error to runtime when the route actually uses the DB
-    console.warn('⚠️ DATABASE_URL not set at build time. DB connections will fail at runtime.');
-  } else {
-    console.error('❌ DATABASE_URL environment variable is not set');
-    console.log('📋 Please create a .env.local file with your database configuration');
-    console.log('📋 Example: DATABASE_URL=postgresql://username:password@localhost:5432/database_name');
-  }
+// Only log database URL issues in development, not during build
+if (!process.env.DATABASE_URL && process.env.NODE_ENV === 'development') {
+  console.warn('⚠️ DATABASE_URL not set. Database connections will fail at runtime.');
 }
 
 const databaseUrl: string | undefined = process.env.DATABASE_URL;
@@ -35,7 +28,8 @@ declare global {
   var __PG_POOL__: any;
 }
 
-const pool = global.__PG_POOL__ ?? new Pool({
+// Create pool only if DATABASE_URL is available
+const pool = global.__PG_POOL__ ?? (databaseUrl ? new Pool({
   connectionString: databaseUrl,
   ssl: shouldUseSsl || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   // Keep dev pool small to avoid exhausting server connection slots during HMR
@@ -48,31 +42,38 @@ const pool = global.__PG_POOL__ ?? new Pool({
   statement_timeout: 30_000,
   // Keep TCP connection alive to reduce ECONNRESET in some environments
   keepAlive: true,
-});
+}) : null);
 
 if (!global.__PG_POOL__) {
   global.__PG_POOL__ = pool;
 }
 
-pool.on('error', (err: any) => {
-  console.error('❌ Database connection error:', err.message);
-  console.error('❌ Error code:', err.code);
-  console.error('❌ Error detail:', err.detail);
-  
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('⚠️  Server will continue without database connection for now');
-  }
-});
+if (pool) {
+  pool.on('error', (err: any) => {
+    console.error('❌ Database connection error:', err.message);
+    console.error('❌ Error code:', err.code);
+    console.error('❌ Error detail:', err.detail);
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('⚠️  Server will continue without database connection for now');
+    }
+  });
 
-pool.on('connect', (client: any) => {
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('🔗 New database client connected');
-  }
-});
+  pool.on('connect', (client: any) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔗 New database client connected');
+    }
+  });
+}
 
 
 
 const testConnection = async (retries = process.env.NODE_ENV === 'production' ? 3 : 1) => {
+  if (!pool) {
+    console.warn('⚠️ Database pool not initialized - DATABASE_URL not set');
+    return;
+  }
+  
   for (let i = 0; i < retries; i++) {
     try {
       const result = await pool.query('SELECT NOW() as current_time, version() as version');
@@ -100,15 +101,19 @@ if (process.env.NODE_ENV !== 'test' && process.env.VERCEL !== '1') {
 
 process.on('SIGINT', async () => {
   console.log('🔄 Shutting down database pool...');
-  await pool.end();
-  console.log('✅ Database pool closed');
+  if (pool) {
+    await pool.end();
+    console.log('✅ Database pool closed');
+  }
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   console.log('🔄 Shutting down database pool...');
-  await pool.end();
-  console.log('✅ Database pool closed');
+  if (pool) {
+    await pool.end();
+    console.log('✅ Database pool closed');
+  }
   process.exit(0);
 });
 
