@@ -4,16 +4,9 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Users, MapPin, Calendar, UserPlus, Check, Clock } from 'lucide-react'
+import { Users, Calendar, UserPlus, Check, Clock } from 'lucide-react'
 import { safeApiCall } from '@/lib/utils/api'
 import { toast } from 'sonner'
-
-interface Chapter {
-  chapter_id: string
-  chapter_name: string
-  location_city: string
-  joined_at: string
-}
 
 interface Member {
   id: number
@@ -21,7 +14,7 @@ interface Member {
   email: string
   profilePhotoUrl?: string
   userJoinedAt: string
-  chapters: Chapter[]
+  chapters: any[]
 }
 
 interface MembersCardProps {
@@ -181,18 +174,6 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
     }
   }
 
-  const formatJoinDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffTime = Math.abs(now.getTime() - date.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
-    if (diffDays === 1) return '1 day ago'
-    if (diffDays < 7) return `${diffDays} days ago`
-    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`
-    if (diffDays < 365) return `${Math.ceil(diffDays / 30)} months ago`
-    return `${Math.ceil(diffDays / 365)} years ago`
-  }
 
   if (loading) {
     return (
@@ -296,34 +277,8 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
                 </div>
                 <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                   <Calendar className="w-3 h-3" />
-                  <span>Joined {formatJoinDate(member.userJoinedAt)}</span>
+                  <span>Joined {new Date(member.userJoinedAt).toLocaleDateString()}</span>
                 </div>
-              </div>
-            </div>
-            
-            {/* Chapters List */}
-            <div className="ml-12">
-              <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center">
-                <Users className="w-3 h-3 mr-1" />
-                Chapters ({member.chapters.length})
-              </div>
-              <div className="space-y-1">
-                {member.chapters.map((chapter, index) => (
-                  <div key={`${member.id}-${chapter.chapter_id}`} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline" className="text-xs px-2 py-0.5">
-                        {chapter.chapter_name}
-                      </Badge>
-                      <div className="flex items-center space-x-1 text-muted-foreground">
-                        <MapPin className="w-3 h-3" />
-                        <span>{chapter.location_city}</span>
-                      </div>
-                    </div>
-                    <span className="text-muted-foreground text-xs">
-                      {formatJoinDate(chapter.joined_at)}
-                    </span>
-                  </div>
-                ))}
               </div>
             </div>
           </div>

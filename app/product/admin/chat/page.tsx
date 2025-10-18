@@ -23,8 +23,16 @@ export default function AdminChatPage() {
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 lg:pb-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Chat Management Dashboard</h1>
-            <p className="text-muted-foreground">Monitor and manage chat activity across all chapters</p>
+            <div className="mb-4 mt-12 lg:mt-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Chat Management Dashboard</h1>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+              <p className="text-sm sm:text-base text-muted-foreground">Monitor and manage chat activity across all chapters</p>
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                <span className="text-sm font-medium">Admin Setup</span>
+              </div>
+            </div>
           </div>
 
           {/* Tab Navigation */}

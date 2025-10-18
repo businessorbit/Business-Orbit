@@ -89,7 +89,7 @@ export default function ProductGroupsPage() {
         // Load current members of the target group to mark as Added
         if (targetGroupId) {
           try {
-            const res2 = await fetch(`/api/admin/secret-groups/${encodeURIComponent(targetGroupId)}/members`, { credentials: 'include' })
+            const res2 = await fetch(`/api/admin/management/secret-groups/${encodeURIComponent(targetGroupId)}/members`, { credentials: 'include' })
             if (res2.ok) {
               const data2 = await res2.json()
               const ids = new Set<number>(
@@ -135,7 +135,7 @@ export default function ProductGroupsPage() {
   const loadData = React.useCallback(async () => {
     try {
       // All groups (for suggestions)
-      const allRes = await fetch('/api/admin/secret-groups', { credentials: 'include' })
+      const allRes = await fetch('/api/admin/management/secret-groups', { credentials: 'include' })
       const allData = allRes.ok ? await allRes.json() : { groups: [] }
       const all = Array.isArray(allData.groups) ? allData.groups.map(mapRow) : []
 
@@ -279,43 +279,46 @@ export default function ProductGroupsPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6 pb-20 lg:pb-6">
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 pb-16 sm:pb-20 lg:pb-6">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6">
           {/* Left Sidebar - Groups List (joined only) */}
           <div className="w-full lg:w-1/2">
-            <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <h2 className="flex items-center gap-2 text-lg font-semibold">Secret Groups</h2>
-              <Button size="sm" onClick={() => setShowCreateGroup(true)}>+ Create Group</Button>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 lg:mb-4 space-y-2 sm:space-y-0">
+              <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold">Secret Groups</h2>
+              <Button size="sm" onClick={() => setShowCreateGroup(true)} className="w-full sm:w-auto text-xs sm:text-sm">
+                + Create Group
+              </Button>
             </div>
-            <div className="p-0 mt-10">
-              <div className="grid grid-cols-1 md:grid-cols-1 gap-3 lg:gap-4">
+            <div className="p-0 mt-6 sm:mt-8 lg:mt-10">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4">
                 {(joinedGroups.length ? joinedGroups : []).slice(0, 3).map((group) => (
                   <div
                     key={group.id}
-                    className={`w-full h-28 md:h-32 border rounded-xl bg-white flex items-center justify-between px-5 transition-colors hover:bg-accent/30`}
+                    className={`w-full h-24 sm:h-28 md:h-32 border rounded-xl bg-white flex items-center justify-between px-3 sm:px-4 md:px-5 transition-colors hover:bg-accent/30`}
                   >
                     <div
-                      className="flex items-center gap-4 cursor-pointer flex-1"
+                      className="flex items-center gap-3 sm:gap-4 cursor-pointer flex-1 min-w-0"
                       onClick={() => { window.location.href = `/product/groups/${encodeURIComponent(group.id)}` }}
                     >
                       <div
-                        className="w-12 h-12 lg:w-14 lg:h-14 rounded-lg flex items-center justify-center flex-shrink-0"
+                        className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg flex items-center justify-center flex-shrink-0"
                         style={{ backgroundImage: `url("${group.pattern}")` }}
                       >
-                        <Lock className="w-6 h-6 lg:w-7 lg:h-7" />
+                        <Lock className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7" />
                       </div>
-                      <div className="text-left">
-                        <p className="text-2xl lg:text-3xl font-semibold leading-tight">{group.name}</p>
-                        <p className="text-sm text-muted-foreground mt-1">{group.members} members</p>
+                      <div className="text-left min-w-0 flex-1">
+                        <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-semibold leading-tight truncate">{group.name}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1">{group.members} members</p>
                       </div>
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 px-3 text-xs bg-transparent ml-4 whitespace-nowrap"
+                      className="h-6 sm:h-7 px-2 sm:px-3 text-xs bg-transparent ml-2 sm:ml-4 whitespace-nowrap flex-shrink-0"
                       onClick={(e) => { e.stopPropagation(); openAddMembers({ id: group.id, name: group.name }) }}
                     >
-                      + Add Member
+                      <span className="hidden sm:inline">+ Add Member</span>
+                      <span className="sm:hidden">+ Add</span>
                     </Button>
                   </div>
                 ))}
@@ -327,20 +330,21 @@ export default function ProductGroupsPage() {
           </div>
 
           {/* Right Sidebar */}
-          <div className="w-full lg:w-1/2 space-y-4 lg:space-y-6">
+          <div className="w-full lg:w-1/2 space-y-3 sm:space-y-4 lg:space-y-6">
             {/* Upcoming Events (dynamic) */}
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h3 className="flex items-center gap-2 text-sm lg:text-base font-semibold">
-                    <Calendar className="w-4 h-4" /> Upcoming Events
+                <div className="min-w-0 flex-1">
+                  <h3 className="flex items-center gap-2 text-xs sm:text-sm lg:text-base font-semibold">
+                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" /> 
+                    <span className="truncate">Upcoming Events</span>
                   </h3>
                   {lastEventsUpdate && (
-                    <p className="text-xs text-muted-foreground mt-1">Last updated: {lastEventsUpdate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
+                    <p className="text-xs text-muted-foreground mt-1 truncate">Last updated: {lastEventsUpdate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
                   )}
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleRefreshEvents} disabled={eventsLoading} className="text-xs px-2">
-                  <RefreshCw className={`w-4 h-4 ${eventsLoading ? 'animate-spin' : ''}`} />
+                <Button variant="ghost" size="sm" onClick={handleRefreshEvents} disabled={eventsLoading} className="text-xs px-2 flex-shrink-0">
+                  <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 ${eventsLoading ? 'animate-spin' : ''}`} />
                 </Button>
               </div>
               <div className="space-y-3">
@@ -356,19 +360,22 @@ export default function ProductGroupsPage() {
                   </div>
                 ) : (
                   events.map((ev) => (
-                    <Card key={ev.id} className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <p className="font-medium">{ev.title}</p>
+                    <Card key={ev.id} className="p-3 sm:p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <p className="font-medium text-sm sm:text-base truncate">{ev.title}</p>
                           <p className="text-xs text-muted-foreground">{ev.dateText} • {ev.timeText}</p>
                           {ev.venue_address && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" /> {ev.venue_address}</p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MapPin className="w-3 h-3 flex-shrink-0" /> 
+                              <span className="truncate">{ev.venue_address}</span>
+                            </p>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground text-right">
+                        <div className="text-xs text-muted-foreground text-right flex-shrink-0">
                           <p>{ev.attendees} attending</p>
                           {ev.is_registered && (
-                            <Badge variant="secondary" className="mt-1">Registered</Badge>
+                            <Badge variant="secondary" className="mt-1 text-xs">Registered</Badge>
                           )}
                         </div>
                       </div>
@@ -377,16 +384,16 @@ export default function ProductGroupsPage() {
                 )}
               </div>
               {events.length > 0 && (
-                <Button variant="outline" className="w-full mt-4 bg-transparent text-sm" onClick={() => window.location.href = '/events'}>
+                <Button variant="outline" className="w-full mt-3 sm:mt-4 bg-transparent text-xs sm:text-sm" onClick={() => window.location.href = '/events'}>
                   View All Events
                 </Button>
               )}
             </div>
 
             {/* Group Admins */}
-            <Card className="p-4 lg:p-6">
-              <h3 className="font-semibold mb-4 flex items-center text-sm lg:text-base">
-                <Crown className="w-4 h-4 lg:w-5 lg:h-5 mr-2" />
+            <Card className="p-3 sm:p-4 lg:p-6">
+              <h3 className="font-semibold mb-3 sm:mb-4 flex items-center text-xs sm:text-sm lg:text-base">
+                <Crown className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 mr-2 flex-shrink-0" />
                 Group Admins
               </h3>
               <div className="space-y-3">
@@ -403,14 +410,14 @@ export default function ProductGroupsPage() {
             </Card>
 
             {/* Suggested Groups (from admin) */}
-            <Card className="p-4 lg:p-6">
-              <h3 className="font-semibold mb-4 text-sm lg:text-base">Suggested Groups</h3>
-              <div className="space-y-4">
+            <Card className="p-3 sm:p-4 lg:p-6">
+              <h3 className="font-semibold mb-3 sm:mb-4 text-xs sm:text-sm lg:text-base">Suggested Groups</h3>
+              <div className="space-y-3 sm:space-y-4">
                 {suggestedGroups.map((group) => (
                   <div key={group.id} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-sm">{group.name}</h4>
-                      <Button size="sm" variant="outline" className="h-6 px-2 text-xs bg-transparent" onClick={() => handleJoin(group.id)}>
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-medium text-xs sm:text-sm truncate min-w-0 flex-1">{group.name}</h4>
+                      <Button size="sm" variant="outline" className="h-6 px-2 text-xs bg-transparent flex-shrink-0" onClick={() => handleJoin(group.id)}>
                         Join
                       </Button>
                     </div>
@@ -428,35 +435,35 @@ export default function ProductGroupsPage() {
 
       {/* Create Group Modal */}
       {showCreateGroup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="p-6 w-full max-w-md relative">
-            <X className="w-5 h-5 absolute top-4 right-4 cursor-pointer" onClick={() => setShowCreateGroup(false)} />
-            <h2 className="text-xl font-bold mb-4">Create Secret Group</h2>
-            <div className="flex flex-col space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="p-4 sm:p-6 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
+            <X className="w-4 h-4 sm:w-5 sm:h-5 absolute top-3 right-3 sm:top-4 sm:right-4 cursor-pointer" onClick={() => setShowCreateGroup(false)} />
+            <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Create Secret Group</h2>
+            <div className="flex flex-col space-y-3 sm:space-y-4">
               <div>
-                <label className="text-sm font-medium">Group Name *</label>
-                <input type="text" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} className="border p-2 rounded w-full" placeholder="Enter group name" required />
+                <label className="text-xs sm:text-sm font-medium">Group Name *</label>
+                <input type="text" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} className="border p-2 sm:p-3 rounded w-full text-sm sm:text-base" placeholder="Enter group name" required />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Invite Connections</label>
+                <label className="text-xs sm:text-sm font-medium mb-1 block">Invite Connections</label>
                 <div className="flex items-center border rounded mb-2 p-2">
-                  <Search className="w-4 h-4 text-muted-foreground mr-2" />
-                  <input type="text" placeholder="Search connections..." value={searchConnection} onChange={(e) => setSearchConnection(e.target.value)} className="flex-1 outline-none" />
+                  <Search className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground mr-2 flex-shrink-0" />
+                  <input type="text" placeholder="Search connections..." value={searchConnection} onChange={(e) => setSearchConnection(e.target.value)} className="flex-1 outline-none text-sm sm:text-base" />
                 </div>
-                <div className="max-h-32 overflow-y-auto space-y-2">
+                <div className="max-h-24 sm:max-h-32 overflow-y-auto space-y-2">
                   {filteredConnections.map(conn => (
                     <div key={conn.id} className="flex items-center space-x-2">
-                      <input type="checkbox" checked={selectedConnections.includes(conn.id)} onChange={() => toggleConnection(conn.id)} />
-                      <span className="text-sm">{conn.name}</span>
+                      <input type="checkbox" checked={selectedConnections.includes(conn.id)} onChange={() => toggleConnection(conn.id)} className="flex-shrink-0" />
+                      <span className="text-xs sm:text-sm truncate">{conn.name}</span>
                     </div>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium">Invite by Email</label>
-                <textarea value={inviteEmails} onChange={(e) => setInviteEmails(e.target.value)} className="border p-2 rounded w-full" placeholder="Enter email addresses separated by commas" />
+                <label className="text-xs sm:text-sm font-medium">Invite by Email</label>
+                <textarea value={inviteEmails} onChange={(e) => setInviteEmails(e.target.value)} className="border p-2 sm:p-3 rounded w-full text-sm sm:text-base" placeholder="Enter email addresses separated by commas" rows={3} />
               </div>
-              <Button onClick={handleCreateGroup} className="mt-2">Create Group</Button>
+              <Button onClick={handleCreateGroup} className="mt-2 text-sm sm:text-base">Create Group</Button>
             </div>
           </Card>
         </div>
@@ -464,34 +471,34 @@ export default function ProductGroupsPage() {
 
       {/* Add Members Modal */}
       {showAddMembers && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="p-6 w-full max-w-md relative">
-            <X className="w-5 h-5 absolute top-4 right-4 cursor-pointer" onClick={() => setShowAddMembers(false)} />
-            <h2 className="text-xl font-bold mb-4">Add Members{targetGroupName ? ` to ${targetGroupName}` : ''}</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="p-4 sm:p-6 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
+            <X className="w-4 h-4 sm:w-5 sm:h-5 absolute top-3 right-3 sm:top-4 sm:right-4 cursor-pointer" onClick={() => setShowAddMembers(false)} />
+            <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Add Members{targetGroupName ? ` to ${targetGroupName}` : ''}</h2>
             <div className="flex flex-col space-y-3">
-              <label className="text-sm font-medium">Search Connections</label>
+              <label className="text-xs sm:text-sm font-medium">Search Connections</label>
               <input
                 type="text"
                 value={inviteSearch}
                 onChange={(e) => setInviteSearch(e.target.value)}
                 placeholder="Search by name or email..."
-                className="border p-2 rounded w-full"
+                className="border p-2 sm:p-3 rounded w-full text-sm sm:text-base"
               />
-              <div className="border rounded p-2 h-64 overflow-y-auto space-y-2">
+              <div className="border rounded p-2 h-48 sm:h-64 overflow-y-auto space-y-2">
                 {usersLoading ? (
-                  <div className="text-sm text-muted-foreground">Loading users...</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">Loading users...</div>
                 ) : filteredUsers.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No users found.</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">No users found.</div>
                 ) : (
                   filteredUsers.map(u => (
-                    <div key={u.id} className="flex items-center justify-between p-2 rounded hover:bg-accent/40">
-                      <div>
-                        <p className="text-sm font-medium">{u.name}</p>
-                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                    <div key={u.id} className="flex items-center justify-between p-2 rounded hover:bg-accent/40 gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-medium truncate">{u.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                       </div>
                       <Button
                         size="sm"
-                        className="h-7 px-3 text-xs"
+                        className="h-6 sm:h-7 px-2 sm:px-3 text-xs flex-shrink-0"
                         disabled={invitedEmails.has(u.email) || currentMemberIds.has(u.id)}
                         onClick={() => inviteUserToGroup(u.email)}
                       >

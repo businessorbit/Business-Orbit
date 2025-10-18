@@ -5,7 +5,7 @@ import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { DisplayPostCard } from "@/components/post-card"
+import { DisplayPostCard } from "@/components/PostCard"
 import { Lock, Users, Crown, Plus, Hash, Settings, Calendar, MapPin, RefreshCw, Search, X } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import React from "react"
@@ -177,7 +177,7 @@ export default function GroupsPage() {
         // Load current members of the target group to mark as Added
         if (targetGroupId) {
           try {
-            const res2 = await fetch(`/api/admin/secret-groups/${encodeURIComponent(targetGroupId)}/members`, { credentials: 'include' })
+            const res2 = await fetch(`/api/admin/management/secret-groups/${encodeURIComponent(targetGroupId)}/members`, { credentials: 'include' })
             if (res2.ok) {
               const data2 = await res2.json()
               const ids = new Set<number>(
@@ -223,7 +223,7 @@ export default function GroupsPage() {
   const loadData = React.useCallback(async () => {
     try {
       // All groups (for suggestions)
-      const allRes = await fetch('/api/admin/secret-groups', { credentials: 'include' })
+      const allRes = await fetch('/api/admin/management/secret-groups', { credentials: 'include' })
       const allData = allRes.ok ? await allRes.json() : { groups: [] }
       const all = Array.isArray(allData.groups) ? allData.groups.map(mapRow) : []
 
@@ -371,7 +371,7 @@ export default function GroupsPage() {
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
           {/* Left Sidebar - Groups List (joined only) */}
           <div className="w-full lg:w-1/2">
-            <div className="flex items-center justify-between mb-3 lg:mb-4">
+            <div className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
               <h2 className="flex items-center gap-2 text-lg font-semibold">Secret Groups</h2>
               <Button size="sm" onClick={() => setShowCreateGroup(true)}>+ Create Group</Button>
             </div>

@@ -392,33 +392,34 @@ export default function ChapterDashboard() {
       <Navigation />
 
       {loading ? (
-        <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-10">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 space-y-6 sm:space-y-8 md:space-y-10">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>Loading...</p>
+            <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-primary mx-auto mb-3 sm:mb-4"></div>
+            <p className="text-sm sm:text-base">Loading...</p>
           </div>
         </main>
       ) : !user ? (
-        <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-10">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 space-y-6 sm:space-y-8 md:space-y-10">
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-2">Authentication Required</h2>
-            <p className="text-muted-foreground mb-4">Please sign in to view your chapters.</p>
-            <Button onClick={() => router.push('/product/auth')}>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2">Authentication Required</h2>
+            <p className="text-muted-foreground mb-4 text-sm sm:text-base">Please sign in to view your chapters.</p>
+            <Button onClick={() => router.push('/product/auth')} className="text-sm sm:text-base">
               Sign In
             </Button>
           </div>
         </main>
       ) : (
-        <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-10">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 space-y-6 sm:space-y-8 md:space-y-10">
         
         {/* Dashboard Grid */}
-        <div className="grid gap-10 md:grid-cols-2">
+        <div className="grid gap-6 sm:gap-8 md:gap-10 lg:grid-cols-2">
           
           {/* My Chapters */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <Users className="h-5 w-5 text-primary" /> My Chapters
+          <section className="space-y-3 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
+              <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" /> 
+                <span className="truncate">My Chapters</span>
               </h2>
               <Dialog open={isAddChapterOpen} onOpenChange={setIsAddChapterOpen}>
                 <DialogTrigger asChild>
@@ -429,53 +430,57 @@ export default function ChapterDashboard() {
                       fetchAvailableOptions();
                       setSelectedChapters([]);
                     }}
+                    className="w-full sm:w-auto text-xs sm:text-sm"
                   >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Chapter
+                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <span className="hidden sm:inline">Add Chapter</span>
+                    <span className="sm:hidden">Add</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto p-4 sm:p-6">
                   <DialogHeader>
-                    <DialogTitle>Add New Chapters</DialogTitle>
+                    <DialogTitle className="text-lg sm:text-xl">Add New Chapters</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {/* Locations Selection */}
                     <div>
-                      <h3 className="font-semibold mb-3">Select Locations</h3>
-                      <p className="text-sm text-muted-foreground mb-3">
+                      <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Select Locations</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
                         Choose locations to join all chapters in those cities
                       </p>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                         {availableChapters.map((location) => (
                           <button
                             key={location}
                             onClick={() => handleChapterSelection(location)}
-                            className={`p-2 rounded-lg border-2 transition-all duration-200 text-sm font-medium cursor-pointer ${
+                            className={`p-2 sm:p-3 rounded-lg border-2 transition-all duration-200 text-xs sm:text-sm font-medium cursor-pointer ${
                               selectedChapters.includes(location)
                                 ? 'border-primary bg-primary text-primary-foreground'
                                 : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
                             }`}
                           >
-                            {location}
+                            <span className="truncate">{location}</span>
                           </button>
                         ))}
                       </div>
-                      <p className="text-sm text-muted-foreground mt-2">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                         Selected: {selectedChapters.length} locations
                       </p>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex justify-end space-x-2">
+                    <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
                       <Button 
                         variant="outline" 
                         onClick={() => setIsAddChapterOpen(false)}
+                        className="w-full sm:w-auto text-xs sm:text-sm"
                       >
                         Cancel
                       </Button>
                       <Button 
                         onClick={handleAddChapters}
                         disabled={isAdding || selectedChapters.length === 0}
+                        className="w-full sm:w-auto text-xs sm:text-sm"
                       >
                         {isAdding ? 'Adding...' : 'Add Chapters'}
                       </Button>
@@ -514,25 +519,25 @@ export default function ChapterDashboard() {
                 </p>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {userChapters.map((chapter) => (
-                  <Card key={chapter.id} className="p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <Link href={`/product/chapters/${chapter.id}`} className="flex-1 cursor-pointer">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-1">{chapter.name}</h3>
-                          <div className="flex items-center text-sm text-muted-foreground mb-2">
-                            <MapPin className="w-4 h-4 mr-1" />
-                            {chapter.location_city}
+                  <Card key={chapter.id} className="p-3 sm:p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between gap-2">
+                      <Link href={`/product/chapters/${chapter.id}`} className="flex-1 cursor-pointer min-w-0">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm sm:text-lg mb-1 truncate">{chapter.name}</h3>
+                          <div className="flex items-center text-xs sm:text-sm text-muted-foreground mb-2">
+                            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
+                            <span className="truncate">{chapter.location_city}</span>
                           </div>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Users className="w-4 h-4 mr-1" />
-                            {chapter.member_count} members
+                          <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+                            <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
+                            <span className="truncate">{chapter.member_count} members</span>
                           </div>
                         </div>
                       </Link>
-                      <div className="flex items-center space-x-2 ml-2">
-                        <Badge variant="secondary">
+                      <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                        <Badge variant="secondary" className="text-xs">
                           Active
                         </Badge>
                         {user?.id && (
@@ -546,12 +551,12 @@ export default function ChapterDashboard() {
                                   e.stopPropagation();
                                 }}
                                 disabled={deletingChapterId === chapter.id}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer h-6 w-6 sm:h-8 sm:w-8 p-0"
                               >
                                 {deletingChapterId === chapter.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                                 ) : (
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                                 )}
                               </Button>
                             </AlertDialogTrigger>
@@ -583,16 +588,16 @@ export default function ChapterDashboard() {
           </section>
 
           {/* Upcoming Events */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <h2 className="flex items-center gap-2 text-lg font-semibold">
-                  <Calendar className="h-5 w-5 text-primary" /> 
-                  Upcoming Events
-                  {eventsLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+          <section className="space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col min-w-0 flex-1">
+                <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold">
+                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" /> 
+                  <span className="truncate">Upcoming Events</span>
+                  {eventsLoading && <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin flex-shrink-0" />}
                 </h2>
                 {lastEventsUpdate && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1 truncate">
                     Last updated: {lastEventsUpdate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                   </p>
                 )}
@@ -602,7 +607,7 @@ export default function ChapterDashboard() {
                 size="sm"
                 onClick={handleRefreshEvents}
                 disabled={eventsLoading}
-                className="text-xs px-2"
+                className="text-xs px-2 flex-shrink-0"
               >
                 <RefreshCw className={`w-3 h-3 ${eventsLoading ? 'animate-spin' : ''}`} />
               </Button>
@@ -621,11 +626,11 @@ export default function ChapterDashboard() {
                 </Card>
               ) : (
                 events.map((event) => (
-                  <Card key={event.id} className="p-4 hover:shadow-md transition-shadow">
+                  <Card key={event.id} className="p-3 sm:p-4 hover:shadow-md transition-shadow">
                     <div className="space-y-2">
-                      <div className="flex items-start justify-between">
-                        <h3 className="font-medium text-sm">{event.title}</h3>
-                        <div className="flex items-center gap-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-medium text-xs sm:text-sm truncate min-w-0 flex-1">{event.title}</h3>
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           {event.is_registered && (
                             <Badge variant="secondary" className="text-xs">
                               Registered
@@ -639,14 +644,14 @@ export default function ChapterDashboard() {
                       </div>
                       
                       <div className="flex flex-col space-y-1">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-muted-foreground gap-1 sm:gap-0">
                           <span className="flex items-center">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            {event.date} • {event.time}
+                            <Calendar className="w-3 h-3 mr-1 flex-shrink-0" />
+                            <span className="truncate">{event.date} • {event.time}</span>
                           </span>
                           <span className="flex items-center">
-                            <Users className="w-3 h-3 mr-1" />
-                            {event.attendees} attending
+                            <Users className="w-3 h-3 mr-1 flex-shrink-0" />
+                            <span className="truncate">{event.attendees} attending</span>
                           </span>
                         </div>
                         
@@ -666,7 +671,7 @@ export default function ChapterDashboard() {
                         {user && !event.is_registered && (
                           <Button
                             size="sm"
-                            className="text-xs h-6 mt-2 w-full"
+                            className="text-xs h-6 sm:h-7 mt-2 w-full"
                             onClick={() => handleEventRSVP(event.id, event.title)}
                           >
                             RSVP Now
@@ -681,7 +686,7 @@ export default function ChapterDashboard() {
             {events.length > 0 && (
               <Button 
                 variant="outline" 
-                className="w-full text-sm"
+                className="w-full text-xs sm:text-sm"
                 onClick={() => router.push('/events')}
               >
                 View All Events
@@ -690,40 +695,42 @@ export default function ChapterDashboard() {
           </section>
 
           {/* Top Performers */}
-          <section className="space-y-4">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <Trophy className="h-5 w-5 text-primary" /> Top Performers
+          <section className="space-y-3 sm:space-y-4">
+            <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold">
+              <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" /> 
+              <span className="truncate">Top Performers</span>
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {topPerformers.map((p, idx) => (
-                <Card key={idx} className="p-4">
-                  <p className="font-medium">{p.name}</p>
-                  <p className="text-sm text-muted-foreground">{p.chapter}</p>
-                  <Badge className="mt-2">{p.score} pts</Badge>
+                <Card key={idx} className="p-3 sm:p-4">
+                  <p className="font-medium text-sm sm:text-base truncate">{p.name}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{p.chapter}</p>
+                  <Badge className="mt-2 text-xs">{p.score} pts</Badge>
                 </Card>
               ))}
             </div>
           </section>
 
           {/* Thank You Notes */}
-          <section className="space-y-4">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <MessageSquare className="h-5 w-5 text-primary" /> Thank You Notes
+          <section className="space-y-3 sm:space-y-4">
+            <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold">
+              <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" /> 
+              <span className="truncate">Thank You Notes</span>
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {thankYouNotes.map((note) => (
-                <Card key={note.id} className="p-4 space-y-3">
+                <Card key={note.id} className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                   <div>
-                    <p className="font-medium">{note.from}</p>
-                    <p className="text-xs text-muted-foreground">{note.chapter}</p>
+                    <p className="font-medium text-sm sm:text-base truncate">{note.from}</p>
+                    <p className="text-xs text-muted-foreground truncate">{note.chapter}</p>
                   </div>
-                  <p className="text-sm">{note.message}</p>
-                  <div className="flex gap-2">
+                  <p className="text-xs sm:text-sm">{note.message}</p>
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       id={`reply-${note.id}`}
                       type="text"
                       placeholder="Reply..."
-                      className="flex-1 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="flex-1 border rounded px-2 py-1 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           handleReply(note.id, (e.target as HTMLInputElement).value);
@@ -740,6 +747,7 @@ export default function ChapterDashboard() {
                           input.value = "";
                         }
                       }}
+                      className="text-xs sm:text-sm"
                     >
                       Send
                     </Button>

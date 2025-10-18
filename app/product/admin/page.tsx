@@ -59,7 +59,7 @@ export default function AdminDashboard(): React.JSX.Element | null {
     const fetchAllStats = async () => {
       try {
         // Fetch chat analytics
-        const chatResponse = await fetch('/api/admin/chat-analytics?days=30', {
+        const chatResponse = await fetch('/api/admin/analytics/chat?days=30', {
           credentials: 'include'
         });
         
@@ -74,7 +74,7 @@ export default function AdminDashboard(): React.JSX.Element | null {
         }
 
         // Fetch member statistics
-        const statsResponse = await fetch('/api/admin/chapter-stats', {
+        const statsResponse = await fetch('/api/admin/analytics/chapters', {
           credentials: 'include'
         });
         
@@ -89,7 +89,7 @@ export default function AdminDashboard(): React.JSX.Element | null {
         }
 
         // Fetch events count
-        const eventsResponse = await fetch('/api/admin/events', {
+        const eventsResponse = await fetch('/api/admin/management/events', {
           credentials: 'include'
         });
         
@@ -183,8 +183,8 @@ export default function AdminDashboard(): React.JSX.Element | null {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-gray-600 text-sm sm:text-base">Loading...</p>
         </div>
       </div>
     );
@@ -199,26 +199,26 @@ export default function AdminDashboard(): React.JSX.Element | null {
     <div className="min-h-screen bg-background flex">
       <AdminSidebar />
       <div className="flex-1 lg:ml-0">
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 lg:pb-8">
+        <div className="px-3 sm:px-4 md:px-6 lg:px-8 pt-12 sm:pt-3 sm:py-4 md:py-8 pb-16 sm:pb-20 lg:pb-8">
         
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage your Business Orbit Admin platform</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Admin Dashboard</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Manage your Business Orbit Admin platform</p>
         </div>
 
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {adminStats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.label} className="p-6 shadow-elevated border-border/50">
+              <Card key={stat.label} className="p-4 sm:p-6 shadow-elevated border-border/50">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{stat.label}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-foreground truncate">{stat.value}</p>
                   </div>
-                  <div className="p-3 bg-accent rounded-full">
-                    <Icon className="w-6 h-6 text-foreground" />
+                  <div className="p-2 sm:p-3 bg-accent rounded-full flex-shrink-0 ml-2">
+                    <Icon className="w-4 h-4 sm:w-6 sm:h-6 text-foreground" />
                   </div>
                 </div>
               </Card>
@@ -227,19 +227,19 @@ export default function AdminDashboard(): React.JSX.Element | null {
         </div>
 
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
           {adminActions.map((action) => {
             const Icon = action.icon;
             return (
               <Link key={action.title} href={action.href}>
-                <Card className="p-6 shadow-elevated border-border/50 hover:shadow-lg transition-all duration-200 hover:scale-105 cursor-pointer">
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className={`p-4 rounded-full ${action.color}`}>
-                      <Icon className="w-8 h-8 text-white" />
+                <Card className="p-4 sm:p-6 shadow-elevated border-border/50 hover:shadow-lg transition-all duration-200 hover:scale-105 cursor-pointer">
+                  <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
+                    <div className={`p-3 sm:p-4 rounded-full ${action.color}`}>
+                      <Icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground mb-2">{action.title}</h3>
-                      <p className="text-sm text-muted-foreground">{action.description}</p>
+                    <div className="min-w-0 w-full">
+                      <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1 sm:mb-2 truncate">{action.title}</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{action.description}</p>
                     </div>
                   </div>
                 </Card>
@@ -249,24 +249,24 @@ export default function AdminDashboard(): React.JSX.Element | null {
         </div>
 
         {/* Chat Analytics Overview */}
-        <Card className="mt-8 p-6 shadow-elevated border-border/50">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Chat Analytics Overview</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm font-medium text-blue-600">Active Conversations</p>
-              <p className="text-2xl font-bold text-blue-900">
+        <Card className="mt-6 sm:mt-8 p-4 sm:p-6 shadow-elevated border-border/50">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">Chat Analytics Overview</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
+              <p className="text-xs sm:text-sm font-medium text-blue-600">Active Conversations</p>
+              <p className="text-xl sm:text-2xl font-bold text-blue-900">
                 {loading ? "..." : chatStats.activeConversations}
               </p>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <p className="text-sm font-medium text-green-600">Chat Users</p>
-              <p className="text-2xl font-bold text-green-900">
+            <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
+              <p className="text-xs sm:text-sm font-medium text-green-600">Chat Users</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-900">
                 {loading ? "..." : chatStats.totalUsers}
               </p>
             </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <p className="text-sm font-medium text-purple-600">Active Chapters</p>
-              <p className="text-2xl font-bold text-purple-900">
+            <div className="text-center p-3 sm:p-4 bg-purple-50 rounded-lg sm:col-span-2 lg:col-span-1">
+              <p className="text-xs sm:text-sm font-medium text-purple-600">Active Chapters</p>
+              <p className="text-xl sm:text-2xl font-bold text-purple-900">
                 {loading ? "..." : chatStats.totalChapters}
               </p>
             </div>
@@ -274,37 +274,37 @@ export default function AdminDashboard(): React.JSX.Element | null {
         </Card>
 
         
-        <Card className="mt-8 p-6 shadow-elevated border-border/50">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <Button asChild className="h-auto p-4 flex flex-col items-center space-y-2">
+        <Card className="mt-6 sm:mt-8 p-4 sm:p-6 shadow-elevated border-border/50">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            <Button asChild className="h-auto p-3 sm:p-4 flex flex-col items-center space-y-1 sm:space-y-2 text-xs sm:text-sm">
               <Link href="/product/admin/chapters">
-                <MapPinned className="w-6 h-6 text-black" />
-                <span>Manage Chapters</span>
+                <MapPinned className="w-4 h-4 sm:w-6 sm:h-6 text-black" />
+                <span className="truncate">Manage Chapters</span>
               </Link>
             </Button>
-            <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
+            <Button asChild variant="outline" className="h-auto p-3 sm:p-4 flex flex-col items-center space-y-1 sm:space-y-2 text-xs sm:text-sm">
               <Link href="/product/admin/chat">
-                <MessageSquare className="w-6 h-6 text-black" />
-                <span>Chat Management</span>
+                <MessageSquare className="w-4 h-4 sm:w-6 sm:h-6 text-black" />
+                <span className="truncate">Chat Management</span>
               </Link>
             </Button>
-            <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
+            <Button asChild variant="outline" className="h-auto p-3 sm:p-4 flex flex-col items-center space-y-1 sm:space-y-2 text-xs sm:text-sm">
               <Link href="/product/admin/events">
-                <Calendar className="w-6 h-6 text-black" />
-                <span>Create Event</span>
+                <Calendar className="w-4 h-4 sm:w-6 sm:h-6 text-black" />
+                <span className="truncate">Create Event</span>
               </Link>
             </Button>
-            <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
+            <Button asChild variant="outline" className="h-auto p-3 sm:p-4 flex flex-col items-center space-y-1 sm:space-y-2 text-xs sm:text-sm">
               <Link href="/product/admin/members">
-                <Users className="w-6 h-6 text-black" />
-                <span>Review Members</span>
+                <Users className="w-4 h-4 sm:w-6 sm:h-6 text-black" />
+                <span className="truncate">Review Members</span>
               </Link>
             </Button>
-            <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
+            <Button asChild variant="outline" className="h-auto p-3 sm:p-4 flex flex-col items-center space-y-1 sm:space-y-2 text-xs sm:text-sm">
               <Link href="/product/admin/settings">
-                <Settings className="w-6 h-6 text-black" />
-                <span>Platform Settings</span>
+                <Settings className="w-4 h-4 sm:w-6 sm:h-6 text-black" />
+                <span className="truncate">Platform Settings</span>
               </Link>
             </Button>
           </div>

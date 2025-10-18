@@ -19,9 +19,10 @@ interface FollowRequest {
 
 interface RequestsCardProps {
   className?: string
+  variant?: 'full' | 'compact' // Add variant prop to support both layouts
 }
 
-export default function RequestsCard({ className = "" }: RequestsCardProps) {
+export default function RequestsCard({ className = "", variant = 'full' }: RequestsCardProps) {
   const [requests, setRequests] = useState<FollowRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -116,16 +117,16 @@ export default function RequestsCard({ className = "" }: RequestsCardProps) {
 
   if (loading) {
     return (
-      <Card className={`p-6 ${className}`}>
+      <Card className={`${variant === 'compact' ? 'p-4' : 'p-6'} ${className}`}>
         <div className="flex items-center space-x-2 mb-4">
           <Users className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Requests</h3>
+          <h3 className={`${variant === 'compact' ? 'text-sm' : 'text-lg'} font-semibold`}>Requests</h3>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-muted rounded-full"></div>
+                <div className={`${variant === 'compact' ? 'w-8 h-8' : 'w-10 h-10'} bg-muted rounded-full`}></div>
                 <div className="flex-1 space-y-2">
                   <div className="h-4 bg-muted rounded w-3/4"></div>
                   <div className="h-3 bg-muted rounded w-1/2"></div>
@@ -140,31 +141,33 @@ export default function RequestsCard({ className = "" }: RequestsCardProps) {
 
   if (error) {
     return (
-      <Card className={`p-6 ${className}`}>
+      <Card className={`${variant === 'compact' ? 'p-4' : 'p-6'} ${className}`}>
         <div className="flex items-center space-x-2 mb-4">
           <Users className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Requests</h3>
+          <h3 className={`${variant === 'compact' ? 'text-sm' : 'text-lg'} font-semibold`}>Requests</h3>
         </div>
         <div className="text-center py-8">
           <div className="text-destructive text-sm">{error}</div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-2 cursor-pointer"
-            onClick={() => window.location.reload()}
-          >
-            Try Again
-          </Button>
+          {variant === 'full' && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2 cursor-pointer"
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </Button>
+          )}
         </div>
       </Card>
     )
   }
 
   return (
-    <Card className={`p-6 ${className}`}>
+    <Card className={`${variant === 'compact' ? 'p-4' : 'p-6'} ${className}`}>
       <div className="flex items-center space-x-2 mb-4">
         <Users className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold">Requests</h3>
+        <h3 className={`${variant === 'compact' ? 'text-sm' : 'text-lg'} font-semibold`}>Requests</h3>
         {requests.length > 0 && (
           <Badge variant="secondary" className="ml-2">
             {requests.length}
@@ -178,24 +181,26 @@ export default function RequestsCard({ className = "" }: RequestsCardProps) {
             <UserPlus className="w-8 h-8 text-muted-foreground" />
           </div>
           <p className="text-muted-foreground text-sm">No pending follow requests</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            When someone sends you a follow request, it will appear here
-          </p>
+          {variant === 'full' && (
+            <p className="text-xs text-muted-foreground mt-1">
+              When someone sends you a follow request, it will appear here
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {requests.map((request) => (
-            <div key={request.id} className="p-3 rounded-lg hover:bg-muted/50 transition-colors border border-border/50">
+            <div key={request.id} className={`${variant === 'compact' ? 'p-2' : 'p-3'} rounded-lg hover:bg-muted/50 transition-colors border border-border/50`}>
               <div className="flex items-start space-x-3">
                 <div className="relative">
                   {request.requesterPhoto ? (
                     <img
                       src={request.requesterPhoto}
                       alt={request.requesterName}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-background"
+                      className={`${variant === 'compact' ? 'w-8 h-8' : 'w-10 h-10'} rounded-full object-cover border-2 border-background`}
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/40 rounded-full flex items-center justify-center text-sm font-semibold text-primary border-2 border-background">
+                    <div className={`${variant === 'compact' ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br from-primary/20 to-primary/40 rounded-full flex items-center justify-center text-sm font-semibold text-primary border-2 border-background`}>
                       {request.requesterName.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -212,16 +217,18 @@ export default function RequestsCard({ className = "" }: RequestsCardProps) {
                     </div>
                   </div>
                   
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Wants to follow you
-                  </p>
+                  {variant === 'full' && (
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Wants to follow you
+                    </p>
+                  )}
                   
                   <div className="flex space-x-2">
                     <Button
                       size="sm"
                       onClick={() => handleRequestAction(request.id, 'accept', request.requesterName)}
                       disabled={processing.has(request.id)}
-                      className="h-7 px-3 text-xs bg-black hover:bg-gray-800 text-white cursor-pointer"
+                      className={`${variant === 'compact' ? 'h-6 px-2' : 'h-7 px-3'} text-xs bg-black hover:bg-gray-800 text-white cursor-pointer`}
                     >
                       {processing.has(request.id) ? (
                         <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
@@ -238,7 +245,7 @@ export default function RequestsCard({ className = "" }: RequestsCardProps) {
                       variant="outline"
                       onClick={() => handleRequestAction(request.id, 'decline', request.requesterName)}
                       disabled={processing.has(request.id)}
-                      className="h-7 px-3 text-xs text-destructive hover:bg-destructive hover:text-destructive-foreground cursor-pointer"
+                      className={`${variant === 'compact' ? 'h-6 px-2' : 'h-7 px-3'} text-xs text-destructive hover:bg-destructive hover:text-destructive-foreground cursor-pointer`}
                     >
                       <X className="w-3 h-3 mr-1" />
                       Decline

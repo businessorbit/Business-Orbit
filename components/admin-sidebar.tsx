@@ -36,7 +36,7 @@ export function AdminSidebar() {
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
-      const response = await fetch('/api/admin/logout', {
+      const response = await fetch('/api/admin/auth/logout', {
         method: 'POST',
         credentials: 'include',
       })
@@ -61,12 +61,12 @@ export function AdminSidebar() {
   return (
     <>
       {/* Mobile Menu Button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className="lg:hidden fixed top-3 left-3 z-50">
         <Button
           variant="outline"
           size="sm"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="bg-background/80 backdrop-blur-sm cursor-pointer"
+          className="bg-background/95 backdrop-blur-sm cursor-pointer shadow-lg border-2 h-9 w-9 p-0"
         >
           {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
         </Button>

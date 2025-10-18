@@ -188,24 +188,26 @@ export default function EventsPage() {
       <Navigation />
       <Toaster />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 lg:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Events</h1>
-            <p className="text-muted-foreground">Discover and join professional networking events</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Events</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Discover and join professional networking events</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
             <a
               href={`mailto:events@businessorbit.app?subject=${encodeURIComponent('Event Proposal')}&body=${encodeURIComponent('Hi Team,\n\nI would like to propose an event.\n\nTitle: \nDate: \nMode (Online/Physical): \nVenue or Meeting Link: \nDescription: \n\nThanks!')}`}
+              className="w-full sm:w-auto"
             >
-              <Button className="rounded-full">
+              <Button className="rounded-full w-full sm:w-auto text-sm">
                 <Plus className="w-4 h-4 mr-2" />
-                Propose Event
+                <span className="hidden xs:inline">Propose Event</span>
+                <span className="xs:hidden">Propose</span>
               </Button>
             </a>
             <Button 
-              className="rounded-full"
+              className="rounded-full w-full sm:w-auto text-sm"
               onClick={() => setIsModalOpen(true)}
             >
               Use Form
@@ -214,39 +216,40 @@ export default function EventsPage() {
         </div>
 
         {/* Search and Filters */}
-        <Card className="p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4">
+        <Card className="p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search events..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-sm sm:text-base"
               />
             </div>
-            <div>
+            <div className="w-full sm:w-auto">
               <Input
                 type="date"
                 value={searchDate}
                 onChange={(e) => setSearchDate(e.target.value)}
+                className="text-sm sm:text-base"
               />
             </div>
           </div>
         </Card>
 
-        <Tabs defaultValue="upcoming" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="hosting">Hosting</TabsTrigger>
-            <TabsTrigger value="past">Past</TabsTrigger>
+        <Tabs defaultValue="upcoming" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-3 max-w-md mx-auto sm:mx-0">
+            <TabsTrigger value="upcoming" className="text-xs sm:text-sm">Upcoming</TabsTrigger>
+            <TabsTrigger value="hosting" className="text-xs sm:text-sm">Hosting</TabsTrigger>
+            <TabsTrigger value="past" className="text-xs sm:text-sm">Past</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upcoming" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {upcomingEventsList.map((event) => (
-                <Card key={event.id} className="p-6 hover:shadow-sm transition-shadow">
-                  <div className="space-y-4">
+                <Card key={event.id} className="p-4 sm:p-6 hover:shadow-sm transition-shadow">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-start justify-between">
                       <Badge variant="outline" className="text-xs">
                         {event.category}
@@ -257,40 +260,41 @@ export default function EventsPage() {
                     </div>
 
                     <div>
-                      <h3 className="font-semibold mb-2 line-clamp-2">{event.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{event.description}</p>
+                      <h3 className="font-semibold mb-2 line-clamp-2 text-sm sm:text-base">{event.title}</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-3 line-clamp-2">{event.description}</p>
                     </div>
 
-                    <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
                       <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        {event.date}
+                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{event.date}</span>
                       </div>
                       <div className="flex items-center">
-                        <Clock className="w-4 h-4 mr-2" />
-                        {event.time}
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{event.time}</span>
                       </div>
                       <div className="flex items-center">
-                        <MapPin className="w-4 h-4 mr-2" />
-                        {event.location}
+                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{event.location}</span>
                       </div>
                       <div className="flex items-center">
-                        <Users className="w-4 h-4 mr-2" />
-                        {event.attendees}/{event.maxAttendees} attending
+                        <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{event.attendees}/{event.maxAttendees} attending</span>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center text-xs font-semibold">
+                      <div className="flex items-center space-x-2 min-w-0 flex-1">
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 bg-muted rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">
                           {event.hostAvatar}
                         </div>
-                        <span className="text-sm text-muted-foreground">{event.host}</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground truncate">{event.host}</span>
                       </div>
                       <Button
                         size="sm"
                         variant={event.isJoined ? "secondary" : "default"}
                         onClick={() => handleRSVPClick(event)}
+                        className="text-xs sm:text-sm ml-2 flex-shrink-0"
                       >
                         {event.isJoined ? "Registered" : "RSVP"}
                       </Button>
@@ -302,19 +306,19 @@ export default function EventsPage() {
           </TabsContent>
 
           <TabsContent value="hosting" className="space-y-4">
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No hosted events yet</p>
-              <Button className="mt-4" onClick={() => setIsModalOpen(true)}>
+            <div className="text-center py-6 sm:py-8">
+              <p className="text-sm sm:text-base text-muted-foreground mb-4">No hosted events yet</p>
+              <Button className="text-sm sm:text-base" onClick={() => setIsModalOpen(true)}>
                 Propose Your First Event
               </Button>
             </div>
           </TabsContent>
 
           <TabsContent value="past" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {pastEventsList.map((event) => (
-                <Card key={event.id} className="p-6 hover:shadow-sm transition-shadow">
-                  <div className="space-y-4">
+                <Card key={event.id} className="p-4 sm:p-6 hover:shadow-sm transition-shadow">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-start justify-between">
                       <Badge variant="outline" className="text-xs">
                         {event.category}
@@ -325,37 +329,37 @@ export default function EventsPage() {
                     </div>
 
                     <div>
-                      <h3 className="font-semibold mb-2 line-clamp-2">{event.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{event.description}</p>
+                      <h3 className="font-semibold mb-2 line-clamp-2 text-sm sm:text-base">{event.title}</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-3 line-clamp-2">{event.description}</p>
                     </div>
 
-                    <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
                       <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        {event.date}
+                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{event.date}</span>
                       </div>
                       <div className="flex items-center">
-                        <Clock className="w-4 h-4 mr-2" />
-                        {event.time}
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{event.time}</span>
                       </div>
                       <div className="flex items-center">
-                        <MapPin className="w-4 h-4 mr-2" />
-                        {event.location}
+                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{event.location}</span>
                       </div>
                       <div className="flex items-center">
-                        <Users className="w-4 h-4 mr-2" />
-                        {event.attendees}/{event.maxAttendees} attending
+                        <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{event.attendees}/{event.maxAttendees} attending</span>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center text-xs font-semibold">
+                      <div className="flex items-center space-x-2 min-w-0 flex-1">
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 bg-muted rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">
                           {event.hostAvatar}
                         </div>
-                        <span className="text-sm text-muted-foreground">{event.host}</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground truncate">{event.host}</span>
                       </div>
-                      <Button size="sm" variant="secondary" disabled>
+                      <Button size="sm" variant="secondary" disabled className="text-xs sm:text-sm ml-2 flex-shrink-0">
                         Ended
                       </Button>
                     </div>
@@ -371,25 +375,26 @@ export default function EventsPage() {
       <Modal
         isOpen={showRSVPDialog}
         onRequestClose={() => setShowRSVPDialog(false)}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
         overlayClassName="fixed inset-0"
         ariaHideApp={false}
       >
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-          <h2 className="text-xl font-bold mb-4">Confirm RSVP</h2>
-          <p className="mb-4">
+        <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <h2 className="text-lg sm:text-xl font-bold mb-4">Confirm RSVP</h2>
+          <p className="mb-4 text-sm sm:text-base">
             Confirm your RSVP for "{selectedEvent?.title}". A confirmation will be sent to your registered email.
           </p>
-          <div className="flex gap-2 justify-end">
+          <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
             <Button
               variant="outline"
               onClick={() => setShowRSVPDialog(false)}
+              className="w-full sm:w-auto text-sm"
             >
               Cancel
             </Button>
             <Button
               onClick={() => handleRSVPConfirm(selectedEvent)}
-              className="bg-black hover:bg-black"
+              className="bg-black hover:bg-black w-full sm:w-auto text-sm"
             >
               Confirm RSVP
             </Button>
@@ -401,12 +406,12 @@ export default function EventsPage() {
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
         overlayClassName="fixed inset-0"
         ariaHideApp={false}
       >
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-          <h2 className="text-xl font-bold mb-4">Propose an Event</h2>
+        <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <h2 className="text-lg sm:text-xl font-bold mb-4">Propose an Event</h2>
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -438,7 +443,7 @@ export default function EventsPage() {
               }
               setLoading(false);
             }}
-            className="space-y-4"
+            className="space-y-3 sm:space-y-4"
           >
             <Input
               placeholder="Your Name"
@@ -447,6 +452,7 @@ export default function EventsPage() {
                 setProposalData({ ...proposalData, name: e.target.value })
               }
               required
+              className="text-sm sm:text-base"
             />
             <Input
               placeholder="Your Email"
@@ -456,6 +462,7 @@ export default function EventsPage() {
                 setProposalData({ ...proposalData, email: e.target.value })
               }
               required
+              className="text-sm sm:text-base"
             />
             <Input
               placeholder="Event Title"
@@ -464,6 +471,7 @@ export default function EventsPage() {
                 setProposalData({ ...proposalData, eventTitle: e.target.value })
               }
               required
+              className="text-sm sm:text-base"
             />
             <Input
               placeholder="Event Date"
@@ -473,9 +481,10 @@ export default function EventsPage() {
                 setProposalData({ ...proposalData, eventDate: e.target.value })
               }
               required
+              className="text-sm sm:text-base"
             />
             <select
-              className="w-full p-2 border rounded"
+              className="w-full p-2 sm:p-3 border rounded text-sm sm:text-base"
               value={proposalData.mode}
               onChange={(e) =>
                 setProposalData({ ...proposalData, mode: e.target.value })
@@ -486,7 +495,7 @@ export default function EventsPage() {
             </select>
             <textarea
               placeholder="Event Description"
-              className="w-full p-2 border rounded"
+              className="w-full p-2 sm:p-3 border rounded text-sm sm:text-base"
               rows={3}
               value={proposalData.description}
               onChange={(e) =>
@@ -494,15 +503,16 @@ export default function EventsPage() {
               }
               required
             />
-            <div className="flex gap-2 justify-end">
+            <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsModalOpen(false)}
+                className="w-full sm:w-auto text-sm"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading} className="w-full sm:w-auto text-sm">
                 {loading ? "Sending..." : "Send Proposal"}
               </Button>
             </div>
@@ -512,7 +522,7 @@ export default function EventsPage() {
 
       {/* Success Message */}
       {successMessage && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50">
+        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50 text-sm sm:text-base max-w-sm sm:max-w-none">
           {successMessage}
         </div>
       )}

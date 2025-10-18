@@ -3,13 +3,12 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Navigation } from "@/components/navigation"
-import { EventCard } from "@/components/post-card"
-import PostCard from "@/components/PostCard"
+import PostCard, { EventCard } from "@/components/PostCard"
 import FeedPost from "@/components/FeedPost"
 import ProfileCard from "@/components/ProfileCard"
 import ChaptersCard from "@/components/ChaptersCard"
 import SecretGroupsCard from "@/components/SecretGroupsCard"
-import IncomingRequestsCard from "@/components/IncomingRequestsCard"
+import RequestsCard from "@/components/RequestsCard"
 import SuggestedConnectionsCard from "@/components/SuggestedConnectionsCard"
 import UpcomingEventsCard from "@/components/UpcomingEventsCard"
 import DynamicEventsFeed from "@/components/DynamicEventsFeed"
@@ -131,8 +130,8 @@ export default function FeedPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-gray-600 text-sm sm:text-base">Loading...</p>
         </div>
       </div>
     )
@@ -148,8 +147,8 @@ export default function FeedPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to complete your setup...</p>
+          <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-gray-600 text-sm sm:text-base">Redirecting to complete your setup...</p>
         </div>
       </div>
     )
@@ -159,9 +158,18 @@ export default function FeedPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 lg:pb-8">
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
-          {/* Left Sidebar */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-8 pb-16 sm:pb-20 lg:pb-8">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-8">
+          {/* Left Sidebar - Mobile: Show at top, Desktop: Show on left */}
+          <div className="lg:hidden w-full space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <ProfileCard />
+              <ChaptersCard />
+            </div>
+            <SecretGroupsCard />
+          </div>
+          
+          {/* Left Sidebar - Desktop */}
           <div className="hidden lg:block w-64 space-y-4">
             <ProfileCard />
             <ChaptersCard />
@@ -169,23 +177,23 @@ export default function FeedPage() {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 lg:max-w-2xl space-y-4 lg:space-y-6">
+          <div className="flex-1 lg:max-w-2xl space-y-3 sm:space-y-4 lg:space-y-6">
             {/* Post Creation Card */}
             <PostCard onPostCreated={handlePostCreated} />
 
             {/* Trending heading */}
             <div className="flex items-center space-x-2 px-1">
-              <Sparkles className="w-4 h-4 lg:w-5 lg:h-5 text-foreground" />
-              <h2 className="text-base lg:text-lg font-bold text-foreground">
+              <Sparkles className="w-4 h-4 lg:w-5 lg:h-5 text-foreground flex-shrink-0" />
+              <h2 className="text-sm sm:text-base lg:text-lg font-bold text-foreground truncate">
                 Trending in Your Network
               </h2>
             </div>
 
             {/* Feed */}
-            <div className="space-y-4 lg:space-y-6">
+            <div className="space-y-3 sm:space-y-4 lg:space-y-6">
               {loadingPosts && posts.length === 0 ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="flex justify-center py-6 sm:py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600"></div>
                 </div>
               ) : (
                 <>
@@ -205,13 +213,13 @@ export default function FeedPage() {
 
             {/* Load more */}
             {hasMore && (
-              <div className="flex justify-center pt-4 lg:pt-6">
+              <div className="flex justify-center pt-3 sm:pt-4 lg:pt-6">
                 <Button
                   variant="outline"
-                  size="lg"
+                  size="sm"
                   onClick={loadMorePosts}
                   disabled={loadingPosts}
-                  className="font-semibold px-6 lg:px-8 py-2 lg:py-3 hover:bg-accent/50 border-border/50 bg-transparent"
+                  className="font-semibold px-4 sm:px-6 lg:px-8 py-2 lg:py-3 hover:bg-accent/50 border-border/50 bg-transparent text-xs sm:text-sm"
                 >
                   {loadingPosts ? "Loading..." : "Load More Posts"}
                 </Button>
@@ -219,9 +227,18 @@ export default function FeedPage() {
             )}
           </div>
 
-          {/* Right Sidebar */}
+          {/* Right Sidebar - Mobile: Show at bottom, Desktop: Show on right */}
+          <div className="lg:hidden w-full space-y-3 sm:space-y-4 mt-4 sm:mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <RequestsCard variant="compact" />
+              <SuggestedConnectionsCard />
+            </div>
+            <UpcomingEventsCard />
+          </div>
+          
+          {/* Right Sidebar - Desktop */}
           <div className="hidden lg:block w-64 space-y-4">
-            <IncomingRequestsCard />
+            <RequestsCard variant="compact" />
             <SuggestedConnectionsCard />
             <UpcomingEventsCard />
           </div>

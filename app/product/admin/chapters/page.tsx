@@ -45,7 +45,6 @@ export default function AdminChaptersPage() {
   const [members, setMembers] = useState<ChapterMember[]>([]);
   const [seeding, setSeeding] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [testing, setTesting] = useState(false);
   const [stats, setStats] = useState<{
     total_chapters: number; 
     unique_cities: number; 
@@ -152,7 +151,7 @@ export default function AdminChaptersPage() {
   const seedChapters = async () => {
     setSeeding(true);
     try {
-      const res = await fetch('/api/admin/seed-chapters', {
+      const res = await fetch('/api/admin/management/chapters', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -181,7 +180,7 @@ export default function AdminChaptersPage() {
 
   const loadStats = async () => {
     try {
-      const res = await fetch('/api/admin/seed-chapters', { 
+      const res = await fetch('/api/admin/management/chapters', { 
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -199,34 +198,6 @@ export default function AdminChaptersPage() {
     }
   };
 
-  const addTestMembers = async () => {
-    setTesting(true);
-    try {
-      const res = await fetch('/api/admin/test-members', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      const data = await res.json();
-      
-      if (res.ok && data.success) {
-        toast.success(data.message || 'Test members added successfully!');
-        await loadChapters();
-        await loadStats();
-      } else {
-        console.error('Failed to add test members:', data);
-        toast.error(data.error || 'Failed to add test members');
-      }
-    } catch (error) {
-      console.error('Error adding test members:', error);
-      toast.error('Failed to add test members');
-    } finally {
-      setTesting(false);
-    }
-  };
 
   const deleteChapter = async (chapterId: string) => {
     setDeleting(chapterId);
@@ -275,72 +246,41 @@ export default function AdminChaptersPage() {
       <div className="flex-1 lg:ml-0">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 lg:pb-8">
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-2xl font-bold">Manage Chapters</h1>
-                <p className="text-muted-foreground">
+            <div className="mb-6">
+              <div className="mb-4 mt-12 lg:mt-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Manage Chapters</h1>
+                <p className="text-muted-foreground text-sm sm:text-base">
                   Create chapters by location. Users will see these chapters when they select matching locations during onboarding.
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
+              
+              {/* Stats and Reset Button Row */}
+              <div className="flex items-center justify-between">
                 {stats && (
-                  <div className="text-sm text-muted-foreground">
-                    <div>Total: {stats.total_chapters} chapters</div>
-                    <div>Cities: {stats.unique_cities}</div>
-                    <div>Memberships: {stats.total_memberships}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      <span>Total: {stats.total_chapters} chapters</span>
+                      <span>Cities: {stats.unique_cities}</span>
+                      <span>Memberships: {stats.total_memberships}</span>
+                    </div>
                   </div>
                 )}
-                <Button 
-                  onClick={loadChapters} 
-                  disabled={loading} 
-                  variant="outline"
-                  className="cursor-pointer"
-                >
-                  {loading ? (
-                    <>
-                      <Database className="w-4 h-4 mr-2 animate-spin" />
-                      Refreshing...
-                    </>
-                  ) : (
-                    <>
-                      <Database className="w-4 h-4 mr-2" />
-                      Refresh
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  onClick={addTestMembers} 
-                  disabled={testing} 
-                  variant="outline"
-                  className="cursor-pointer"
-                >
-                  {testing ? (
-                    <>
-                      <Users className="w-4 h-4 mr-2 animate-spin" />
-                      Adding...
-                    </>
-                  ) : (
-                    <>
-                      <Users className="w-4 h-4 mr-2" />
-                      Add Test Members
-                    </>
-                  )}
-                </Button>
                 <Button 
                   onClick={seedChapters} 
                   disabled={seeding} 
                   variant="outline"
                   className="cursor-pointer"
+                  size="sm"
                 >
                   {seeding ? (
                     <>
                       <Database className="w-4 h-4 mr-2 animate-spin" />
-                      Seeding...
+                      Resetting...
                     </>
                   ) : (
                     <>
                       <Database className="w-4 h-4 mr-2" />
-                      Seed 20 Chapters
+                      Reset
                     </>
                   )}
                 </Button>
@@ -349,20 +289,22 @@ export default function AdminChaptersPage() {
           </div>
 
           {/* Create Chapter */}
-          <Card className="p-6 mb-8 shadow-elevated border-border/50">
+          <Card className="p-4 sm:p-6 mb-8 shadow-elevated border-border/50">
             <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-foreground mb-2">Create New Chapter</h2>
-                <p className="text-sm text-muted-foreground">
-                  Add a new chapter to expand your network coverage
-                </p>
-              </div>
-              <div className="p-3 bg-accent rounded-full">
-                <Plus className="w-6 h-6 text-foreground" />
+              <div className="flex items-center space-x-3">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-2">Create New Chapter</h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Add a new chapter to expand your network coverage
+                  </p>
+                </div>
+                <div className="p-2 sm:p-3 bg-accent rounded-full">
+                  <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
+                </div>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <Label htmlFor="chapterName" className="text-sm font-medium text-foreground">
                   Chapter Name
@@ -387,7 +329,7 @@ export default function AdminChaptersPage() {
                   className="w-full"
                 />
               </div>
-              <div className="flex items-end">
+              <div className="flex items-end sm:col-span-2 lg:col-span-1">
                 <Button 
                   onClick={createChapter} 
                   disabled={creating || !name.trim() || !city.trim()} 
@@ -404,14 +346,16 @@ export default function AdminChaptersPage() {
           {/* Chapters list */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-foreground mb-2">All Chapters</h2>
-                <p className="text-sm text-muted-foreground">
-                  Manage existing chapters and view member details
-                </p>
-              </div>
-              <div className="p-3 bg-accent rounded-full">
-                <Database className="w-6 h-6 text-foreground" />
+              <div className="flex items-center space-x-3">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-2">All Chapters</h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Manage existing chapters and view member details
+                  </p>
+                </div>
+                <div className="p-2 sm:p-3 bg-accent rounded-full">
+                  <Database className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
+                </div>
               </div>
             </div>
             {loading ? (
@@ -432,58 +376,58 @@ export default function AdminChaptersPage() {
                 </Button>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                 {chapters.map((chapter) => (
                   <Card 
                     key={chapter.id} 
-                    className="p-6 hover:shadow-lg transition-all duration-200 hover:scale-105 shadow-elevated border-border/50" 
+                    className="p-4 sm:p-6 hover:shadow-lg transition-all duration-200 hover:scale-105 shadow-elevated border-border/50" 
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div 
-                        className="flex-1 cursor-pointer" 
+                        className="flex-1 cursor-pointer min-w-0" 
                         onClick={() => loadMembers(chapter)}
                       >
-                        <h3 className="font-semibold text-lg mb-2 text-foreground">{chapter.name}</h3>
-                        <div className="flex items-center text-sm text-muted-foreground mb-3">
-                          <MapPin className="w-4 h-4 mr-2" /> 
-                          {chapter.location_city}
+                        <h3 className="font-semibold text-base sm:text-lg mb-2 text-foreground truncate">{chapter.name}</h3>
+                        <div className="flex items-center text-xs sm:text-sm text-muted-foreground mb-3">
+                          <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" /> 
+                          <span className="truncate">{chapter.location_city}</span>
                         </div>
-                        <div className="flex items-center text-sm font-medium text-black">
-                          <Users className="w-4 h-4 mr-2" />
-                          {chapter.member_count || 0} member{(chapter.member_count || 0) !== 1 ? 's' : ''}
+                        <div className="flex items-center text-xs sm:text-sm font-medium text-black">
+                          <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                          <span>{chapter.member_count || 0} member{(chapter.member_count || 0) !== 1 ? 's' : ''}</span>
                         </div>
                       </div>
-                      <div className="ml-3 flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <div className="ml-2 sm:ml-3 flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                        <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                              className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                               disabled={deleting === chapter.id}
                             >
                               {deleting === chapter.id ? (
-                                <Database className="w-4 h-4 animate-spin" />
+                                <Database className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                               ) : (
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                               )}
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="max-w-sm sm:max-w-md">
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Chapter</AlertDialogTitle>
-                              <AlertDialogDescription>
+                              <AlertDialogDescription className="text-sm">
                                 Are you sure you want to delete "{chapter.name}" from {chapter.location_city}? 
                                 This action will permanently delete the chapter and remove all {chapter.member_count || 0} members from it.
                                 This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                              <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => deleteChapter(chapter.id)}
-                                className="bg-red-600 hover:bg-red-700"
+                                className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
                               >
                                 Delete Chapter
                               </AlertDialogAction>
@@ -500,47 +444,49 @@ export default function AdminChaptersPage() {
 
           {/* Members section */}
           {selectedChapter && (
-            <Card className="p-6 shadow-elevated border-border/50">
+            <Card className="p-4 sm:p-6 shadow-elevated border-border/50">
               <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground mb-2">
-                    Members in {selectedChapter.name}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {members.length} member{members.length !== 1 ? 's' : ''} in this chapter
-                  </p>
-                </div>
-                <div className="p-3 bg-accent rounded-full">
-                  <Users className="w-6 h-6 text-foreground" />
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-2 truncate">
+                      Members in {selectedChapter.name}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      {members.length} member{members.length !== 1 ? 's' : ''} in this chapter
+                    </p>
+                  </div>
+                  <div className="p-2 sm:p-3 bg-accent rounded-full flex-shrink-0">
+                    <Users className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
+                  </div>
                 </div>
               </div>
               
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="space-y-2 sm:space-y-3 max-h-80 sm:max-h-96 overflow-y-auto">
                 {members.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
+                  <div className="text-center py-6 sm:py-8">
+                    <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-xs sm:text-sm text-muted-foreground px-4">
                       No members found. Users will appear here when they select "{selectedChapter.location_city}" during onboarding.
                     </p>
                   </div>
                 ) : (
                   members.map(member => (
-                    <div key={member.id} className="flex items-center justify-between border border-border/50 rounded-lg px-4 py-3 hover:bg-accent/50 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center text-sm font-semibold">
+                    <div key={member.id} className="flex items-center justify-between border border-border/50 rounded-lg px-3 sm:px-4 py-2 sm:py-3 hover:bg-accent/50 transition-colors">
+                      <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-muted rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold flex-shrink-0">
                           {member.profile_photo_url ? (
                             <img 
                               src={member.profile_photo_url} 
                               alt={member.name}
-                              className="w-10 h-10 rounded-full object-cover"
+                              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                             />
                           ) : (
                             member.name.charAt(0).toUpperCase()
                           )}
                         </div>
-                        <div>
-                          <p className="font-medium text-foreground">{member.name}</p>
-                          <p className="text-sm text-muted-foreground">{member.email}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-foreground text-sm sm:text-base truncate">{member.name}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">{member.email}</p>
                         </div>
                       </div>
                     </div>

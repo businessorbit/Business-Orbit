@@ -54,6 +54,8 @@ export default function AdminEvents() {
   const [rsvps, setRsvps] = useState<RSVP[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const { register, handleSubmit, reset, setValue, watch } = useForm<FormValues>({
     defaultValues: {
@@ -71,23 +73,39 @@ export default function AdminEvents() {
   const eventType = watch("eventtype");
   const status = watch("status");
 
-  // Fetch all events
+  // Fetch all events from the admin management API
   const fetchEvents = async () => {
     try {
-      const res = await fetch("/api/admin/events");
-      const data = await res.json();
-      // Hide cancelled events from the dashboard list
-      const visible = Array.isArray(data) ? data.filter((e: Event) => String(e.status).toLowerCase() !== 'cancelled') : [];
-      setEvents(visible);
+      setLoading(true);
+      setError(null);
+      const res = await fetch("/api/admin/management/events", {
+        credentials: 'include'
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        // Filter out cancelled events from the dashboard list
+        const visible = Array.isArray(data) ? data.filter((e: Event) => String(e.status).toLowerCase() !== 'cancelled') : [];
+        setEvents(visible);
+      } else {
+        const errorData = await res.json();
+        console.error("Failed to fetch events:", errorData);
+        setError(`Failed to load events: ${errorData.error || 'Unknown error'}`);
+      }
     } catch (err) {
       console.error("Failed to fetch events", err);
+      setError('Network error: Failed to connect to server');
+    } finally {
+      setLoading(false);
     }
   };
 
   // Fetch RSVPs for an event
   const fetchRSVPs = async (eventId: number) => {
     try {
-      const res = await fetch(`/api/admin/events?id=${eventId}`);
+      const res = await fetch(`/api/admin/management/events?id=${eventId}`, {
+        credentials: 'include'
+      });
       const data = await res.json();
       setRsvps(data.attendees || []);
     } catch (err) {
@@ -95,9 +113,33 @@ export default function AdminEvents() {
     }
   };
 
+  // Refresh events data
+  const refreshEvents = () => {
+    fetchEvents();
+  };
+
   useEffect(() => {
     fetchEvents();
   }, []);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchEvents();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Clear error messages after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   // Edit or prefill event
   const onEdit = (event: Event) => {
@@ -133,9 +175,10 @@ export default function AdminEvents() {
     console.log("Payload being sent:", payload);
 
     try {
-      const res = await fetch("/api/admin/events", {
+      const res = await fetch("/api/admin/management/events", {
         method: selectedEvent ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: selectedEvent
           ? JSON.stringify({ id: selectedEvent.id, ...payload })
           : JSON.stringify(payload),
@@ -146,7 +189,7 @@ export default function AdminEvents() {
       if (res.ok) {
         const savedEvent = await res.json();
         console.log("Event saved successfully:", savedEvent);
-        fetchEvents();
+        refreshEvents();
         reset();
         setSelectedEvent(null);
         setShowDialog(false);
@@ -155,146 +198,346 @@ export default function AdminEvents() {
       } else {
         const error = await res.json();
         console.error("API Error:", error);
-        alert("Failed to save event: " + (error.error || "Unknown error"));
+        setError("Failed to save event: " + (error.error || "Unknown error"));
       }
     } catch (err) {
       console.error("Error saving event:", err);
-      alert("Error saving event");
+      setError("Error saving event");
     }
   };
 
+  // Cancel event
+  const cancelEvent = async (event: Event) => {
+    try {
+      if (!confirm('Are you sure you want to cancel this event?')) return;
+      
+      const res = await fetch('/api/admin/management/events', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          id: event.id, 
+          title: event.title, 
+          description: event.description, 
+          date: event.date, 
+          event_type: event.event_type, 
+          meeting_link: event.meeting_link, 
+          venue_address: event.venue_address, 
+          status: 'cancelled' 
+        }),
+      });
+
+      if (res.ok) {
+        refreshEvents();
+        setSuccessMessage('Event cancelled and attendees notified.');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        const error = await res.json();
+        setError('Failed to cancel event: ' + (error.error || 'Unknown error'));
+      }
+    } catch (e) {
+      console.error(e);
+      setError('Failed to cancel event');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-4">
+          <div className="mb-4 mt-12 lg:mt-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Admin Event Dashboard</h1>
+          </div>
+          <div className="animate-pulse bg-gray-200 h-8 sm:h-10 w-32 sm:w-40 rounded"></div>
+        </div>
+        <div className="animate-pulse bg-gray-200 h-48 sm:h-64 rounded"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-4">
+          <div className="mb-4 mt-12 lg:mt-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Admin Event Dashboard</h1>
+          </div>
+          <Button 
+            onClick={refreshEvents}
+            className="bg-black text-white font-semibold px-4 sm:px-6 py-2 rounded-lg hover:bg-gray-800 text-sm sm:text-base"
+          >
+            Create New Event
+          </Button>
+        </div>
+        <div className="p-3 sm:p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
+          <p className="font-medium text-sm sm:text-base">Error Loading Events</p>
+          <p className="text-xs sm:text-sm mt-1">{error}</p>
+          <Button 
+            onClick={refreshEvents}
+            variant="outline"
+            size="sm"
+            className="mt-2"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Admin Event Dashboard</h1>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header */}
+      <div className="space-y-4">
+        <div className="mb-4 mt-12 lg:mt-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Admin Event Dashboard</h1>
+        </div>
+        
+        {/* Create New Event Button */}
+        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <DialogTrigger asChild>
+            <Button className="bg-black text-white font-semibold px-4 sm:px-6 py-2 rounded-lg hover:bg-gray-800 text-sm sm:text-base">
+              Create New Event
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm sm:max-w-md p-4 sm:p-6">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg">{selectedEvent ? "Edit Event" : "Create Event"}</DialogTitle>
+            </DialogHeader>
+            <form className="space-y-3 mt-4" onSubmit={handleSubmit(onSubmit)}>
+              <Input {...register("title", { required: true })} placeholder="Title" className="w-full" />
+              <Input {...register("description")} placeholder="Description" className="w-full" />
+              <Input {...register("date", { required: true })} type="datetime-local" className="w-full" />
+              <Select value={eventType} onValueChange={(value) => setValue("eventtype", value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="physical">Physical</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={status} onValueChange={(value) => setValue("status", value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input {...register("meetingLink")} placeholder="Meeting Link" className="w-full" />
+              <Input {...register("venueAddress")} placeholder="Venue Address" className="w-full" />
+
+              <div className="flex flex-col sm:flex-row justify-end gap-2 mt-2">
+                <DialogClose asChild>
+                  <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+                </DialogClose>
+                <Button
+                  type="submit"
+                  className="bg-green-500 hover:bg-green-600 text-white w-full sm:w-auto"
+                >
+                  Save
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {/* Success Message */}
       {successMessage && (
-        <div className="mb-4 p-3 bg-green-200 text-green-800 rounded">
-          {successMessage}
+        <div className="p-3 sm:p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg">
+          <p className="text-sm sm:text-base">{successMessage}</p>
         </div>
       )}
 
-      {/* Create/Edit Event Button */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogTrigger asChild>
-          <Button className="mb-4 bg-black text-white font-semibold px-6 py-2 rounded-lg shadow-lg transform transition-transform duration-300 hover:scale-105 hover:bg-black hover:shadow-xl active:scale-95">
-            {selectedEvent ? "Edit Event" : "Create New Event"}
+      {/* Error Message */}
+      {error && (
+        <div className="p-3 sm:p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
+          <p className="font-medium text-sm sm:text-base">Error</p>
+          <p className="text-xs sm:text-sm mt-1">{error}</p>
+          <Button 
+            onClick={() => setError(null)}
+            variant="outline"
+            size="sm"
+            className="mt-2"
+          >
+            Dismiss
           </Button>
-        </DialogTrigger>
-        <DialogContent className="p-6">
-          <DialogHeader>
-            <DialogTitle>{selectedEvent ? "Edit Event" : "Create Event"}</DialogTitle>
-          </DialogHeader>
-          <form className="space-y-3 mt-4" onSubmit={handleSubmit(onSubmit)}>
-            <Input {...register("title", { required: true })} placeholder="Title" />
-            <Input {...register("description")} placeholder="Description" />
-            <Input {...register("date", { required: true })} type="datetime-local" />
-            <Select value={eventType} onValueChange={(value) => setValue("eventtype", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="online">Online</SelectItem>
-                <SelectItem value="physical">Physical</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={status} onValueChange={(value) => setValue("status", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input {...register("meetingLink")} placeholder="Meeting Link" />
-            <Input {...register("venueAddress")} placeholder="Venue Address" />
-
-            <div className="flex justify-end gap-2 mt-2">
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-              <Button
-                type="submit"
-                className="bg-green-500 hover:bg-green-600 text-white transition-all duration-300"
-              >
-                Save
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* Events Table */}
-      <table className="w-full border-collapse border border-gray-300">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border px-4 py-2">Title</th>
-            <th className="border px-4 py-2">Date</th>
-            <th className="border px-4 py-2">Type</th>
-            <th className="border px-4 py-2">Status</th>
-            <th className="border px-4 py-2">RSVP Count</th>
-            <th className="border px-4 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((event) => (
-            <tr key={event.id} className="text-center">
-              <td className="border px-4 py-2">{event.title}</td>
-              <td className="border px-4 py-2">{new Date(event.date).toLocaleString()}</td>
-              <td className="border px-4 py-2">{event.event_type}</td>
-              <td className="border px-4 py-2">{event.status}</td>
-              <td className="border px-4 py-2">{event.rsvp_count}</td>
-              <td className="border px-4 py-2 flex justify-center gap-2">
-                <Button size="sm" onClick={() => onEdit(event)}>
-                  Edit
-                </Button>
-                <Button size="sm" onClick={() => fetchRSVPs(event.id)}>
-                  View RSVPs
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={async () => {
-                    try {
-                      if (!confirm('Are you sure you want to cancel this event?')) return;
-                      await fetch('/api/admin/events', {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: event.id, title: event.title, description: event.description, date: event.date, event_type: event.event_type, meeting_link: event.meeting_link, venue_address: event.venue_address, status: 'cancelled' }),
-                      });
-                      // Optimistically remove from current list
-                      setEvents(prev => prev.filter(e => e.id !== event.id));
-                      // Then refresh from server (which we also filter in fetchEvents)
-                      await fetchEvents();
-                      setSuccessMessage('Event cancelled and attendees notified.');
-                      setTimeout(() => setSuccessMessage(''), 3000);
-                    } catch (e) {
-                      console.error(e);
-                      alert('Failed to cancel event');
-                    }
-                  }}
-                >
-                  Cancel
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="border border-gray-300 rounded-lg overflow-hidden">
+        {/* Desktop Table */}
+        <div className="hidden lg:block">
+          <table className="w-full">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-gray-900">Title</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-900">Date</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-900">Type</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-900">Status</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-900">RSVP Count</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-900">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {events.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                    No events found. Create your first event to get started.
+                  </td>
+                </tr>
+              ) : (
+                events.map((event) => (
+                  <tr key={event.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm text-gray-900">{event.title}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {new Date(event.date).toLocaleDateString('en-US', {
+                        month: 'numeric',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 capitalize">{event.event_type}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        event.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        event.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        event.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {event.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{event.rsvp_count || 0}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          onClick={() => onEdit(event)}
+                          className="bg-black text-white hover:bg-gray-800"
+                        >
+                          Edit
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={() => fetchRSVPs(event.id)}
+                          className="bg-black text-white hover:bg-gray-800"
+                        >
+                          View RSVPs
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => cancelEvent(event)}
+                          className="bg-red-600 text-white hover:bg-red-700"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="lg:hidden">
+          {events.length === 0 ? (
+            <div className="px-4 py-8 text-center text-gray-500">
+              No events found. Create your first event to get started.
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {events.map((event) => (
+                <div key={event.id} className="p-4 hover:bg-gray-50">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <h3 className="font-medium text-gray-900 text-sm sm:text-base">{event.title}</h3>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        event.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        event.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        event.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {event.status}
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-2 text-xs sm:text-sm text-gray-600">
+                      <div className="flex items-center justify-between">
+                        <span>Date:</span>
+                        <span>{new Date(event.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Type:</span>
+                        <span className="capitalize">{event.event_type}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>RSVPs:</span>
+                        <span>{event.rsvp_count || 0}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => onEdit(event)}
+                        className="bg-black text-white hover:bg-gray-800 text-xs"
+                      >
+                        Edit
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={() => fetchRSVPs(event.id)}
+                        className="bg-black text-white hover:bg-gray-800 text-xs"
+                      >
+                        View RSVPs
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => cancelEvent(event)}
+                        className="bg-red-600 text-white hover:bg-red-700 text-xs"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* RSVP List */}
       {rsvps.length > 0 && (
-        <div className="mt-4 max-h-64 overflow-y-auto border p-2 rounded">
-          <h3 className="font-semibold mb-2">RSVP List</h3>
-          {rsvps.map((r) => (
-            <div key={r.id} className="flex justify-between border-b py-1">
-              <span>{r.name}</span>
-              <span>{r.email}</span>
-            </div>
-          ))}
+        <div className="mt-4 max-h-48 sm:max-h-64 overflow-y-auto border border-gray-300 rounded-lg p-3 sm:p-4">
+          <h3 className="font-semibold mb-2 text-base sm:text-lg">RSVP List</h3>
+          <div className="space-y-2">
+            {rsvps.map((r) => (
+              <div key={r.id} className="flex flex-col sm:flex-row sm:justify-between py-2 border-b border-gray-200 last:border-b-0 gap-1 sm:gap-0">
+                <span className="text-xs sm:text-sm text-gray-900 font-medium">{r.name}</span>
+                <span className="text-xs sm:text-sm text-gray-600">{r.email}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

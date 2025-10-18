@@ -6,7 +6,7 @@ import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { DisplayPostCard } from "@/components/post-card"
+import { DisplayPostCard } from "@/components/PostCard"
 import { Lock, Users, Crown, Plus, X, Calendar, MapPin } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import React from "react"
@@ -56,7 +56,7 @@ export default function GroupsSecretPage() {
   useEffect(() => {
     ;(async () => {
       try {
-        const res = await fetch('/api/admin/secret-groups', { credentials: 'include' })
+        const res = await fetch('/api/admin/management/secret-groups', { credentials: 'include' })
         if (res.ok) {
           const data = await res.json()
           const groups: SecretGroupMeta[] = Array.isArray(data?.groups) ? data.groups.map((g: any) => ({

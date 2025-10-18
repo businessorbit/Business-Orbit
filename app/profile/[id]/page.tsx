@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DisplayPostCard } from "@/components/post-card"
+import { DisplayPostCard } from "@/components/PostCard"
 import { MapPin, MessageCircle, UserPlus, Calendar, Star, Award, Users, Lock, DollarSign, Clock } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Upload } from "lucide-react"
@@ -195,10 +195,10 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Navigation />
 
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Cover Banner */}
         <div
-          className="h-32 md:h-48 bg-muted relative overflow-hidden group"
+          className="h-24 sm:h-32 md:h-40 lg:h-48 bg-muted relative overflow-hidden group"
           style={{ 
             backgroundImage: (profileData.bannerUrl || (currentUser as any)?.bannerUrl)
               ? `url("${profileData.bannerUrl || (currentUser as any)?.bannerUrl}")`
@@ -222,11 +222,11 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
         </div>
 
         {/* Profile Header */}
-        <div className="px-4 md:px-6 pb-6">
-          <div className="flex flex-col space-y-4 -mt-12 md:-mt-16 relative z-10">
+        <div className="px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6">
+          <div className="flex flex-col space-y-3 sm:space-y-4 -mt-8 sm:-mt-12 md:-mt-16 relative z-10">
             {/* Profile Picture and Basic Info */}
-            <div className="flex flex-col items-center md:items-start">
-              <div className="w-24 h-24 md:w-32 md:h-32 bg-background rounded-full border-4 border-background shadow-lg flex items-center justify-center text-2xl md:text-4xl font-bold mb-3 overflow-hidden relative group">
+            <div className="flex flex-col items-center lg:items-start">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 bg-background rounded-full border-4 border-background shadow-lg flex items-center justify-center text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 overflow-hidden relative group">
                 {(profileData.profilePhotoUrl || (currentUser as any)?.profilePhotoUrl) ? (
                   <img 
                     src={profileData.profilePhotoUrl || (currentUser as any)?.profilePhotoUrl} 
@@ -253,8 +253,8 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
                 )}
               </div>
 
-              <div className="text-center md:text-left space-y-2 bg-background/80 backdrop-blur-sm rounded-lg p-4 md:bg-transparent md:backdrop-blur-none md:p-0">
-                <div className="flex items-center justify-center md:justify-start gap-2">
+              <div className="text-center lg:text-left space-y-2 bg-background/80 backdrop-blur-sm rounded-lg p-3 sm:p-4 lg:bg-transparent lg:backdrop-blur-none lg:p-0">
+                <div className="flex items-center justify-center lg:justify-start gap-2">
                   {isOwnProfile ? (
                     <form
                       onSubmit={async (e) => {
@@ -277,41 +277,41 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
                       <input
                         name="name"
                         defaultValue={profileData.name}
-                        className="px-2 py-1 border rounded text-base md:text-lg"
+                        className="px-2 py-1 border rounded text-sm sm:text-base md:text-lg"
                       />
-                      <Button type="submit" size="sm">Save</Button>
+                      <Button type="submit" size="sm" className="text-xs sm:text-sm">Save</Button>
                     </form>
                   ) : (
-                    <h1 className="text-2xl md:text-3xl font-bold">{profileData.name}</h1>
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">{profileData.name}</h1>
                   )}
                 </div>
-                <p className="text-base md:text-lg text-muted-foreground">{profileData.description || 'Professional'}</p>
+                <p className="text-sm sm:text-base md:text-lg text-muted-foreground">{profileData.description || 'Professional'}</p>
 
-                <div className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4 text-sm text-muted-foreground">
-                  <div className="flex items-center justify-center md:justify-start">
-                    <MapPin className="w-4 h-4 mr-1" />
+                <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-3 lg:space-x-4 text-xs sm:text-sm text-muted-foreground">
+                  <div className="flex items-center justify-center lg:justify-start">
+                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                     {profileData.phone || 'Location not specified'}
                   </div>
-                  <Badge variant="secondary" className="flex items-center justify-center w-fit mx-auto md:mx-0">
+                  <Badge variant="secondary" className="flex items-center justify-center w-fit mx-auto lg:mx-0">
                     <Award className="w-3 h-3 mr-1" />
                     Score: 85
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">12 mutual connections</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">12 mutual connections</p>
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 lg:space-x-3 pt-2 sm:pt-4">
               <Button
                 variant={isConnected ? "secondary" : "default"}
                 onClick={handleConnect}
-                className="w-full md:w-auto"
+                className="w-full sm:w-auto text-xs sm:text-sm"
               >
-                <UserPlus className="w-4 h-4 mr-2" />
+                <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 {isConnected ? "Connected" : "Connect"}
               </Button>
-              <Button variant="outline" className="w-full md:w-auto bg-transparent">
-                <MessageCircle className="w-4 h-4 mr-2" />
+              <Button variant="outline" className="w-full sm:w-auto bg-transparent text-xs sm:text-sm">
+                <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Message
               </Button>
             </div>
@@ -319,38 +319,38 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
         </div>
 
         {/* Profile Content */}
-        <div className="px-4 md:px-6">
+        <div className="px-4 sm:px-6 lg:px-8">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="overflow-x-auto">
-              <TabsList className="grid w-full grid-cols-4 min-w-max md:min-w-0">
-                <TabsTrigger value="about" className="whitespace-nowrap">
+              <TabsList className="grid w-full grid-cols-4 min-w-max lg:min-w-0">
+                <TabsTrigger value="about" className="whitespace-nowrap text-xs sm:text-sm">
                   About
                 </TabsTrigger>
-                <TabsTrigger value="activity" className="whitespace-nowrap">
+                <TabsTrigger value="activity" className="whitespace-nowrap text-xs sm:text-sm">
                   Activity
                 </TabsTrigger>
-                <TabsTrigger value="groups" className="whitespace-nowrap">
+                <TabsTrigger value="groups" className="whitespace-nowrap text-xs sm:text-sm">
                   Groups
                 </TabsTrigger>
-                <TabsTrigger value="consultation" className="whitespace-nowrap">
+                <TabsTrigger value="consultation" className="whitespace-nowrap text-xs sm:text-sm">
                   Consultation
                 </TabsTrigger>
               </TabsList>
             </div>
 
-            <TabsContent value="about" className="space-y-6 mt-6">
-              <Card className="p-4 md:p-6">
-                <h3 className="font-semibold mb-3">About</h3>
-                <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
+            <TabsContent value="about" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
+              <Card className="p-3 sm:p-4 md:p-6">
+                <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">About</h3>
+                <p className="text-muted-foreground leading-relaxed text-xs sm:text-sm md:text-base">
                   {profileData.description || 'No description available.'}
                 </p>
               </Card>
 
-              <Card className="p-4 md:p-6">
-                <h3 className="font-semibold mb-3">Skills</h3>
-                <div className="flex flex-wrap gap-2">
+              <Card className="p-3 sm:p-4 md:p-6">
+                <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Skills</h3>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {(profileData.skills || []).map((skill: string) => (
-                    <Badge key={skill} variant="outline" className="text-xs md:text-sm">
+                    <Badge key={skill} variant="outline" className="text-xs sm:text-sm">
                       {skill}
                     </Badge>
                   ))}
@@ -359,31 +359,31 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
 
             </TabsContent>
 
-            <TabsContent value="activity" className="space-y-4 mt-6">
+            <TabsContent value="activity" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Recent Activity</h3>
-                <Badge variant="outline">{userPosts.length} posts</Badge>
+                <h3 className="font-semibold text-sm sm:text-base">Recent Activity</h3>
+                <Badge variant="outline" className="text-xs">{userPosts.length} posts</Badge>
               </div>
               {userPosts.map((post, index) => (
                 <DisplayPostCard key={index} {...post} />
               ))}
             </TabsContent>
 
-            <TabsContent value="groups" className="space-y-4 mt-6">
+            <TabsContent value="groups" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Groups & Chapters</h3>
-                <Badge variant="outline">{userGroups.length} groups</Badge>
+                <h3 className="font-semibold text-sm sm:text-base">Groups & Chapters</h3>
+                <Badge variant="outline" className="text-xs">{userGroups.length} groups</Badge>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {userGroups.map((group) => (
-                  <Card key={group.name} className="p-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                        {group.type === "chapter" ? <Users className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+                  <Card key={group.name} className="p-3 sm:p-4">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                        {group.type === "chapter" ? <Users className="w-5 h-5 sm:w-6 sm:h-6" /> : <Lock className="w-5 h-5 sm:w-6 sm:h-6" />}
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">{group.name}</h4>
-                        <p className="text-sm text-muted-foreground">{group.members} members</p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm sm:text-base truncate">{group.name}</h4>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{group.members} members</p>
                         <Badge variant="outline" className="text-xs mt-1">
                           {group.type === "chapter" ? "Chapter" : "Secret Group"}
                         </Badge>
@@ -394,56 +394,56 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
               </div>
             </TabsContent>
 
-            <TabsContent value="consultation" className="space-y-6 mt-6">
-              <Card className="p-4 md:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold">Consultation Services</h3>
+            <TabsContent value="consultation" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
+              <Card className="p-3 sm:p-4 md:p-6">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <h3 className="font-semibold text-sm sm:text-base">Consultation Services</h3>
                   <Badge className="bg-green-100 text-green-800 text-xs">Available</Badge>
                 </div>
-                <p className="text-muted-foreground mb-6 text-sm md:text-base">
+                <p className="text-muted-foreground mb-4 sm:mb-6 text-xs sm:text-sm md:text-base">
                   Book a consultation session to discuss product strategy, team leadership, or AI implementation.
                 </p>
 
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="flex items-center space-x-3">
-                      <DollarSign className="w-5 h-5 text-green-600 flex-shrink-0" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
                       <div>
-                        <p className="font-medium">$150/hour</p>
-                        <p className="text-sm text-muted-foreground">Rate set by Reward System</p>
+                        <p className="font-medium text-sm sm:text-base">$150/hour</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Rate set by Reward System</p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <Clock className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
                       <div>
-                        <p className="font-medium">30-60 min sessions</p>
-                        <p className="text-sm text-muted-foreground">Flexible duration</p>
+                        <p className="font-medium text-sm sm:text-base">30-60 min sessions</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Flexible duration</p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <Star className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 flex-shrink-0" />
                       <div>
-                        <p className="font-medium">4.9/5 rating</p>
-                        <p className="text-sm text-muted-foreground">Based on 23 sessions</p>
+                        <p className="font-medium text-sm sm:text-base">4.9/5 rating</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Based on 23 sessions</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <Button className="w-full">
-                      <Calendar className="w-4 h-4 mr-2" />
+                  <div className="space-y-2 sm:space-y-3">
+                    <Button className="w-full text-xs sm:text-sm">
+                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       Book Now
                     </Button>
-                    <Button variant="outline" className="w-full bg-transparent">
+                    <Button variant="outline" className="w-full bg-transparent text-xs sm:text-sm">
                       View Available Slots
                     </Button>
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-4 md:p-6">
-                <h4 className="font-semibold mb-3">Expertise Areas</h4>
-                <div className="space-y-3">
+              <Card className="p-3 sm:p-4 md:p-6">
+                <h4 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Expertise Areas</h4>
+                <div className="space-y-2 sm:space-y-3">
                   {[
                     "Product Strategy & Roadmapping",
                     "AI/ML Product Development",
@@ -451,8 +451,8 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
                     "User Research & Analytics",
                   ].map((area) => (
                     <div key={area} className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-foreground rounded-full"></div>
-                      <span className="text-sm">{area}</span>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-foreground rounded-full flex-shrink-0"></div>
+                      <span className="text-xs sm:text-sm">{area}</span>
                     </div>
                   ))}
                 </div>

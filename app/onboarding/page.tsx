@@ -182,7 +182,7 @@ export default function OnboardingPage() {
       for (const groupName of onboardingData.secretGroups) {
         try {
           // First, find the group by name
-          const groupsResponse = await fetch('/api/admin/secret-groups', {
+          const groupsResponse = await fetch('/api/admin/management/secret-groups', {
             credentials: 'include'
           });
           

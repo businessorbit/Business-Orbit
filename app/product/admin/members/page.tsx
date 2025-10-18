@@ -1,7 +1,7 @@
 "use client";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
-import AdminMembers from "@/components/admin/AdminMembers";
+import { MembersManagement } from "@/components/AdminDashboard";
 
 export default function AdminMembersPage() {
   return (
@@ -9,7 +9,7 @@ export default function AdminMembersPage() {
       <AdminSidebar />
       <div className="flex-1 lg:ml-0">
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 lg:pb-8">
-          <AdminMembers />
+          <MembersManagement />
         </div>
       </div>
     </div>

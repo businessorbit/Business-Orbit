@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { EventCard } from '@/components/post-card'
+import { EventCard } from '@/components/PostCard'
 import { safeApiCall } from '@/lib/utils/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'

@@ -28,20 +28,16 @@ export async function seedChapters() {
   try {
     console.log('🌱 Starting chapter seeding...')
     
-    // Check if chapters already exist
-    const existingChapters = await pool.query('SELECT COUNT(*) FROM chapters')
-    const count = parseInt(existingChapters.rows[0].count)
-    
-    if (count > 0) {
-      console.log(`✅ Chapters already exist (${count} chapters found)`)
-      return { success: true, message: `Chapters already exist (${count} chapters found)` }
-    }
-
-    // Insert predefined chapters
+    // First, clean up any existing chapters to ensure we only have the predefined ones
     const client = await pool.connect()
     try {
       await client.query('BEGIN')
       
+      // Delete all existing chapters
+      await client.query('DELETE FROM chapters')
+      console.log('🧹 Cleaned up existing chapters')
+      
+      // Insert predefined chapters
       for (const chapter of PREDEFINED_CHAPTERS) {
         await client.query(
           'INSERT INTO chapters (name, location_city) VALUES ($1, $2)',
