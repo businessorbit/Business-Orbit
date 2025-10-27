@@ -6,7 +6,6 @@ export async function GET(request: NextRequest) {
     const user = await getUserFromToken(request);
 
     if (!user) {
-      console.log('No valid user found - token may be invalid or expired');
       return NextResponse.json(
         { error: 'Access token required or invalid. Please log in again.' },
         { status: 401 }
@@ -26,13 +25,12 @@ export async function GET(request: NextRequest) {
         skills: user.skills,
         description: user.description,
         profession: user.profession,
+        interest: user.interest,
         createdAt: user.created_at,
         isAdmin: user.is_admin || false
       }
     });
   } catch (error: any) {
-    console.error('Get user error:', error);
-    
     // If it's a token-related error, return 401 to trigger re-authentication
     if (error.message === 'Access token required' || 
         error.message === 'Invalid token' || 

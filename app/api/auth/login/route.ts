@@ -5,6 +5,14 @@ import { generateToken, setTokenCookie } from '@/lib/utils/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if pool is available
+    if (!pool) {
+      return NextResponse.json(
+        { error: 'Database connection not available. Please check server configuration.' },
+        { status: 503 }
+      );
+    }
+
     const { email, password } = await request.json();
 
     // Validation
@@ -17,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     // Find user by email
     const result = await pool.query(
-      'SELECT id, name, email, phone, password_hash, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, created_at FROM users WHERE email = $1',
+      'SELECT id, name, email, phone, password_hash, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, interest, created_at FROM users WHERE email = $1',
       [email]
     );
 
@@ -65,6 +73,7 @@ export async function POST(request: NextRequest) {
         skills: user.skills,
         description: user.description,
         profession: user.profession,
+        interest: user.interest,
         createdAt: user.created_at
       }
     });
@@ -75,7 +84,6 @@ export async function POST(request: NextRequest) {
     return response;
 
   } catch (error: any) {
-    console.error('Login error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

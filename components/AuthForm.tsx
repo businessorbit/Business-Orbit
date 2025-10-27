@@ -19,6 +19,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
     confirmPassword: '',
     description: '',
     profession: '',
+    interest: '',
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
@@ -155,6 +156,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
       submitData.append('confirmPassword', formData.confirmPassword);
       submitData.append('description', formData.description);
       submitData.append('profession', formData.profession);
+      submitData.append('interest', formData.interest);
       submitData.append('skills', JSON.stringify(selectedSkills));
 
       if (profilePhoto) {
@@ -201,7 +203,87 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
           onToggleConfirmPassword={() => setShowConfirmPassword(!showConfirmPassword)}
         />
 
-        {/* Profession field - only for signup */}
+        {/* Row 3: Skills & Interest (2 items in a row) - only for signup */}
+        {!isSignIn && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="skills" className="block text-sm font-medium text-gray-700 mb-1">
+                Skills
+              </label>
+              <div className="space-y-3">
+                {/* Skills dropdown */}
+                <div className="relative">
+                  <select
+                    id="skills"
+                    name="skills"
+                    value={selectedSkills.length > 0 ? selectedSkills[0] : ''}
+                    onChange={(e) => {
+                      if (e.target.value && !selectedSkills.includes(e.target.value)) {
+                        setSelectedSkills([...selectedSkills, e.target.value]);
+                      }
+                    }}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 appearance-none bg-white cursor-pointer text-black"
+                    style={{
+                      colorScheme: 'light',
+                      backgroundColor: 'white',
+                      color: 'black'
+                    }}
+                  >
+                    <option value="">Select a skill</option>
+                    {availableSkills.map((skill) => (
+                      <option key={skill} value={skill} disabled={selectedSkills.includes(skill)}>
+                        {skill}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="interest" className="block text-sm font-medium text-gray-700 mb-1">
+                Interest
+              </label>
+              <input
+                type="text"
+                id="interest"
+                name="interest"
+                value={formData.interest}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
+                placeholder="Enter your interests"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Selected skills display - only for signup */}
+        {!isSignIn && selectedSkills.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {selectedSkills.map((skill) => (
+              <span
+                key={skill}
+                className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
+              >
+                {skill}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveSkill(skill)}
+                  className="text-gray-500 hover:text-red-500 transition-colors duration-200"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Row 4: Profession (full width) - only for signup */}
         {!isSignIn && (
           <div>
             <label htmlFor="profession" className="block text-sm font-medium text-gray-700 mb-1">
@@ -233,69 +315,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode = 'signin', setMode }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Skills section - only for signup */}
-        {!isSignIn && (
-          <div>
-            <label htmlFor="skills" className="block text-sm font-medium text-gray-700 mb-1">
-              Skills
-            </label>
-            <div className="space-y-3">
-              {/* Skills dropdown */}
-              <div className="relative">
-                <select
-                  id="skills"
-                  name="skills"
-                  value={selectedSkills.length > 0 ? selectedSkills[0] : ''}
-                  onChange={(e) => {
-                    if (e.target.value && !selectedSkills.includes(e.target.value)) {
-                      setSelectedSkills([...selectedSkills, e.target.value]);
-                    }
-                  }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 appearance-none bg-white cursor-pointer text-black"
-                  style={{
-                    colorScheme: 'light',
-                    backgroundColor: 'white',
-                    color: 'black'
-                  }}
-                >
-                  <option value="">Select a skill</option>
-                  {availableSkills.map((skill) => (
-                    <option key={skill} value={skill} disabled={selectedSkills.includes(skill)}>
-                      {skill}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-              
-              {/* Selected skills display */}
-              {selectedSkills.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedSkills.map((skill) => (
-                    <span
-                      key={skill}
-                      className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
-                    >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSkill(skill)}
-                        className="text-gray-500 hover:text-red-500 transition-colors duration-200"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -359,6 +378,7 @@ interface FormFieldsProps {
     password: string;
     confirmPassword: string;
     profession: string;
+    interest: string;
   };
   showPassword: boolean;
   showConfirmPassword: boolean;
@@ -380,122 +400,164 @@ export const FormFields: React.FC<FormFieldsProps> = ({
 
   return (
     <>
-      {/* Name field - only for signup */}
-      {!isSignIn && (
+      {/* Row 1: Name, Email, Phone (3 items) - only for signup */}
+      {!isSignIn ? (
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={onFieldChange}
+                required
+                className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
+                placeholder="Enter your full name"
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={onFieldChange}
+                required
+                className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
+                placeholder="Enter your email"
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+              Phone Number
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={onFieldChange}
+                required
+                className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
+                placeholder="Enter your phone number"
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        // For signin, only show email
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            Full Name
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            Email
           </label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
               onChange={onFieldChange}
               required
               className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
-              placeholder="Enter your full name"
+              placeholder="Enter your email"
             />
           </div>
         </div>
       )}
 
-      {/* Email field */}
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-          Email
-        </label>
-        <div className="relative">
-          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={onFieldChange}
-            required
-            className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
-            placeholder="Enter your email"
-          />
-        </div>
-      </div>
-
-      {/* Phone field - only for signup */}
-      {!isSignIn && (
+      {/* Row 2: Password, Confirm Password (2 items) */}
+      {isSignIn ? (
         <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number
-          </label>
-          <div className="relative">
-            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              value={formData.phone}
-              onChange={onFieldChange}
-              required
-              className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
-              placeholder="Enter your phone number"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Password field */}
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-          Password
-        </label>
-        <div className="relative">
-          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-          <input
-            type={showPassword ? 'text' : 'password'}
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={onFieldChange}
-            required
-            className="w-full px-4 py-3 pl-10 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
-            placeholder="Enter your password"
-          />
-          <button
-            type="button"
-            onClick={onTogglePassword}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          >
-            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Confirm Password field - only for signup */}
-      {!isSignIn && (
-        <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-            Confirm Password
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            Password
           </label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
-              type={showConfirmPassword ? 'text' : 'password'}
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
+              type={showPassword ? 'text' : 'password'}
+              id="password"
+              name="password"
+              value={formData.password}
               onChange={onFieldChange}
               required
               className="w-full px-4 py-3 pl-10 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
-              placeholder="Confirm your password"
+              placeholder="Enter your password"
             />
             <button
               type="button"
-              onClick={onToggleConfirmPassword}
+              onClick={onTogglePassword}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
-              {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={onFieldChange}
+                required
+                className="w-full px-4 py-3 pl-10 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                onClick={onTogglePassword}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={onFieldChange}
+                required
+                className="w-full px-4 py-3 pl-10 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
+                placeholder="Confirm your password"
+              />
+              <button
+                type="button"
+                onClick={onToggleConfirmPassword}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
         </div>
       )}

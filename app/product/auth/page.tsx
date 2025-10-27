@@ -171,7 +171,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className={`${mode === 'signup' ? 'max-w-2xl' : 'max-w-md'} w-full space-y-8`}>
+      <div className={`${mode === 'signup' ? 'max-w-6xl' : 'max-w-md'} w-full space-y-8`}>
         <div className="text-center">
           <h1 className="text-4xl font-bold text-black mb-2">
             Business Orbit

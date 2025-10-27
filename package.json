@@ -259,14 +259,14 @@
     "zod": "^3.25.67"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "chat:dev": "tsx server/chat-server.ts",
-    "chat:start": "node scripts/start-chat-server.js",
-    "test:chat": "tsx scripts/test-chat-system.ts",
-    "test:db": "node scripts/test-database-connection.js",
+    "db:setup": "tsx lib/database/setup.ts",
+    "admin:setup": "tsx lib/database/setup-admin.ts",
+    "migrate:proposals": "tsx lib/database/run-migration.ts",
+    "migrate:host-id": "tsx lib/database/migrate-host-id.ts",
     "lint": "next lint"
   },
   "keywords": [],

@@ -77,8 +77,6 @@ export default function ProfilePage() {
     if (showLoading) setGroupsLoading(true)
     
     try {
-      console.log('Profile: Fetching groups for user:', user.id);
-      
       // Fetch chapters
       const chaptersResult = await safeApiCall(
         () => fetch(`/api/users/${user.id}/chapters`, { 
@@ -101,16 +99,12 @@ export default function ProfilePage() {
         'Failed to fetch user secret groups'
       )
       
-      console.log('Profile: Chapters API response:', chaptersResult);
-      console.log('Profile: Secret Groups API response:', secretGroupsResult);
-      
       let allGroups: UserGroup[] = []
       
       // Process chapters
       if (chaptersResult.success && chaptersResult.data && typeof chaptersResult.data === 'object' && chaptersResult.data !== null) {
         const chaptersData = chaptersResult.data as any
         if (chaptersData.success && Array.isArray(chaptersData.chapters)) {
-          console.log('Profile: Found chapters:', chaptersData.chapters);
           const chapterGroups: UserGroup[] = chaptersData.chapters.map((c: any) => ({
             name: c.name,
             type: 'chapter' as const,
@@ -124,7 +118,6 @@ export default function ProfilePage() {
       if (secretGroupsResult.success && secretGroupsResult.data && typeof secretGroupsResult.data === 'object' && secretGroupsResult.data !== null) {
         const secretGroupsData = secretGroupsResult.data as any
         if (Array.isArray(secretGroupsData.groups)) {
-          console.log('Profile: Found secret groups:', secretGroupsData.groups);
           const secretGroups: UserGroup[] = secretGroupsData.groups.map((g: any) => ({
             name: g.name,
             type: 'secret' as const,
@@ -134,7 +127,6 @@ export default function ProfilePage() {
         }
       }
       
-      console.log('Profile: All groups combined:', allGroups);
       setUserGroups(allGroups)
       
       if (showLoading) {
@@ -191,7 +183,6 @@ export default function ProfilePage() {
         await logout()
         router.push('/product/auth')
       } catch (error) {
-        console.error('Logout error:', error)
         toast.error('Failed to logout')
       }
     }
@@ -337,11 +328,19 @@ export default function ProfilePage() {
                   <Card className="p-3 sm:p-4 md:p-6">
                     <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Interests</h3>
                     <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                      <Badge variant="secondary" className="text-xs sm:text-sm">Artificial Intelligence</Badge>
-                      <Badge variant="secondary" className="text-xs sm:text-sm">Startup Ecosystem</Badge>
-                      <Badge variant="secondary" className="text-xs sm:text-sm">Design Thinking</Badge>
-                      <Badge variant="secondary" className="text-xs sm:text-sm">Mentoring</Badge>
-                      <Badge variant="secondary" className="text-xs sm:text-sm">Tech Innovation</Badge>
+                      {user.interest ? (
+                        <Badge variant="secondary" className="text-xs sm:text-sm">
+                          {user.interest}
+                        </Badge>
+                      ) : (
+                        <>
+                          <Badge variant="secondary" className="text-xs sm:text-sm">Artificial Intelligence</Badge>
+                          <Badge variant="secondary" className="text-xs sm:text-sm">Startup Ecosystem</Badge>
+                          <Badge variant="secondary" className="text-xs sm:text-sm">Design Thinking</Badge>
+                          <Badge variant="secondary" className="text-xs sm:text-sm">Mentoring</Badge>
+                          <Badge variant="secondary" className="text-xs sm:text-sm">Tech Innovation</Badge>
+                        </>
+                      )}
                     </div>
                   </Card>
                 </TabsContent>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, MessageCircle, Share, Sparkles, MoreVertical, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Sparkles, MoreVertical, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { safeApiCall } from "@/lib/utils/api";
 import CommentsSection from "./CommentsSection";
@@ -45,18 +45,7 @@ export default function FeedPost({ post, onEngagementChange, onPostDeleted }: Fe
   const [showCommentsSection, setShowCommentsSection] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Debug logging
-  console.log('FeedPost - Post data:', post);
-  console.log('FeedPost - Media:', post.media);
-  console.log('FeedPost - Media length:', post.media?.length || 0);
-  console.log('FeedPost - Media details:', post.media?.map(m => ({
-    id: m.id,
-    type: m.media_type,
-    url: m.cloudinary_url,
-    filename: m.file_name
-  })));
-
-  const handleEngagement = async (type: 'like' | 'share') => {
+  const handleEngagement = async (type: 'like') => {
     if (!user) return;
     
     setIsEngaging(true);
@@ -87,7 +76,7 @@ export default function FeedPost({ post, onEngagementChange, onPostDeleted }: Fe
         }
       }
     } catch (error) {
-      console.error('Error handling engagement:', error);
+      // Error handling
     } finally {
       setIsEngaging(false);
     }
@@ -137,7 +126,7 @@ export default function FeedPost({ post, onEngagementChange, onPostDeleted }: Fe
         }
       }
     } catch (error) {
-      console.error('Error deleting post:', error);
+      // Error handling
     } finally {
       setIsDeleting(false);
     }
@@ -259,16 +248,7 @@ export default function FeedPost({ post, onEngagementChange, onPostDeleted }: Fe
                     alt={media.file_name || 'Post image'}
                     className="w-full max-h-96 object-cover rounded-lg"
                     onError={(e) => {
-                      console.error('Failed to load image:', media.cloudinary_url);
-                      console.error('Image error details:', {
-                        src: media.cloudinary_url,
-                        alt: media.file_name,
-                        mediaType: media.media_type
-                      });
                       e.currentTarget.style.display = 'none';
-                    }}
-                    onLoad={() => {
-                      console.log('Image loaded successfully:', media.cloudinary_url);
                     }}
                   />
                 ) : media.media_type === 'video' ? (
@@ -276,9 +256,6 @@ export default function FeedPost({ post, onEngagementChange, onPostDeleted }: Fe
                     src={media.cloudinary_url} 
                     controls
                     className="w-full max-h-96 rounded-lg"
-                    onError={(e) => {
-                      console.error('Failed to load video:', media.cloudinary_url);
-                    }}
                   />
                 ) : (
                   <div className="p-4 bg-gray-100 rounded-lg">
@@ -328,17 +305,6 @@ export default function FeedPost({ post, onEngagementChange, onPostDeleted }: Fe
           >
             <MessageCircle className="h-4 w-4" />
             <span>{comments}</span>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleEngagement('share')}
-            disabled={isEngaging}
-            className="flex items-center gap-2 text-gray-500 hover:text-green-500"
-          >
-            <Share className="h-4 w-4" />
-            <span>{post.shares}</span>
           </Button>
         </div>
 

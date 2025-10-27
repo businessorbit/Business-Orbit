@@ -8,11 +8,8 @@ export async function GET(
   try {
     const { id: chapterId } = await params
     
-    console.log('Fetching members for chapter:', chapterId)
-    
     // Validate chapter ID (UUID format)
     if (!chapterId || typeof chapterId !== 'string') {
-      console.error('Invalid chapter ID:', chapterId)
       return NextResponse.json({
         success: false,
         error: 'Invalid chapter ID',
@@ -32,8 +29,6 @@ export async function GET(
         [chapterId]
       )
       
-      console.log(`Found ${result.rows.length} members for chapter ${chapterId}`)
-      
       return NextResponse.json({ 
         success: true,
         members: result.rows,
@@ -43,12 +38,6 @@ export async function GET(
       client.release()
     }
   } catch (error: any) {
-    console.error('GET /api/chapters/[id]/members error:', error)
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      detail: error.detail
-    })
     return NextResponse.json({ 
       success: false,
       error: 'Failed to fetch chapter members',

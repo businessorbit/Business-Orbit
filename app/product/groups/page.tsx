@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Lock, Users, Crown, Plus, Calendar, MapPin, RefreshCw, Search, X } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import toast from "react-hot-toast"
 import React from "react"
 
 type GroupItem = {
@@ -15,6 +16,7 @@ type GroupItem = {
   members: number
   unread: number
   pattern: string
+  admin_name?: string
 }
 
 export default function ProductGroupsPage() {
@@ -32,22 +34,18 @@ export default function ProductGroupsPage() {
   const [inviteEmails, setInviteEmails] = React.useState("")
   const [searchConnection, setSearchConnection] = React.useState("")
   const [selectedConnections, setSelectedConnections] = React.useState<string[]>([])
-  const userConnections = React.useMemo(() => [
-    { id: "1", name: "Alice Johnson" },
-    { id: "2", name: "Mark Thompson" },
-    { id: "3", name: "Ravi Sharma" },
-    { id: "4", name: "Sophia Lee" },
-    { id: "5", name: "Daniel Martinez" },
-  ], [])
+  const [userConnections, setUserConnections] = React.useState<{ id: string; name: string }[]>([])
+  const [connectionsLoading, setConnectionsLoading] = React.useState(false)
 
   const currentGroup = joinedGroups.find((g) => g.id === activeGroup) || joinedGroups[0]
 
-  const mapRow = (row: { id: string | number; name: string; member_count?: number | string }): GroupItem => ({
+  const mapRow = (row: { id: string | number; name: string; member_count?: number | string; admin_name?: string }): GroupItem => ({
     id: String(row.id),
     name: row.name,
     members: Number(row.member_count || 0),
     unread: 0,
     pattern: "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fillOpacity='0.06'%3E%3Crect x='0' y='0' width='20' height='20'/%3E%3C/g%3E%3C/svg%3E",
+    admin_name: row.admin_name || 'Unknown Admin',
   })
 
   // Add Members modal state (top-level)
@@ -177,6 +175,33 @@ export default function ProductGroupsPage() {
 
   const filteredConnections = React.useMemo(() => userConnections.filter(c => c.name.toLowerCase().includes(searchConnection.toLowerCase())), [userConnections, searchConnection])
 
+  // Fetch actual community members when modal opens
+  React.useEffect(() => {
+    if (!showCreateGroup) return
+    
+    const fetchConnections = async () => {
+      try {
+        setConnectionsLoading(true)
+        const res = await fetch('/api/members', { credentials: 'include' })
+        if (res.ok) {
+          const data = await res.json()
+          const members: { id: string; name: string }[] = Array.isArray(data?.members)
+            ? (data.members as any[]).map((m) => ({ id: String(m.id), name: String(m.name || 'Unknown') }))
+            : []
+          setUserConnections(members)
+        } else {
+          setUserConnections([])
+        }
+      } catch (error) {
+        setUserConnections([])
+      } finally {
+        setConnectionsLoading(false)
+      }
+    }
+
+    fetchConnections()
+  }, [showCreateGroup])
+
   const handleCreateGroup = async () => {
     const name = newGroupName.trim()
     if (!name) return
@@ -187,7 +212,10 @@ export default function ProductGroupsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description: null })
       })
-      if (!createRes.ok) return
+      if (!createRes.ok) {
+        toast.error('Failed to create group')
+        return
+      }
       const data = await createRes.json()
       const groupId = data?.group?.id
       const emails = inviteEmails.split(',').map(e => e.trim()).filter(Boolean)
@@ -199,12 +227,16 @@ export default function ProductGroupsPage() {
           body: JSON.stringify({ emails })
         })
       }
+      toast.success(`Group "${name}" created successfully!`)
       setShowCreateGroup(false)
       setNewGroupName("")
       setInviteEmails("")
+      setSearchConnection("")
       setSelectedConnections([])
       await loadData()
-    } catch {}
+    } catch (error) {
+      toast.error('Failed to create group')
+    }
   }
 
   // Events state for secret groups page
@@ -308,7 +340,11 @@ export default function ProductGroupsPage() {
                       </div>
                       <div className="text-left min-w-0 flex-1">
                         <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-semibold leading-tight truncate">{group.name}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground mt-1">{group.members} members</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-xs sm:text-sm text-muted-foreground">{group.members} members</p>
+                          <span className="text-xs text-muted-foreground">•</span>
+                          <p className="text-xs sm:text-sm text-muted-foreground">Admin: {group.admin_name}</p>
+                        </div>
                       </div>
                     </div>
                     <Button
@@ -384,7 +420,7 @@ export default function ProductGroupsPage() {
                 )}
               </div>
               {events.length > 0 && (
-                <Button variant="outline" className="w-full mt-3 sm:mt-4 bg-transparent text-xs sm:text-sm" onClick={() => window.location.href = '/events'}>
+                <Button variant="outline" className="w-full mt-3 sm:mt-4 bg-transparent text-xs sm:text-sm" onClick={() => window.location.href = '/product/events'}>
                   View All Events
                 </Button>
               )}
@@ -397,10 +433,16 @@ export default function ProductGroupsPage() {
                 Group Admins
               </h3>
               <div className="space-y-3">
-                {currentGroup ? (
-                  <div className="text-sm text-muted-foreground">
-                    Select a group to view admins
-                  </div>
+                {joinedGroups.length > 0 ? (
+                  joinedGroups.map((group) => (
+                    <div key={group.id} className="flex items-start gap-2 pb-2 border-b last:border-0 last:pb-0">
+                      <Crown className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-1" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{group.name}</p>
+                        <p className="text-xs text-muted-foreground">Admin: {group.admin_name || 'Unknown Admin'}</p>
+                      </div>
+                    </div>
+                  ))
                 ) : (
                   <div className="text-sm text-muted-foreground">
                     No groups joined yet
@@ -411,21 +453,31 @@ export default function ProductGroupsPage() {
 
             {/* Suggested Groups (from admin) */}
             <Card className="p-3 sm:p-4 lg:p-6">
-              <h3 className="font-semibold mb-3 sm:mb-4 text-xs sm:text-sm lg:text-base">Suggested Groups</h3>
-              <div className="space-y-3 sm:space-y-4">
-                {suggestedGroups.map((group) => (
-                  <div key={group.id} className="space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="font-medium text-xs sm:text-sm truncate min-w-0 flex-1">{group.name}</h4>
-                      <Button size="sm" variant="outline" className="h-6 px-2 text-xs bg-transparent flex-shrink-0" onClick={() => handleJoin(group.id)}>
-                        Join
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{group.members} members</p>
-                  </div>
-                ))}
-                {suggestedGroups.length === 0 && (
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className="font-semibold text-xs sm:text-sm lg:text-base">Suggested Groups</h3>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                  {suggestedGroups.length} groups
+                </span>
+              </div>
+              <div className="space-y-3 sm:space-y-4 max-h-[300px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+                {suggestedGroups.length === 0 ? (
                   <p className="text-xs text-muted-foreground">No suggestions available.</p>
+                ) : (
+                  suggestedGroups.map((group) => (
+                    <div key={group.id} className="space-y-2 border-b pb-3 last:border-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="font-medium text-xs sm:text-sm truncate min-w-0 flex-1">{group.name}</h4>
+                        <Button size="sm" variant="outline" className="h-6 px-2 text-xs bg-transparent flex-shrink-0" onClick={() => handleJoin(group.id)}>
+                          Join
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-muted-foreground">{group.members} members</p>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <p className="text-xs text-muted-foreground">Admin: {group.admin_name}</p>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </Card>
@@ -437,7 +489,13 @@ export default function ProductGroupsPage() {
       {showCreateGroup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <Card className="p-4 sm:p-6 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
-            <X className="w-4 h-4 sm:w-5 sm:h-5 absolute top-3 right-3 sm:top-4 sm:right-4 cursor-pointer" onClick={() => setShowCreateGroup(false)} />
+            <X className="w-4 h-4 sm:w-5 sm:h-5 absolute top-3 right-3 sm:top-4 sm:right-4 cursor-pointer" onClick={() => {
+              setShowCreateGroup(false)
+              setNewGroupName("")
+              setInviteEmails("")
+              setSearchConnection("")
+              setSelectedConnections([])
+            }} />
             <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Create Secret Group</h2>
             <div className="flex flex-col space-y-3 sm:space-y-4">
               <div>
@@ -451,12 +509,21 @@ export default function ProductGroupsPage() {
                   <input type="text" placeholder="Search connections..." value={searchConnection} onChange={(e) => setSearchConnection(e.target.value)} className="flex-1 outline-none text-sm sm:text-base" />
                 </div>
                 <div className="max-h-24 sm:max-h-32 overflow-y-auto space-y-2">
-                  {filteredConnections.map(conn => (
-                    <div key={conn.id} className="flex items-center space-x-2">
-                      <input type="checkbox" checked={selectedConnections.includes(conn.id)} onChange={() => toggleConnection(conn.id)} className="flex-shrink-0" />
-                      <span className="text-xs sm:text-sm truncate">{conn.name}</span>
+                  {connectionsLoading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-xs text-muted-foreground">Loading connections...</span>
                     </div>
-                  ))}
+                  ) : filteredConnections.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-4 text-center">No connections found</p>
+                  ) : (
+                    filteredConnections.map(conn => (
+                      <div key={conn.id} className="flex items-center space-x-2">
+                        <input type="checkbox" checked={selectedConnections.includes(conn.id)} onChange={() => toggleConnection(conn.id)} className="flex-shrink-0" />
+                        <span className="text-xs sm:text-sm truncate">{conn.name}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
               <div>

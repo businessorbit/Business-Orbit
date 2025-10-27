@@ -105,8 +105,6 @@ export async function POST(
       } catch (err) {
         console.error("SendGrid error:", err);
       }
-    } else {
-      console.log("Email not sent (no SENDGRID_API_KEY)", { subject, text });
     }
 
     return NextResponse.json({

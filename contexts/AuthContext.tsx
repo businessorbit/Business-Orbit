@@ -15,6 +15,7 @@ interface User {
   skills?: string[];
   description?: string;
   profession?: string;
+  interest?: string;
   createdAt: string;
   isAdmin?: boolean;
 }
@@ -136,7 +137,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
     } catch (error) {
-      console.error('Auth check error:', error);
       // On error, clear user state and clear cookies
       setUser(null);
       setOnboardingCompleted(false);
@@ -247,7 +247,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         window.location.href = '/product/auth';
       }
     } catch (error) {
-      console.error('Logout error:', error);
       // Even if server logout fails, clear client state and cookies
       setUser(null);
       setOnboardingCompleted(false);

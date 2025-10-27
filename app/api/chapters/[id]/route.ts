@@ -63,7 +63,6 @@ export async function DELETE(
     }
     
   } catch (error: any) {
-    console.error('DELETE /api/chapters/[id] error:', error)
     return NextResponse.json({ 
       success: false,
       error: 'Failed to delete chapter',
@@ -107,7 +106,6 @@ export async function GET(
       chapter: result.rows[0]
     })
   } catch (error: any) {
-    console.error('GET /api/chapters/[id] error:', error)
     return NextResponse.json({ 
       success: false,
       error: 'Failed to fetch chapter',

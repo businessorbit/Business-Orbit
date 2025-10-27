@@ -30,12 +30,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
 
-    console.log('Media upload - Files received:', files.length);
-    console.log('Media upload - File details:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
-    console.log('Media upload - FormData entries:', Array.from(formData.entries()));
-
     if (!files || files.length === 0) {
-      console.log('Media upload - No files provided, returning error');
       return NextResponse.json(
         { success: false, error: 'No files provided' },
         { status: 400 }
@@ -64,7 +59,6 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(bytes);
 
       // Upload to Cloudinary directly
-      console.log('Starting Cloudinary upload for file:', file.name);
       const uploadResult = await new Promise((resolve, reject) => {
         cloudinary.uploader.upload_stream(
           {
@@ -77,10 +71,8 @@ export async function POST(request: NextRequest) {
           },
           (error: any, result: any) => {
             if (error) {
-              console.error('Cloudinary upload error:', error);
               reject(error);
             } else {
-              console.log('Cloudinary upload success:', result?.public_id);
               resolve(result);
             }
           }
@@ -88,12 +80,6 @@ export async function POST(request: NextRequest) {
       });
 
       const uploadData = uploadResult as any;
-      
-      console.log('Media upload - Cloudinary result:', {
-        public_id: uploadData.public_id,
-        secure_url: uploadData.secure_url,
-        resource_type: uploadData.resource_type
-      });
       
       uploadedMedia.push({
         media_type: uploadData.resource_type === 'video' ? 'video' : 'image',

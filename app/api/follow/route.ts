@@ -12,8 +12,6 @@ export async function POST(request: NextRequest) {
 
     const { targetUserId, action } = await request.json()
 
-    console.log('Follow API called:', { userId: user.id, targetUserId, action })
-
     if (!targetUserId || !action) {
       return NextResponse.json({ 
         success: false, 
@@ -38,8 +36,6 @@ export async function POST(request: NextRequest) {
     // Convert to integers to ensure proper data types
     const userId = parseInt(String(user.id))
     const targetId = parseInt(String(targetUserId))
-
-    console.log('Converted IDs:', { userId, targetId })
 
     // Check if target user exists
     const targetUser = await pool.query(
@@ -135,7 +131,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('Error handling follow action:', error)
     return NextResponse.json({ 
       success: false, 
       error: 'Failed to process follow action' 
@@ -225,7 +220,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Error fetching following list:', error)
     return NextResponse.json({ 
       success: false, 
       error: 'Failed to fetch following list' 

@@ -34,6 +34,11 @@ export default function GroupDetailsPage() {
   const [allUsers, setAllUsers] = useState<Array<{ id: number; name: string; email: string }>>([])
   const [allLoading, setAllLoading] = useState(false)
 
+  // Events state
+  const [events, setEvents] = useState<Array<any>>([])
+  const [eventsLoading, setEventsLoading] = useState(false)
+  const [lastEventsUpdate, setLastEventsUpdate] = useState<Date | null>(null)
+
   // Chat state
   const [messages, setMessages] = useState<GroupMessage[]>([])
   const [chatLoading, setChatLoading] = useState(false)
@@ -200,6 +205,68 @@ export default function GroupDetailsPage() {
       } finally { setAllLoading(false) }
     })()
   }, [addOpen])
+
+  // Fetch upcoming events
+  const fetchUpcomingEvents = async (forceRefresh = false) => {
+    if (eventsLoading && !forceRefresh) return
+    setEventsLoading(true)
+    try {
+      const url = user?.id ? `/api/events?userId=${user.id}&limit=3` : `/api/events?limit=3`
+      const res = await fetch(url, {
+        credentials: 'include',
+        headers: { 'Cache-Control': forceRefresh ? 'no-cache' : 'default' }
+      })
+      if (!res.ok) {
+        setEvents([])
+      } else {
+        const data = await res.json()
+        const now = new Date()
+        const upcoming = (data || [])
+          .filter((e: any) => {
+            if (!e?.date) return false
+            const d = new Date(e.date)
+            return d >= now && e.status === 'approved'
+          })
+          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .slice(0, 3)
+          .map((e: any) => {
+            const d = new Date(e.date)
+            return {
+              id: e.id,
+              title: e.title,
+              dateText: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              timeText: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+              attendees: Number(e.rsvp_count || 0) || 0,
+              event_type: e.event_type,
+              venue_address: e.venue_address,
+              is_registered: Boolean(e.is_registered)
+            }
+          })
+        setEvents(upcoming)
+        setLastEventsUpdate(new Date())
+      }
+    } finally {
+      setEventsLoading(false)
+    }
+  }
+
+  // Initial load
+  useEffect(() => {
+    fetchUpcomingEvents()
+  }, [user?.id])
+
+  // Periodic refresh
+  useEffect(() => {
+    const interval = setInterval(() => fetchUpcomingEvents(false), 120000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Focus refresh
+  useEffect(() => {
+    const handler = () => { if (!document.hidden) fetchUpcomingEvents(false) }
+    document.addEventListener('visibilitychange', handler)
+    return () => document.removeEventListener('visibilitychange', handler)
+  }, [])
 
   if (authLoading) {
     return (
@@ -386,10 +453,44 @@ export default function GroupDetailsPage() {
                 <Calendar className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 mr-2 flex-shrink-0" />
                 Upcoming Events
               </h3>
-              <div className="text-xs sm:text-sm text-muted-foreground">No upcoming events found.</div>
-              <Button variant="outline" className="w-full mt-3 sm:mt-4 bg-transparent text-xs sm:text-sm" onClick={() => router.push('/events')}>
-                View All Events
-              </Button>
+              <div className="space-y-3">
+                {eventsLoading ? (
+                  <div className="text-center py-4">
+                    <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground">Loading events...</p>
+                  </div>
+                ) : events.length === 0 ? (
+                  <p className="text-xs sm:text-sm text-muted-foreground">No upcoming events found.</p>
+                ) : (
+                  events.map((ev) => (
+                    <Card key={ev.id} className="p-3 sm:p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <p className="font-medium text-sm sm:text-base truncate">{ev.title}</p>
+                          <p className="text-xs text-muted-foreground">{ev.dateText} • {ev.timeText}</p>
+                          {ev.venue_address && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MapPin className="w-3 h-3 flex-shrink-0" /> 
+                              <span className="truncate">{ev.venue_address}</span>
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground text-right flex-shrink-0">
+                          <p>{ev.attendees} attending</p>
+                          {ev.is_registered && (
+                            <Badge variant="secondary" className="mt-1 text-xs">Registered</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                )}
+              </div>
+              {events.length > 0 && (
+                <Button variant="outline" className="w-full mt-3 sm:mt-4 bg-transparent text-xs sm:text-sm" onClick={() => router.push('/product/events')}>
+                  View All Events
+                </Button>
+              )}
             </Card>
           </div>
         </div>

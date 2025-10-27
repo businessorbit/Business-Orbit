@@ -3,8 +3,6 @@ import pool from '@/lib/config/database';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 Starting profession column migration...');
-    
     // Check if pool is available
     if (!pool) {
       return NextResponse.json({
@@ -34,8 +32,6 @@ export async function POST(request: NextRequest) {
       ALTER TABLE users ADD COLUMN profession VARCHAR(255)
     `);
 
-    console.log('✅ Profession column added successfully');
-
     // Verify the column was added
     const verifyResult = await pool.query(`
       SELECT column_name, data_type, is_nullable 
@@ -51,8 +47,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Migration failed:', error);
-    
     return NextResponse.json({
       success: false,
       error: error.message,

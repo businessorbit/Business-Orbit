@@ -371,7 +371,7 @@ export default function GroupsPage() {
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
           {/* Left Sidebar - Groups List (joined only) */}
           <div className="w-full lg:w-1/2">
-            <div className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
               <h2 className="flex items-center gap-2 text-lg font-semibold">Secret Groups</h2>
               <Button size="sm" onClick={() => setShowCreateGroup(true)}>+ Create Group</Button>
             </div>

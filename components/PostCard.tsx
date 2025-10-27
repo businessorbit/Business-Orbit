@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Calendar, Upload, AlertCircle, Image, Video, Clock, Heart, MessageCircle, Share2, MoreHorizontal, MapPin, Sparkles } from "lucide-react";
+import { PlusCircle, Calendar, Upload, AlertCircle, Image, Video, Clock, Heart, MessageCircle, MoreHorizontal, MapPin, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { safeApiCall } from "@/lib/utils/api";
 
@@ -227,7 +227,6 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
         // }
       }
     } catch (error) {
-      console.error('Error creating post:', error);
       setError('Failed to create post');
     } finally {
       setIsSubmitting(false);
@@ -288,7 +287,6 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
         // }
       }
     } catch (error) {
-      console.error('Error scheduling post:', error);
       setError('Failed to schedule post');
     } finally {
       setIsSubmitting(false);
@@ -524,15 +522,6 @@ export function DisplayPostCard({ author, content, timestamp, engagement, isLike
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 <span className="text-sm font-medium">{engagement.comments}</span>
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-2 hover:bg-accent/50 hover:text-green-500 transition-all duration-200"
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                <span className="text-sm font-medium">{engagement.shares}</span>
               </Button>
             </div>
           </div>

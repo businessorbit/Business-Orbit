@@ -4,44 +4,30 @@ import { getUserFromToken } from '@/lib/utils/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== Chat Analytics API Called ===')
-    
     // Optional: Check if user is authenticated (but not required to be admin)
     const user = await getUserFromToken(request)
-    console.log('Analytics auth check:', { 
-      user: user ? { id: user.id, name: user.name, is_admin: user.is_admin } : null,
-      hasToken: !!request.cookies.get('token')?.value
-    })
     
     // Proceed with analytics regardless of admin status
-    console.log('Proceeding with analytics...')
 
     // Get date range from query params (default to last 30 days)
     const url = new URL(request.url)
     const days = parseInt(url.searchParams.get('days') || '30')
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
-    
-    console.log('Date range:', { days, startDate: startDate.toISOString() })
 
     // Check database connection
-    console.log('Testing database connection...')
     try {
       await pool.query('SELECT 1')
-      console.log('Database connection successful')
     } catch (dbError) {
-      console.error('Database connection failed:', dbError)
       return NextResponse.json({ error: 'Database connection failed' }, { status: 500 })
     }
 
     // Total messages count
-    console.log('Fetching total messages...')
     const totalMessagesResult = await pool.query(
       'SELECT COUNT(*) as count FROM chapter_messages WHERE created_at >= $1',
       [startDate]
     )
     const totalMessages = parseInt(totalMessagesResult.rows[0].count)
-    console.log('Total messages:', totalMessages)
 
     // Active conversations (chapters with messages in date range)
     const activeConversationsResult = await pool.query(

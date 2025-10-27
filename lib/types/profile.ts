@@ -9,6 +9,7 @@ export interface UserProfile {
   skills: string[];
   description?: string;
   profession?: string;
+  interest?: string;
   createdAt: string;
 }
 

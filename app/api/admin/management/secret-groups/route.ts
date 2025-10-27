@@ -7,8 +7,18 @@ async function ensureTables() {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name VARCHAR(255) NOT NULL,
       description TEXT,
+      admin_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      admin_name VARCHAR(255),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+  `)
+  await pool.query(`
+    ALTER TABLE secret_groups 
+    ADD COLUMN IF NOT EXISTS admin_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+  `)
+  await pool.query(`
+    ALTER TABLE secret_groups 
+    ADD COLUMN IF NOT EXISTS admin_name VARCHAR(255);
   `)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS secret_group_memberships (
@@ -24,10 +34,10 @@ export async function GET() {
   try {
     await ensureTables()
     const res = await pool.query(
-      `SELECT g.id, g.name, g.description, g.created_at, COUNT(m.user_id)::int AS member_count
+      `SELECT g.id, g.name, g.description, g.admin_id, g.admin_name, g.created_at, COUNT(m.user_id)::int AS member_count
        FROM secret_groups g
        LEFT JOIN secret_group_memberships m ON m.group_id = g.id
-       GROUP BY g.id
+       GROUP BY g.id, g.admin_id, g.admin_name
        ORDER BY g.created_at DESC`
     )
     return NextResponse.json({ groups: res.rows }, { status: 200 })
@@ -44,10 +54,13 @@ export async function POST(req: NextRequest) {
     const description = body?.description ? String(body.description) : null
     if (!name) return NextResponse.json({ success: false, message: 'Group name is required' }, { status: 400 })
 
+    // Set admin as Business Orbit Admin for admin-created groups
+    const adminName = 'Business Orbit Admin'
+
     const ins = await pool.query(
-      `INSERT INTO secret_groups (name, description) VALUES ($1, $2)
-       RETURNING id, name, description, created_at`,
-      [name, description]
+      `INSERT INTO secret_groups (name, description, admin_name) VALUES ($1, $2, $3)
+       RETURNING id, name, description, admin_id, admin_name, created_at`,
+      [name, description, adminName]
     )
     const group = { ...ins.rows[0], member_count: 0 }
     return NextResponse.json({ success: true, group }, { status: 201 })

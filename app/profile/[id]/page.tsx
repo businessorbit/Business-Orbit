@@ -357,6 +357,17 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
                 </div>
               </Card>
 
+              {profileData.interest && (
+                <Card className="p-3 sm:p-4 md:p-6">
+                  <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Interests</h3>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                    <Badge variant="secondary" className="text-xs sm:text-sm">
+                      {profileData.interest}
+                    </Badge>
+                  </div>
+                </Card>
+              )}
+
             </TabsContent>
 
             <TabsContent value="activity" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">

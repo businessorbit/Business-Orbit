@@ -79,8 +79,6 @@ export default function ChapterDashboard() {
     
     setChaptersLoading(true);
     try {
-      console.log('Fetching chapters for user:', user.id);
-      
       const result = await safeApiCall(
         () => fetch(`/api/users/${user.id}/chapters`, {
           credentials: 'include',
@@ -91,24 +89,18 @@ export default function ChapterDashboard() {
         'Failed to fetch user chapters'
       );
       
-      console.log('API response:', result);
-      
       if (result.success && result.data && typeof result.data === 'object' && result.data !== null) {
         const data = result.data as any;
         if (data.success && Array.isArray(data.chapters)) {
-          console.log('Found chapters:', data.chapters);
           setUserChapters(data.chapters);
         } else {
-          console.log('No chapters found for user, data:', data);
           setUserChapters([]);
         }
       } else {
-        console.error('Error fetching user chapters:', result.error);
         toast.error('Failed to load chapters');
         setUserChapters([]);
       }
     } catch (error) {
-      console.error('Error fetching user chapters:', error);
       toast.error('Failed to load chapters');
       setUserChapters([]);
     } finally {
@@ -141,7 +133,6 @@ export default function ChapterDashboard() {
       return;
     }
 
-    console.log('Adding chapters for locations:', selectedChapters);
     setIsAdding(true);
     try {
       const result = await safeApiCall(
@@ -158,8 +149,6 @@ export default function ChapterDashboard() {
         'Failed to add chapters'
       );
 
-      console.log('Add chapters API response:', result);
-
       if (result.success) {
         const memberships = (result.data as any)?.memberships ?? 0;
         toast.success(`Successfully joined ${memberships} chapters!`);
@@ -168,11 +157,13 @@ export default function ChapterDashboard() {
         // Refresh user chapters
         await fetchUserChapters();
       } else if (result.error) {
-        console.error('Add chapters error:', result.error);
-        toast.error(result.error);
+        // Show specific error message for chapter limit
+        const errorMsg = result.error === 'Chapter limit exceeded' 
+          ? 'You cannot join more than 5 chapters' 
+          : result.error;
+        toast.error(errorMsg);
       }
     } catch (error) {
-      console.error('Error adding chapters:', error);
       toast.error('Failed to add chapters');
     } finally {
       setIsAdding(false);
@@ -181,17 +172,9 @@ export default function ChapterDashboard() {
 
   // Handle deleting a chapter membership
   const handleDeleteChapter = async (chapterId: string, chapterName: string) => {
-    console.log('=== DELETE CHAPTER DEBUG ===');
-    console.log('Chapter ID:', chapterId);
-    console.log('Chapter Name:', chapterName);
-    console.log('User object:', user);
-    console.log('User ID:', user?.id);
-    console.log('Loading state:', loading);
-    
     setDeletingChapterId(chapterId);
     try {
       if (!user?.id) {
-        console.error('No user ID found!');
         toast.error('User not found. Please refresh the page and try again.');
         setDeletingChapterId(null);
         return;
@@ -209,18 +192,14 @@ export default function ChapterDashboard() {
         'Failed to leave chapter'
       );
 
-      console.log('Delete chapter API response:', result);
-
       if (result.success) {
         toast.success(`Successfully left "${chapterName}"`);
         // Refresh user chapters
         await fetchUserChapters();
       } else if (result.error) {
-        console.error('Delete chapter error:', result.error);
         toast.error(result.error);
       }
     } catch (error) {
-      console.error('Error deleting chapter:', error);
       toast.error('Failed to leave chapter');
     } finally {
       setDeletingChapterId(null);
@@ -275,8 +254,6 @@ export default function ChapterDashboard() {
     
     setEventsLoading(true);
     try {
-      console.log('Fetching upcoming events for chapters dashboard...');
-      
       const url = user?.id ? `/api/events?userId=${user.id}&limit=6` : '/api/events?limit=6';
       const response = await fetch(url, {
         credentials: 'include',
@@ -287,7 +264,6 @@ export default function ChapterDashboard() {
       
       if (response.ok) {
         const eventsData = await response.json();
-        console.log('Events API response:', eventsData);
         
         // Filter upcoming events and format them
         const now = new Date();
@@ -298,7 +274,6 @@ export default function ChapterDashboard() {
               const eventDate = new Date(event.date);
               return eventDate >= now && event.status === 'approved';
             } catch (error) {
-              console.error('Error filtering event date:', event.date, error);
               return false;
             }
           })
@@ -314,12 +289,11 @@ export default function ChapterDashboard() {
               time: eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
               attendees: event.rsvp_count || 0,
               is_registered: event.is_registered || false,
-              event_type: event.event_type,
+                event_type: event.event_type,
               venue_address: event.venue_address
             };
           });
         
-        console.log('Processed upcoming events for dashboard:', upcomingEvents);
         setEvents(upcomingEvents);
         setLastEventsUpdate(new Date());
         
@@ -327,12 +301,9 @@ export default function ChapterDashboard() {
           toast.success(`Events updated - ${upcomingEvents.length} upcoming event${upcomingEvents.length === 1 ? '' : 's'} found`);
         }
       } else {
-        const errorData = await response.json();
-        console.error('Events API error:', errorData);
-        toast.error('Failed to load events: ' + (errorData.error || 'Unknown error'));
+        toast.error('Failed to load events');
       }
     } catch (error) {
-      console.error('Error fetching events:', error);
       toast.error('Failed to load events');
     } finally {
       setEventsLoading(false);
@@ -375,7 +346,6 @@ export default function ChapterDashboard() {
         toast.error(data.message || 'Failed to RSVP to event');
       }
     } catch (error) {
-      console.error('Error RSVPing to event:', error);
       toast.error('Failed to RSVP to event');
     }
   };
@@ -383,7 +353,6 @@ export default function ChapterDashboard() {
   // Handle reply to thank you notes
   const handleReply = (noteId: number, reply: string) => {
     if (!reply.trim()) return;
-    console.log(`Reply to note ${noteId}: ${reply}`);
     toast.success('Reply sent!');
   };
 

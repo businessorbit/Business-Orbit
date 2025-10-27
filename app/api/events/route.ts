@@ -3,15 +3,11 @@ import pool from '@/lib/config/database';
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('Events API called');
-    
     const url = new URL(req.url);
     const searchQuery = url.searchParams.get('search') || '';
     const dateQuery = url.searchParams.get('date') || '';
     const userId = url.searchParams.get('userId');
     const limit = parseInt(url.searchParams.get('limit') || '10');
-
-    console.log('Query parameters:', { searchQuery, dateQuery, userId, limit });
 
     // Build SELECT with RSVP count and optional is_registered flag
     let queryText = `
@@ -54,22 +50,10 @@ export async function GET(req: NextRequest) {
     `;
     queryParams.push(limit);
 
-    console.log('Executing query:', queryText);
-    console.log('Query params:', queryParams);
-
     const result = await pool.query(queryText, queryParams);
-
-    console.log(`Found ${result.rows.length} events`);
     
     return NextResponse.json(result.rows, { status: 200 });
   } catch (err: any) {
-    console.error('Error fetching events:', err);
-    console.error('Error details:', {
-      message: err.message,
-      code: err.code,
-      detail: err.detail,
-      hint: err.hint
-    });
     return NextResponse.json({ error: 'Failed to fetch events', details: err.message }, { status: 500 });
   }
 }

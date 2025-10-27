@@ -51,7 +51,6 @@ export default function OnboardingPage() {
         const data = await response.json();
         setAvailableData(data);
       } catch (error) {
-        console.error('Error fetching onboarding data:', error);
         toast.error('Failed to load onboarding data');
       }
     };
@@ -77,7 +76,7 @@ export default function OnboardingPage() {
           }
         }
       } catch (error) {
-        console.error('Error checking onboarding status:', error);
+        // Error checking onboarding status
       }
     };
 
@@ -94,11 +93,14 @@ export default function OnboardingPage() {
         // Remove item if already selected
         newSelection = currentSelection.filter(i => i !== item);
       } else {
-        // Add item if not selected (but limit to 2)
-        if (currentSelection.length < 2) {
+        // For chapters: limit to exactly 2 (required for onboarding)
+        // For secret groups: limit to 2
+        const limit = 2;
+        if (currentSelection.length < limit) {
           newSelection = [...currentSelection, item];
         } else {
-          toast.error(`You can only select 2 ${type === 'chapters' ? 'chapters' : 'secret groups'}`);
+          const itemType = type === 'chapters' ? 'chapters' : 'secret groups';
+          toast.error(`Please select exactly 2 ${itemType} to continue`);
           return prev;
         }
       }
@@ -112,8 +114,8 @@ export default function OnboardingPage() {
 
   const handleNext = () => {
     if (currentStep === 1) {
-      if (onboardingData.chapters.length === 0) {
-        toast.error('Please select at least 1 chapter');
+      if (onboardingData.chapters.length < 2) {
+        toast.error('Please select exactly 2 chapters to continue');
         return;
       }
       setCurrentStep(2);
@@ -160,11 +162,8 @@ export default function OnboardingPage() {
       });
       
       const chapterData = await chapterResponse.json();
-      console.log('Chapter membership response:', chapterData);
       
       if (!chapterResponse.ok || !chapterData.success) {
-        console.error('Failed to create chapter memberships:', chapterData);
-        
         // Show detailed error message
         if (chapterData.details && chapterData.details.available_cities) {
           toast.error(`Chapters not found for: ${chapterData.details.requested.join(', ')}. Available cities: ${chapterData.details.available_cities.join(', ')}`);
@@ -174,7 +173,6 @@ export default function OnboardingPage() {
         return;
       }
       
-      console.log('Successfully created chapter memberships:', chapterData);
       toast.success(`Successfully joined ${chapterData.memberships} chapters!`);
 
       // Join selected secret groups
@@ -196,20 +194,15 @@ export default function OnboardingPage() {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-              });
+              }              );
               
               if (joinResponse.ok) {
                 joinedGroupsCount++;
-                console.log(`Successfully joined group: ${groupName}`);
-              } else {
-                console.error(`Failed to join group: ${groupName}`);
               }
-            } else {
-              console.error(`Group not found: ${groupName}`);
             }
           }
         } catch (error) {
-          console.error(`Error joining group ${groupName}:`, error);
+          // Error joining group
         }
       }
 
@@ -232,7 +225,6 @@ export default function OnboardingPage() {
         toast.error(errorData.error || 'Failed to save preferences');
       }
     } catch (error) {
-      console.error('Error saving preferences:', error);
       toast.error('Failed to save preferences');
     } finally {
       setOnboardingLoading(false);
@@ -267,9 +259,9 @@ export default function OnboardingPage() {
       <div className="mb-4">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-gray-700">
-            Selected: {selectedItems.length}
+            Selected: {selectedItems.length} / 2 {type === 'chapters' ? '(Required)' : ''}
           </span>
-          {selectedItems.length > 0 && (
+          {selectedItems.length >= 2 && (
             <span className="text-sm text-green-600 font-medium flex items-center">
               <Check className="h-4 w-4 mr-1" />
               Ready
@@ -386,8 +378,8 @@ export default function OnboardingPage() {
               availableData.chapters,
               onboardingData.chapters,
               <MapPin className="h-6 w-6 text-gray-600" />,
-              'Select Your Chapters',
-              'Choose chapters that interest you most. These will help us connect you with like-minded professionals in your area.'
+              'Select Your Chapters (Required: 2)',
+              'Please select exactly 2 chapters to join. You can join up to 3 more chapters later (maximum 5 total). These will help us connect you with like-minded professionals in your area.'
             )
           )}
 
@@ -510,7 +502,7 @@ export default function OnboardingPage() {
             {currentStep === 1 ? (
               <Button
                 onClick={handleNext}
-                disabled={onboardingData.chapters.length === 0}
+                disabled={onboardingData.chapters.length !== 2}
                 className="flex items-center space-x-2 cursor-pointer"
               >
                 <span>Next</span>

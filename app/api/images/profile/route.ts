@@ -88,7 +88,6 @@ export async function PUT(request: NextRequest) {
               console.error('Profile photo upload error:', error);
               reject(error);
             } else {
-              console.log('Profile photo uploaded:', result);
               resolve(result);
             }
           }

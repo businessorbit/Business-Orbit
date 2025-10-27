@@ -38,6 +38,19 @@ interface RSVP {
   email: string;
 }
 
+interface EventProposal {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  event_title: string;
+  event_date: string;
+  mode: string;
+  description: string;
+  status: string;
+  created_at: string;
+}
+
 type FormValues = {
   title: string;
   description?: string;
@@ -52,6 +65,7 @@ export default function AdminEvents() {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [rsvps, setRsvps] = useState<RSVP[]>([]);
+  const [proposals, setProposals] = useState<EventProposal[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -100,6 +114,19 @@ export default function AdminEvents() {
     }
   };
 
+  // Fetch pending proposals
+  const fetchProposals = async () => {
+    try {
+      const res = await fetch("/api/event-proposals?status=pending");
+      if (res.ok) {
+        const data = await res.json();
+        setProposals(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch proposals", err);
+    }
+  };
+
   // Fetch RSVPs for an event
   const fetchRSVPs = async (eventId: number) => {
     try {
@@ -118,14 +145,58 @@ export default function AdminEvents() {
     fetchEvents();
   };
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  // Approve proposal and create event
+  const approveProposal = async (proposal: EventProposal) => {
+    try {
+      const res = await fetch("/api/event-proposals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proposalId: proposal.id })
+      });
+
+      if (res.ok) {
+        await fetchProposals();
+        await fetchEvents();
+        setSuccessMessage("Proposal approved and event created!");
+        setTimeout(() => setSuccessMessage(""), 3000);
+      } else {
+        const error = await res.json();
+        setError("Failed to approve proposal: " + (error.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Error approving proposal:", err);
+      setError("Failed to approve proposal");
+    }
+  };
+
+  // Reject proposal
+  const rejectProposal = async (proposal: EventProposal) => {
+    try {
+      if (!confirm('Are you sure you want to reject this proposal?')) return;
+
+      const res = await fetch(`/api/event-proposals?id=${proposal.id}`, {
+        method: "DELETE"
+      });
+
+      if (res.ok) {
+        await fetchProposals();
+        setSuccessMessage("Proposal rejected");
+        setTimeout(() => setSuccessMessage(""), 3000);
+      } else {
+        const error = await res.json();
+        setError("Failed to reject proposal: " + (error.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Error rejecting proposal:", err);
+      setError("Failed to reject proposal");
+    }
+  };
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       fetchEvents();
+      fetchProposals();
     }, 30000);
 
     return () => clearInterval(interval);
@@ -367,6 +438,77 @@ export default function AdminEvents() {
           >
             Dismiss
           </Button>
+        </div>
+      )}
+
+      {/* Event Proposals Section */}
+      {proposals.length > 0 && (
+        <div className="border border-orange-300 rounded-lg overflow-hidden">
+          <div className="bg-orange-50 px-4 py-3 border-b border-orange-300">
+            <h2 className="text-lg font-semibold text-orange-900">
+              Pending Event Proposals ({proposals.length})
+            </h2>
+          </div>
+          
+          <div className="divide-y divide-orange-200">
+            {proposals.map((proposal) => (
+              <div key={proposal.id} className="p-4 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Proposed by</p>
+                    <p className="font-semibold text-gray-900">{proposal.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Contact</p>
+                    <p className="text-sm text-gray-900">{proposal.email}</p>
+                    <p className="text-sm text-gray-900">{proposal.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Event Title</p>
+                    <p className="font-semibold text-gray-900">{proposal.event_title}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Date & Time</p>
+                    <p className="text-sm text-gray-900">
+                      {new Date(proposal.event_date).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Mode</p>
+                    <p className="text-sm font-medium text-gray-900">{proposal.mode}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Description</p>
+                    <p className="text-sm text-gray-900 line-clamp-2">{proposal.description || 'No description'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    size="sm"
+                    onClick={() => approveProposal(proposal)}
+                    className="bg-green-600 text-white hover:bg-green-700"
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => rejectProposal(proposal)}
+                    className="bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

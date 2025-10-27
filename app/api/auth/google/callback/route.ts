@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tokenResponse.ok) {
-      console.error('Token exchange failed:', await tokenResponse.text());
       return NextResponse.redirect(new URL('/product/auth?error=token_exchange_failed', request.url));
     }
 
@@ -47,7 +46,6 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userResponse.ok) {
-      console.error('User info fetch failed:', await userResponse.text());
       return NextResponse.redirect(new URL('/product/auth?error=user_info_failed', request.url));
     }
 
@@ -60,14 +58,14 @@ export async function GET(request: NextRequest) {
 
     // Check if user exists by Google ID first, then by email
     let user = await pool.query(
-      'SELECT id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, created_at FROM users WHERE google_id = $1',
+      'SELECT id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, interest, created_at FROM users WHERE google_id = $1',
       [googleId]
     );
 
     if (user.rows.length === 0) {
       // Check by email for existing users without Google ID
       user = await pool.query(
-        'SELECT id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, created_at FROM users WHERE email = $1',
+        'SELECT id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, interest, created_at FROM users WHERE email = $1',
         [email]
       );
 
@@ -76,7 +74,7 @@ export async function GET(request: NextRequest) {
         const newUser = await pool.query(
           `INSERT INTO users (name, email, google_id, profile_photo_url, created_at)
            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-           RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, created_at`,
+           RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, interest, created_at`,
           [name, email, googleId, picture]
         );
         user = newUser;
@@ -127,7 +125,6 @@ export async function GET(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.error('Error checking user state:', error);
       // Default to invite page if we can't determine state
       redirectUrl = '/product/invite';
     }
@@ -141,7 +138,6 @@ export async function GET(request: NextRequest) {
     return response;
 
   } catch (error: any) {
-    console.error('Google OAuth callback error:', error);
     return NextResponse.redirect(new URL('/product/auth?error=server_error', request.url));
   }
 }

@@ -29,7 +29,6 @@ export async function GET() {
       count: chapters.length
     })
   } catch (error: any) {
-    console.error('GET /api/chapters error:', error)
     return NextResponse.json({ 
       success: false,
       error: 'Failed to fetch chapters',
@@ -90,8 +89,6 @@ export async function POST(request: NextRequest) {
       message: 'Chapter created successfully'
     }, { status: 201 })
   } catch (error: any) {
-    console.error('POST /api/chapters error:', error)
-    
     // Handle specific database errors
     if (error.code === '23505') { // Unique constraint violation
       return NextResponse.json({

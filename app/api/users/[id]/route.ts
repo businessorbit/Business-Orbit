@@ -30,7 +30,7 @@ export async function GET(
     // Get user basic info
     const userResult = await pool.query(
       `SELECT id, name, email, phone, profile_photo_url, profile_photo_id, 
-              banner_url, banner_id, skills, description, profession, created_at
+              banner_url, banner_id, skills, description, profession, interest, created_at
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -70,6 +70,7 @@ export async function GET(
         skills: userData.skills || [],
         description: userData.description,
         profession: userData.profession,
+        interest: userData.interest,
         createdAt: userData.created_at
       },
       groups: {
@@ -86,7 +87,6 @@ export async function GET(
     return res;
 
   } catch (error: any) {
-    console.error('Get user profile error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -138,7 +138,6 @@ export async function PATCH(
     res.headers.set('Expires', '0')
     return res
   } catch (error: any) {
-    console.error('PATCH /api/users/[id] error:', error?.message || error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

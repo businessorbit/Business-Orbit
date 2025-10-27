@@ -35,15 +35,6 @@ export async function GET(
       count: result.rows.length
     })
   } catch (error: any) {
-    // Deduplicate identical errors for a brief window using a global Set
-    ;(globalThis as any).__onceLogKeys = (globalThis as any).__onceLogKeys || new Set<string>()
-    const _once = (globalThis as any).__onceLogKeys as Set<string>
-    const key = `chapters:${String(error?.message || error)}`
-    if (!_once.has(key)) {
-      _once.add(key)
-      console.error('GET /api/users/[id]/chapters error:', String(error?.message || error))
-      setTimeout(() => _once.delete(key), 3000)
-    }
     return NextResponse.json({ 
       success: false,
       error: 'Failed to fetch user chapters',

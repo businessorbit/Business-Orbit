@@ -8,12 +8,9 @@ export async function DELETE(
 ) {
   try {
     const { id: chapterId } = await params
-    console.log('=== DELETE MEMBERSHIP API DEBUG ===');
-    console.log('Chapter ID from params:', chapterId);
     
     // Validate chapter ID
     if (!chapterId || typeof chapterId !== 'string') {
-      console.error('Invalid chapter ID:', chapterId);
       return NextResponse.json({
         success: false,
         error: 'Invalid chapter ID',
@@ -24,11 +21,8 @@ export async function DELETE(
     // For now, we'll need to get user ID from request body since we removed auth
     const body = await request.json()
     const { userId } = body
-    console.log('Request body:', body);
-    console.log('User ID from body:', userId);
     
     if (!userId) {
-      console.error('No user ID provided');
       return NextResponse.json({
         success: false,
         error: 'User ID required',
@@ -42,12 +36,7 @@ export async function DELETE(
       [userId, chapterId]
     )
     
-    console.log('Database query result:', result);
-    console.log('Rows affected:', result.rowCount);
-    console.log('Returned rows:', result.rows);
-    
     if (result.rows.length === 0) {
-      console.error('No membership found to delete');
       return NextResponse.json({
         success: false,
         error: 'Membership not found',
@@ -55,14 +44,12 @@ export async function DELETE(
       }, { status: 404 })
     }
 
-    console.log('Successfully deleted membership:', result.rows[0]);
     return NextResponse.json({ 
       success: true,
       message: 'Successfully left the chapter',
       deleted_membership: result.rows[0]
     })
   } catch (error: any) {
-    console.error('DELETE /api/chapters/[id]/membership error:', error)
     return NextResponse.json({ 
       success: false,
       error: 'Failed to leave chapter',

@@ -8,7 +8,7 @@ if (process.env.VERCEL !== '1' && process.env.NODE_ENV !== 'production') {
 
 // Only log database URL issues in development, not during build
 if (!process.env.DATABASE_URL && process.env.NODE_ENV === 'development') {
-  console.warn('⚠️ DATABASE_URL not set. Database connections will fail at runtime.');
+  // DATABASE_URL not set warning
 }
 
 const databaseUrl: string | undefined = process.env.DATABASE_URL;
@@ -35,13 +35,12 @@ const pool = global.__PG_POOL__ ?? (databaseUrl ? new Pool({
   // Keep dev pool small to avoid exhausting server connection slots during HMR
   max: process.env.NODE_ENV === 'production' ? 20 : 5,
   min: process.env.NODE_ENV === 'production' ? 5 : 0,
-  idleTimeoutMillis: 10_000,
-  connectionTimeoutMillis: 5_000,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 15_000, // Increased from 5s to 15s
   maxUses: 7_500,
-  // Add statement timeout to prevent long-running queries
-  statement_timeout: 30_000,
   // Keep TCP connection alive to reduce ECONNRESET in some environments
   keepAlive: true,
+  keepAliveInitialDelayMillis: 30_000,
 }) : null);
 
 if (!global.__PG_POOL__) {
@@ -50,19 +49,7 @@ if (!global.__PG_POOL__) {
 
 if (pool) {
   pool.on('error', (err: any) => {
-    console.error('❌ Database connection error:', err.message);
-    console.error('❌ Error code:', err.code);
-    console.error('❌ Error detail:', err.detail);
-    
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('⚠️  Server will continue without database connection for now');
-    }
-  });
-
-  pool.on('connect', (client: any) => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('🔗 New database client connected');
-    }
+    // Database connection error handling
   });
 }
 
@@ -70,22 +57,15 @@ if (pool) {
 
 const testConnection = async (retries = process.env.NODE_ENV === 'production' ? 3 : 1) => {
   if (!pool) {
-    console.warn('⚠️ Database pool not initialized - DATABASE_URL not set');
     return;
   }
   
   for (let i = 0; i < retries; i++) {
     try {
       const result = await pool.query('SELECT NOW() as current_time, version() as version');
-      console.log('✅ PostgreSQL Connected');
-      console.log(`📊 Database version: ${result.rows[0].version.split(' ')[0]}`);
-      console.log(`🕐 Connection time: ${result.rows[0].current_time}`);
       return;
     } catch (err: any) {
-      console.error(`❌ Failed to connect to PostgreSQL (attempt ${i + 1}/${retries}):`, err.message);
       if (i === retries - 1) {
-        console.log('📋 Please ensure PostgreSQL is installed and running');
-        console.log('📋 Check your DATABASE_URL in .env.local file');
         // Do not exit the process in dev; let API routes handle runtime errors gracefully
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -100,21 +80,25 @@ if (process.env.NODE_ENV !== 'test' && process.env.VERCEL !== '1') {
 }
 
 process.on('SIGINT', async () => {
-  console.log('🔄 Shutting down database pool...');
   if (pool) {
     await pool.end();
-    console.log('✅ Database pool closed');
   }
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('🔄 Shutting down database pool...');
   if (pool) {
     await pool.end();
-    console.log('✅ Database pool closed');
   }
   process.exit(0);
 });
+
+// Helper function to ensure pool is available
+export const ensurePool = () => {
+  if (!pool) {
+    throw new Error('Database pool not initialized. Please check DATABASE_URL environment variable.');
+  }
+  return pool;
+};
 
 export default pool;

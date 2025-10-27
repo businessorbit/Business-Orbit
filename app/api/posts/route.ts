@@ -62,12 +62,6 @@ export async function GET(request: NextRequest) {
           `;
           const mediaResult = await client.query(mediaQuery, [post.id]);
           
-          console.log(`Fetching posts - Post ${post.id} media query result:`, {
-            postId: post.id,
-            mediaCount: mediaResult.rows.length,
-            media: mediaResult.rows
-          });
-          
           return {
             ...post,
             media: mediaResult.rows
@@ -94,7 +88,6 @@ export async function GET(request: NextRequest) {
       client.release();
     }
   } catch (error) {
-    console.error('Error fetching posts:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch posts' },
       { status: 500 }
@@ -124,9 +117,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { content, scheduledAt, media } = body;
-
-    console.log('Creating post - Request body:', { content: content?.substring(0, 100), scheduledAt, media });
-    console.log('Creating post - Media type:', typeof media, 'Media length:', Array.isArray(media) ? media.length : 'not array');
 
     if (!content || content.trim().length === 0) {
       return NextResponse.json(
@@ -213,9 +203,7 @@ export async function POST(request: NextRequest) {
 
       // Add media if provided
       if (media && media.length > 0) {
-        console.log('Creating post - Media to save:', media);
         for (const mediaItem of media) {
-          console.log('Creating post - Saving media item:', mediaItem);
           const mediaQuery = `
             INSERT INTO post_media (post_id, media_type, cloudinary_public_id, cloudinary_url, file_name, file_size, mime_type)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -231,11 +219,7 @@ export async function POST(request: NextRequest) {
             mediaItem.file_size,
             mediaItem.mime_type
           ]);
-          
-          console.log('Creating post - Media saved with ID:', mediaResult.rows[0].id);
         }
-      } else {
-        console.log('Creating post - No media provided');
       }
 
       await client.query('COMMIT'); // Commit transaction

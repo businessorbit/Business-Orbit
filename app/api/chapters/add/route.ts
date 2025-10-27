@@ -56,6 +56,26 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Check current chapter count for the user
+    const currentMembershipsResult = await pool.query(
+      'SELECT COUNT(*) as count FROM chapter_memberships WHERE user_id = $1',
+      [user.id]
+    )
+    const currentChapterCount = parseInt(currentMembershipsResult.rows[0].count || '0')
+    
+    // Check if adding more chapters would exceed the limit
+    const newTotalCount = currentChapterCount + sanitizedLocations.length
+    if (newTotalCount > 5) {
+      return NextResponse.json({
+        success: false,
+        error: 'Chapter limit exceeded',
+        message: 'You cannot join more than 5 chapters',
+        currentCount: currentChapterCount,
+        attemptCount: sanitizedLocations.length,
+        maxAllowed: 5
+      }, { status: 400 })
+    }
+
     // Find chapters that match the user's selected locations (case-insensitive)
     const result = await pool.query(
       'SELECT id, name, location_city FROM chapters WHERE LOWER(location_city) = ANY($1::text[])',
@@ -119,8 +139,6 @@ export async function POST(request: NextRequest) {
       client.release()
     }
   } catch (error: any) {
-    console.error('POST /api/chapters/add error:', error)
-    
     // Handle specific database errors
     if (error.code === '23503') { // Foreign key constraint violation
       return NextResponse.json({

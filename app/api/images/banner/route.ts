@@ -88,7 +88,6 @@ export async function PUT(request: NextRequest) {
               console.error('Banner upload error:', error);
               reject(error);
             } else {
-              console.log('Banner uploaded:', result);
               resolve(result);
             }
           }

@@ -7,28 +7,31 @@ import { generateToken, setTokenCookie } from '@/lib/utils/auth';
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
+  // Declare variables at function scope so they're accessible in catch block
+  let name: string = '', email: string = '', phone: string = '', password: string = '', confirmPassword: string = '';
+  let skills: string = '', description: string = '', profession: string = '', interest: string = '';
+  let profilePhoto: File | null = null, banner: File | null = null;
+  let skillsArray: string[] = [];
+  let passwordHash: string = '';
+  let profilePhotoUrl: string | null = null;
+  let profilePhotoId: string | null = null;
+  let bannerUrl: string | null = null;
+  let bannerId: string | null = null;
+
   try {
-    console.log('Signup request received');
-    
-    // Preflight check for Cloudinary credentials in production
-    if (!process.env.CLOUDINARY_URL && (
-      !process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET
-    )) {
-      console.error('Cloudinary environment variables are missing. Please set CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET in Vercel env.')
-      return NextResponse.json({ error: 'Server misconfiguration: Cloudinary credentials missing' }, { status: 500 })
-    }
     const formData = await request.formData();
     
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
-    const phone = formData.get('phone') as string;
-    const password = formData.get('password') as string;
-    const confirmPassword = formData.get('confirmPassword') as string;
-    const skills = formData.get('skills') as string;
-    const description = formData.get('description') as string;
-    const profession = formData.get('profession') as string;
-    const profilePhoto = formData.get('profilePhoto') as File;
-    const banner = formData.get('banner') as File;
+    name = formData.get('name') as string;
+    email = formData.get('email') as string;
+    phone = formData.get('phone') as string;
+    password = formData.get('password') as string;
+    confirmPassword = formData.get('confirmPassword') as string;
+    skills = formData.get('skills') as string;
+    description = formData.get('description') as string;
+    profession = formData.get('profession') as string;
+    interest = formData.get('interest') as string;
+    profilePhoto = formData.get('profilePhoto') as File;
+    banner = formData.get('banner') as File;
 
     // Validation
     if (!name || !email || !password || !confirmPassword) {
@@ -63,20 +66,18 @@ export async function POST(request: NextRequest) {
 
     // Hash password
     const saltRounds = 12;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
+    passwordHash = await bcrypt.hash(password, saltRounds);
 
     // Parse skills array
-    let skillsArray: string[] = [];
     if (skills) {
       try {
         skillsArray = JSON.parse(skills);
         if (!Array.isArray(skillsArray)) {
           skillsArray = [];
-        }
-      } catch (error) {
-        console.error('Error parsing skills:', error);
-        skillsArray = [];
       }
+    } catch (error) {
+      skillsArray = [];
+    }
     }
 
     // Handle file uploads with Cloudinary
@@ -94,11 +95,6 @@ export async function POST(request: NextRequest) {
       return result
     }
 
-    let profilePhotoUrl: string | null = null;
-    let profilePhotoId: string | null = null;
-    let bannerUrl: string | null = null;
-    let bannerId: string | null = null;
-
     // Upload profile photo to Cloudinary
     if (profilePhoto && profilePhoto.size > 0) {
       if (!allowedTypes.includes(profilePhoto.type)) {
@@ -108,28 +104,31 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Profile photo must be less than 4MB' }, { status: 400 })
       }
       try {
-        const arrayBuffer = await profilePhoto.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const profilePhotoResult = await uploadImage(buffer, {
-          folder: 'business-orbit/profile-photos',
-          transformation: [
-            { width: 800, height: 800, crop: 'limit' },
-            { quality: 'auto:good' },
-            { fetch_format: 'auto' }
-          ],
-          resource_type: 'image'
-        })
-        
-        profilePhotoUrl = profilePhotoResult.secure_url || profilePhotoResult.url;
-        profilePhotoId = profilePhotoResult.public_id;
+        // Check if Cloudinary is configured
+        if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_URL) {
+          const arrayBuffer = await profilePhoto.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const profilePhotoResult = await uploadImage(buffer, {
+            folder: 'business-orbit/profile-photos',
+            transformation: [
+              { width: 800, height: 800, crop: 'limit' },
+              { quality: 'auto:good' },
+              { fetch_format: 'auto' }
+            ],
+            resource_type: 'image'
+          })
+          
+          profilePhotoUrl = profilePhotoResult.secure_url || profilePhotoResult.url;
+          profilePhotoId = profilePhotoResult.public_id;
+        } else {
+          // Cloudinary not configured, skip photo upload
+          profilePhotoUrl = null;
+          profilePhotoId = null;
+        }
       } catch (error) {
-        console.error('Profile photo upload error:', {
-          message: (error as any)?.message,
-          name: (error as any)?.name,
-          http_code: (error as any)?.http_code,
-          stack: (error as any)?.stack,
-        });
-        return NextResponse.json({ error: 'Failed to upload profile photo' }, { status: 500 });
+        // If upload fails, continue without photo
+        profilePhotoUrl = null;
+        profilePhotoId = null;
       }
     }
 
@@ -142,52 +141,59 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Banner image must be less than 4MB' }, { status: 400 })
       }
       try {
-        const arrayBuffer = await banner.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const bannerResult = await uploadImage(buffer, {
-          folder: 'business-orbit/banners',
-          transformation: [
-            { width: 1200, height: 400, crop: 'limit' },
-            { quality: 'auto:good' },
-            { fetch_format: 'auto' }
-          ],
-          resource_type: 'image'
-        })
-        
-        bannerUrl = bannerResult.secure_url || bannerResult.url;
-        bannerId = bannerResult.public_id;
+        // Check if Cloudinary is configured
+        if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_URL) {
+          const arrayBuffer = await banner.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const bannerResult = await uploadImage(buffer, {
+            folder: 'business-orbit/banners',
+            transformation: [
+              { width: 1200, height: 400, crop: 'limit' },
+              { quality: 'auto:good' },
+              { fetch_format: 'auto' }
+            ],
+            resource_type: 'image'
+          })
+          
+          bannerUrl = bannerResult.secure_url || bannerResult.url;
+          bannerId = bannerResult.public_id;
+        } else {
+          // Cloudinary not configured, skip banner upload
+          bannerUrl = null;
+          bannerId = null;
+        }
       } catch (error) {
-        console.error('Banner upload error:', {
-          message: (error as any)?.message,
-          name: (error as any)?.name,
-          http_code: (error as any)?.http_code,
-          stack: (error as any)?.stack,
-        });
-        return NextResponse.json({ error: 'Failed to upload banner image' }, { status: 500 });
+        // If upload fails, continue without banner
+        bannerUrl = null;
+        bannerId = null;
       }
     }
 
     // Insert user into database
-    console.log('Signup data:', { name, email, profession, skillsArray });
     
     // First, try to add the profession column if it doesn't exist
     try {
       await pool.query(`
         ALTER TABLE users ADD COLUMN IF NOT EXISTS profession VARCHAR(255)
       `);
-      console.log('✅ Profession column ensured');
     } catch (columnError: any) {
-      // Column might already exist, that's okay
-      if (columnError.code !== '42701') { // 42701 = duplicate column
-        console.warn('⚠️ Could not ensure profession column:', columnError.message);
-      }
+      // Column might already exist, that's okay - ignore the error
+    }
+
+    // Try to add the interest column if it doesn't exist
+    try {
+      await pool.query(`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS interest VARCHAR(255)
+      `);
+    } catch (columnError: any) {
+      // Column might already exist, that's okay - ignore the error
     }
     
     const result = await pool.query(
-      `INSERT INTO users (name, email, phone, password_hash, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, created_at`,
-      [name, email, phone, passwordHash, profilePhotoUrl, profilePhotoId, bannerUrl, bannerId, skillsArray, description, profession || null]
+      `INSERT INTO users (name, email, phone, password_hash, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, interest)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, interest, created_at`,
+      [name, email, phone, passwordHash, profilePhotoUrl, profilePhotoId, bannerUrl, bannerId, skillsArray, description, profession || null, interest || null]
     );
 
     const user = result.rows[0];
@@ -208,6 +214,7 @@ export async function POST(request: NextRequest) {
         skills: user.skills,
         description: user.description,
         profession: user.profession,
+        interest: user.interest,
         createdAt: user.created_at
       }
     }, { status: 201 });
@@ -218,14 +225,6 @@ export async function POST(request: NextRequest) {
     return response;
 
   } catch (error: any) {
-    console.error('Signup error details:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-      detail: error.detail,
-      hint: error.hint
-    });
-    
     // Provide more specific error messages
     if (error.code === '23505') {
       return NextResponse.json(
@@ -243,16 +242,24 @@ export async function POST(request: NextRequest) {
     
     if (error.code === '42703') {
       // Column doesn't exist - try to add it and retry
+      // Only retry if we have all the required data
+      if (!email || !passwordHash) {
+        return NextResponse.json(
+          { error: 'Database schema issue. Please try again.' },
+          { status: 500 }
+        );
+      }
+      
       try {
-        await pool.query(`ALTER TABLE users ADD COLUMN profession VARCHAR(255)`);
-        console.log('✅ Added profession column, retrying signup...');
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profession VARCHAR(255)`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS interest VARCHAR(255)`);
         
-        // Retry the insert without profession for now
+        // Retry the insert with all fields
         const result = await pool.query(
-          `INSERT INTO users (name, email, phone, password_hash, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-           RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, created_at`,
-          [name, email, phone, passwordHash, profilePhotoUrl, profilePhotoId, bannerUrl, bannerId, skillsArray, description]
+          `INSERT INTO users (name, email, phone, password_hash, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, interest)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           RETURNING id, name, email, phone, profile_photo_url, profile_photo_id, banner_url, banner_id, skills, description, profession, interest, created_at`,
+          [name || '', email || '', phone || '', passwordHash, profilePhotoUrl, profilePhotoId, bannerUrl, bannerId, skillsArray, description || '', profession || null, interest || null]
         );
         
         const user = result.rows[0];
@@ -269,7 +276,8 @@ export async function POST(request: NextRequest) {
             bannerUrl: user.banner_url,
             skills: user.skills,
             description: user.description,
-            profession: profession || null,
+            profession: user.profession,
+            interest: user.interest,
             createdAt: user.created_at
           }
         }, { status: 201 });
@@ -278,7 +286,6 @@ export async function POST(request: NextRequest) {
         return response;
         
       } catch (retryError: any) {
-        console.error('Retry failed:', retryError);
         return NextResponse.json(
           { error: 'Database schema issue. Please contact support.' },
           { status: 500 }

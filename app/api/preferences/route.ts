@@ -9,25 +9,15 @@ const AVAILABLE_CHAPTERS = [
   "Nagpur", "Visakhapatnam", "Surat", "Vadodara"
 ];
 
-// Static fallback only; primary source is DB secret_groups
-const AVAILABLE_SECRET_GROUPS_FALLBACK = [
-  'Tech Innovators', 'Creative Minds', 'Business Leaders', 'Startup Founders',
-  'Digital Nomads', 'Art Enthusiasts', 'Fitness Freaks', 'Food Lovers',
-  'Travel Buffs', 'Book Worms', 'Music Makers', 'Sports Champions',
-  'Gaming Community', 'Photography Club', 'Design Thinkers', 'Marketing Gurus',
-  'Finance Wizards', 'Healthcare Heroes', 'Education Pioneers', 'Social Impact'
-];
-
 async function getAvailableSecretGroupsFromDB(): Promise<string[]> {
   try {
     const res = await pool.query(
       `SELECT name FROM secret_groups ORDER BY created_at DESC`
     );
     const names = (res.rows || []).map((r: any) => String(r.name)).filter(Boolean);
-    // If DB has none, use fallback to keep onboarding usable
-    return names.length ? names : AVAILABLE_SECRET_GROUPS_FALLBACK;
+    return names;
   } catch {
-    return AVAILABLE_SECRET_GROUPS_FALLBACK;
+    return [];
   }
 }
 
@@ -53,12 +43,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validation: Must have at least 1 secret group
-    if (!secretGroups || !Array.isArray(secretGroups) || secretGroups.length === 0) {
-      return NextResponse.json(
-        { error: 'You must select at least 1 secret group' },
-        { status: 400 }
-      );
+    // Validation: Must have at least 1 secret group if groups exist in DB
+    const dbGroups = await getAvailableSecretGroupsFromDB();
+    if (dbGroups.length > 0) {
+      if (!secretGroups || !Array.isArray(secretGroups) || secretGroups.length === 0) {
+        return NextResponse.json(
+          { error: 'You must select at least 1 secret group' },
+          { status: 400 }
+        );
+      }
     }
 
     // Validation: All chapters must be from available list
@@ -70,14 +63,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validation: All secret groups must exist in DB (with fallback)
-    const dbGroups = await getAvailableSecretGroupsFromDB();
-    const invalidGroups = secretGroups.filter((group: string) => !dbGroups.includes(group));
-    if (invalidGroups.length > 0) {
-      return NextResponse.json(
-        { error: `Invalid secret groups: ${invalidGroups.join(', ')}` },
-        { status: 400 }
-      );
+    // Validation: All secret groups must exist in DB
+    if (dbGroups.length > 0) {
+      const invalidGroups = secretGroups.filter((group: string) => !dbGroups.includes(group));
+      if (invalidGroups.length > 0) {
+        return NextResponse.json(
+          { error: `Invalid secret groups: ${invalidGroups.join(', ')}` },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if preferences already exist

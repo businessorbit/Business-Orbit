@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, Lock } from 'lucide-react'
-import { safeApiCall } from '@/lib/utils/api'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface SecretGroup {
   id: string
@@ -19,6 +19,7 @@ interface SecretGroupsCardProps {
 }
 
 export default function SecretGroupsCard({ className = "" }: SecretGroupsCardProps) {
+  const { user } = useAuth()
   const [groups, setGroups] = useState<SecretGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -26,46 +27,36 @@ export default function SecretGroupsCard({ className = "" }: SecretGroupsCardPro
 
   useEffect(() => {
     const fetchSecretGroups = async () => {
+      if (!user?.id) {
+        setLoading(false)
+        return
+      }
+
       try {
         setLoading(true)
         setError(null)
 
-        // For now, use mock data since we don't have a secret groups API yet
-        // In the future, replace with actual API call
-        const mockGroups: SecretGroup[] = [
-          {
-            id: '1',
-            name: 'Tech Leaders',
-            description: 'Exclusive group for tech leaders',
-            member_count: 25,
-            is_private: true
-          },
-          {
-            id: '2',
-            name: 'Startup Founders',
-            description: 'Network of startup founders',
-            member_count: 18,
-            is_private: true
+        const res = await fetch(`/api/users/${user.id}/secret-groups`, {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
           }
-        ]
+        })
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500))
-        setGroups(mockGroups)
-
-        // TODO: Replace with actual API call when available
-        // const result = await safeApiCall(
-        //   () => fetch('/api/secret-groups', {
-        //     credentials: 'include',
-        //     headers: {
-        //       'Content-Type': 'application/json',
-        //     }
-        //   }),
-        //   'Failed to fetch secret groups'
-        // )
-
+        if (res.ok) {
+          const data = await res.json()
+          const userGroups = (data?.groups || []).map((g: any) => ({
+            id: String(g.id),
+            name: String(g.name || ''),
+            description: g.description,
+            member_count: Number(g.member_count || 0),
+            is_private: true
+          }))
+          setGroups(userGroups)
+        } else {
+          setError('Failed to load secret groups')
+        }
       } catch (error) {
-        console.error('Error fetching secret groups:', error)
         setError('Failed to load secret groups')
       } finally {
         setLoading(false)
@@ -73,7 +64,7 @@ export default function SecretGroupsCard({ className = "" }: SecretGroupsCardPro
     }
 
     fetchSecretGroups()
-  }, [])
+  }, [user?.id])
 
   if (loading) {
     return (
@@ -135,8 +126,14 @@ export default function SecretGroupsCard({ className = "" }: SecretGroupsCardPro
                   key={group.id}
                   variant="ghost"
                   className="w-full justify-start p-1 h-auto text-xs"
+                  onClick={() => window.location.href = `/product/groups/${group.id}`}
                 >
                   {group.name}
+                  {group.member_count !== undefined && (
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      ({group.member_count})
+                    </span>
+                  )}
                 </Button>
               ))
             )}

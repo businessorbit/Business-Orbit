@@ -90,7 +90,7 @@ export default function FeedPage() {
         setHasMore(responseData.pagination ? responseData.pagination.page < responseData.pagination.totalPages : false)
       }
     } catch (error) {
-      console.error('Error fetching posts:', error)
+      // Error handling
     } finally {
       setLoadingPosts(false)
     }

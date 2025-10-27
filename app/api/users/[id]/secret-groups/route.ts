@@ -5,7 +5,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   try {
     const { id } = await ctx.params
     const res = await pool.query(
-      `SELECT g.id, g.name, g.description, g.created_at,
+      `SELECT g.id, g.name, g.description, g.admin_id, g.admin_name, g.created_at,
               (SELECT COUNT(m2.user_id)::int FROM secret_group_memberships m2 WHERE m2.group_id = g.id) AS member_count
        FROM secret_group_memberships m
        JOIN secret_groups g ON g.id = m.group_id

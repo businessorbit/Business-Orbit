@@ -73,10 +73,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { postId, content, parentCommentId } = body;
 
-    console.log('Comment creation request:', { postId, content, parentCommentId, userId });
-
     if (!postId || !content) {
-      console.log('Missing required fields:', { postId: !!postId, content: !!content });
       return NextResponse.json(
         { success: false, error: 'Post ID and content are required' },
         { status: 400 }
@@ -113,13 +110,11 @@ export async function POST(request: NextRequest) {
       ]);
 
       const comment = commentResult.rows[0];
-      console.log('Comment created:', comment);
 
       // Get user info for response
       const userQuery = `SELECT id, name, profile_photo_url FROM users WHERE id = $1`;
       const userResult = await client.query(userQuery, [userId]);
       const user = userResult.rows[0];
-      console.log('User info:', user);
 
       const responseData = {
         ...comment,
@@ -128,8 +123,6 @@ export async function POST(request: NextRequest) {
         profile_photo_url: user.profile_photo_url,
         updated_at: comment.created_at
       };
-
-      console.log('Comment response data:', responseData);
 
       return NextResponse.json({
         success: true,

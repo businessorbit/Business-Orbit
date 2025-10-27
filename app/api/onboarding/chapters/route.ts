@@ -120,8 +120,6 @@ export async function POST(request: NextRequest) {
       client.release()
     }
   } catch (error: any) {
-    console.error('POST /api/onboarding/chapters error:', error)
-    
     // Handle specific database errors
     if (error.code === '23503') { // Foreign key constraint violation
       return NextResponse.json({
