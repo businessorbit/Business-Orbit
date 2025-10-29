@@ -177,7 +177,7 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
 
   if (loading) {
     return (
-      <Card className={`p-4 ${className}`}>
+      <Card className={`p-4 pt-6 mt-8 ${className}`}>
         <div className="flex items-center space-x-2 mb-4">
           <Users className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Community Members</h3>
@@ -199,7 +199,7 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
 
   if (error) {
     return (
-      <Card className={`p-4 ${className}`}>
+      <Card className={`p-4 pt-6 mt-8 ${className}`}>
         <div className="flex items-center space-x-2 mb-4">
           <Users className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Community Members</h3>
@@ -212,7 +212,7 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
   }
 
   return (
-    <Card className={`p-4 ${className}`}>
+    <Card className={`p-4 pt-6 mt-8 ${className}`}>
       <div className="flex items-center space-x-2 mb-4">
         <Users className="w-5 h-5 text-primary" />
         <h3 className="font-semibold">Community Members</h3>

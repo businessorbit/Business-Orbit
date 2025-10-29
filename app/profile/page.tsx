@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, MessageCircle, UserPlus, Calendar, Star, Award, Users, Lock, DollarSign, Clock, Edit, Settings, LogOut, Heart, Share2, RefreshCw } from "lucide-react"
+import { MapPin, MessageCircle, UserPlus, Calendar, Star, Award, Users, Lock, DollarSign, Clock, Edit, Settings, LogOut, Heart, Share2, RefreshCw, Hash, Mail, Send } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import ImageManager from "@/components/ImageManager"
 import MembersCard from "@/components/MembersCard"
 import RequestsCard from "@/components/RequestsCard"
+import EditProfileForm from "@/components/EditProfileForm"
 import toast from 'react-hot-toast';
 
 // Default activity data
@@ -62,13 +63,28 @@ const defaultGroups: UserGroup[] = [
 ]
 
 export default function ProfilePage() {
-  const { user, loading, logout } = useAuth()
+  const { user, loading, logout, updateUser } = useAuth()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("about")
   const [isEditing, setIsEditing] = useState(false)
   const [userGroups, setUserGroups] = useState<UserGroup[]>(defaultGroups)
-  const [userPosts] = useState(defaultActivityPosts)
+  // Removed static posts list; activity will show dynamic stats only
+  const [expanded, setExpanded] = useState<null | 'chapters' | 'groups' | 'connections' | 'events'>(null)
+  const [chapters, setChapters] = useState<any[]>([])
+  const [connections, setConnections] = useState<any[]>([])
+  const [events, setEvents] = useState<any[]>([])
   const [groupsLoading, setGroupsLoading] = useState(false)
+  const [stats, setStats] = useState({
+    chaptersJoined: 0,
+    groupsJoined: 0,
+    connections: 0,
+    connectionRequestsIncoming: 0,
+    connectionRequestsOutgoing: 0,
+    totalMessages: 0,
+    posts: 0,
+    eventsAttended: 0,
+  })
+  const [statsLoading, setStatsLoading] = useState(false)
 
   // Function to fetch user groups (chapters + secret groups)
   const fetchUserGroups = async (showLoading = false) => {
@@ -149,6 +165,27 @@ export default function ProfilePage() {
     fetchUserGroups()
   }, [user])
 
+  // Fetch user activity stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return
+      setStatsLoading(true)
+      try {
+        const res = await safeApiCall(
+          () => fetch(`/api/users/${user.id}/activity`, { credentials: 'include' }),
+          'Failed to fetch activity stats'
+        )
+        const data: any = (res as any).data
+        if ((res as any).success && data?.stats) {
+          setStats(data.stats)
+        }
+      } finally {
+        setStatsLoading(false)
+      }
+    }
+    fetchStats()
+  }, [user])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -177,6 +214,15 @@ export default function ProfilePage() {
     setIsEditing(!isEditing)
   }
 
+  const handleSaveProfile = (updatedData: any) => {
+    // Update the user context with new data
+    if (user) {
+      const updatedUser = { ...user, ...updatedData }
+      updateUser(updatedUser)
+    }
+    setIsEditing(false)
+  }
+
   const handleLogout = async () => {
     if (confirm('Are you sure you want to log out?')) {
       try {
@@ -186,6 +232,37 @@ export default function ProfilePage() {
         toast.error('Failed to logout')
       }
     }
+  }
+
+  // Toggle sections and fetch on demand
+  const handleToggle = async (key: 'chapters' | 'groups' | 'connections' | 'events') => {
+    const next = expanded === key ? null : key
+    setExpanded(next)
+    if (!user || next === null) return
+    try {
+      if (key === 'chapters') {
+        const res = await safeApiCall(
+          () => fetch(`/api/users/${user.id}/chapters`, { credentials: 'include' }),
+          'Failed to load chapters'
+        )
+        const data: any = (res as any).data
+        if ((res as any).success && data?.chapters) setChapters(data.chapters)
+      } else if (key === 'connections') {
+        const res = await safeApiCall(
+          () => fetch(`/api/follow`, { credentials: 'include' }),
+          'Failed to load connections'
+        )
+        const data: any = (res as any).data
+        if ((res as any).success && Array.isArray(data?.following)) setConnections(data.following)
+      } else if (key === 'events') {
+        const res = await safeApiCall(
+          () => fetch(`/api/users/${user.id}/events-attended`, { credentials: 'include' }),
+          'Failed to load events'
+        )
+        const data: any = (res as any).data
+        if ((res as any).success && Array.isArray(data?.events)) setEvents(data.events)
+      }
+    } catch {}
   }
 
   return (
@@ -277,7 +354,14 @@ export default function ProfilePage() {
 
             {/* Profile Content */}
             <div className="px-4 sm:px-6 lg:px-8">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
+              {isEditing ? (
+                <EditProfileForm 
+                  user={user} 
+                  onCancel={() => setIsEditing(false)}
+                  onSave={handleSaveProfile}
+                />
+              ) : (
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <div className="overflow-x-auto">
                   <TabsList className="grid w-full grid-cols-4 min-w-max lg:min-w-0">
                     <TabsTrigger value="about" className="whitespace-nowrap cursor-pointer text-xs sm:text-sm">
@@ -348,42 +432,44 @@ export default function ProfilePage() {
                 <TabsContent value="activity" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-sm sm:text-base">Recent Activity</h3>
-                    <Badge variant="outline" className="text-xs">{userPosts.length} posts</Badge>
                   </div>
-                  {userPosts.map((post, index) => (
-                    <Card key={index} className="p-3 sm:p-4">
-                      <div className="flex items-start space-x-2 sm:space-x-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold text-white flex-shrink-0">
-                          {post.author.avatar}
+                  <Card className="p-3 sm:p-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                      <StatTile onClick={() => handleToggle('chapters')} clickable icon={<Users className="w-4 h-4" />} label="Chapters Joined" value={statsLoading ? '—' : String(stats.chaptersJoined)} />
+                      <StatTile onClick={() => handleToggle('groups')} clickable icon={<Lock className="w-4 h-4" />} label="Groups Joined" value={statsLoading ? '—' : String(stats.groupsJoined)} />
+                      <StatTile onClick={() => handleToggle('connections')} clickable icon={<UserPlus className="w-4 h-4" />} label="Connections" value={statsLoading ? '—' : String(stats.connections)} />
+                      <StatTile icon={<Mail className="w-4 h-4" />} label="Req. Incoming" value={statsLoading ? '—' : String(stats.connectionRequestsIncoming)} />
+                      <StatTile icon={<Send className="w-4 h-4" />} label="Req. Outgoing" value={statsLoading ? '—' : String(stats.connectionRequestsOutgoing)} />
+                      <StatTile icon={<MessageCircle className="w-4 h-4" />} label="Total Messages" value={statsLoading ? '—' : String(stats.totalMessages)} />
+                      <StatTile icon={<Hash className="w-4 h-4" />} label="Posts" value={statsLoading ? '—' : String(stats.posts)} />
+                      <StatTile onClick={() => handleToggle('events')} clickable icon={<Calendar className="w-4 h-4" />} label="Events Attended" value={statsLoading ? '—' : String(stats.eventsAttended)} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 mb-2">
-                            <span className="font-semibold text-sm sm:text-base">{post.author.name}</span>
-                            <div className="flex items-center space-x-1 sm:space-x-2">
-                              <Badge variant="outline" className="text-xs">{post.author.rewardScore}</Badge>
-                              <span className="text-xs sm:text-sm text-muted-foreground">{post.author.role}</span>
-                              <span className="text-xs sm:text-sm text-muted-foreground">{post.timestamp}</span>
-                            </div>
-                          </div>
-                          <p className="text-xs sm:text-sm mb-2 sm:mb-3 leading-relaxed">{post.content}</p>
-                          <div className="flex items-center space-x-3 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
-                            <button className="flex items-center space-x-1 hover:text-red-500 cursor-pointer">
-                              <Heart className={`w-3 h-3 sm:w-4 sm:h-4 ${post.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                              <span>{post.engagement.likes}</span>
-                            </button>
-                            <button className="flex items-center space-x-1 hover:text-blue-500 cursor-pointer">
-                              <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
-                              <span>{post.engagement.comments}</span>
-                            </button>
-                            <button className="flex items-center space-x-1 hover:text-green-500 cursor-pointer">
-                              <Share2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                              <span>{post.engagement.shares}</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                  </Card>
+
+                  {expanded === 'chapters' && (
+                    <Card className="p-3 sm:p-4">
+                      <h4 className="font-medium mb-2">Chapters</h4>
+                      <SimpleList items={chapters.map((c:any)=>({id: c.id, title: `${c.name} • ${c.location_city}`}))} emptyText="No chapters"/>
                     </Card>
-                  ))}
+                  )}
+                  {expanded === 'groups' && (
+                    <Card className="p-3 sm:p-4">
+                      <h4 className="font-medium mb-2">Groups</h4>
+                      <SimpleList items={userGroups.map((g:any)=>({id: g.name, title: `${g.name} • ${g.members} members`}))} emptyText="No groups"/>
+                    </Card>
+                  )}
+                  {expanded === 'connections' && (
+                    <Card className="p-3 sm:p-4">
+                      <h4 className="font-medium mb-2">Connections</h4>
+                      <SimpleList items={connections.map((u:any)=>({id: u.id, title: u.name}))} emptyText="No connections"/>
+                    </Card>
+                  )}
+                  {expanded === 'events' && (
+                    <Card className="p-3 sm:p-4">
+                      <h4 className="font-medium mb-2">Events Attended</h4>
+                      <SimpleList items={events.map((e:any)=>({id: e.id, title: `${e.title} • ${new Date(e.date).toLocaleDateString()}`}))} emptyText="No events"/>
+                    </Card>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="groups" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
@@ -525,6 +611,7 @@ export default function ProfilePage() {
                   </Card>
                 </TabsContent>
               </Tabs>
+              )}
             </div>
           </div>
 
@@ -538,5 +625,30 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function StatTile({ icon, label, value, onClick, clickable }: { icon: React.ReactNode, label: string, value: string, onClick?: () => void, clickable?: boolean }) {
+  return (
+    <div onClick={onClick} className={`rounded-lg border p-3 sm:p-4 bg-background ${clickable ? 'cursor-pointer hover:bg-accent/30 transition-colors' : ''}`}>
+      <div className="flex items-center justify-between mb-2 text-muted-foreground">
+        <span className="text-xs sm:text-sm">{label}</span>
+        {icon}
+      </div>
+      <div className="text-lg sm:text-2xl font-semibold">{value}</div>
+    </div>
+  )
+}
+
+function SimpleList({ items, emptyText }: { items: { id: string|number, title: string }[], emptyText: string }) {
+  if (!items || items.length === 0) {
+    return <div className="text-sm text-muted-foreground">{emptyText}</div>
+  }
+  return (
+    <ul className="space-y-2">
+      {items.map((it) => (
+        <li key={it.id} className="text-sm">{it.title}</li>
+      ))}
+    </ul>
   )
 }

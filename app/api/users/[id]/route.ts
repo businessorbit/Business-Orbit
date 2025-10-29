@@ -5,7 +5,7 @@ import { getUserFromToken } from '@/lib/utils/auth';
 // Note: Avoid in-memory caching on serverless to prevent stale profile images
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getUserFromToken(request);
@@ -17,7 +17,7 @@ export async function GET(
       );
     }
 
-    const { id: userIdParam } = params || ({} as any);
+    const { id: userIdParam } = await params;
     const userId = parseInt(userIdParam);
 
     if (isNaN(userId)) {
@@ -96,29 +96,109 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authUser = await getUserFromToken(request)
     if (!authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const { id: userIdParam } = params || ({} as any)
+    const { id: userIdParam } = await params
     const userId = parseInt(userIdParam)
     if (!Number.isFinite(userId) || userId !== Number(authUser.id)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-    const body = await request.json().catch(() => ({})) as { name?: string }
+    
+    const body = await request.json().catch(() => ({})) as { 
+      name?: string
+      profession?: string
+      description?: string
+      skills?: string[]
+      interest?: string
+    }
+    
+    // Validate name if provided
     const name = typeof body.name === 'string' ? body.name.trim() : undefined
-    if (!name || name.length < 2 || name.length > 100) {
+    if (name && (name.length < 2 || name.length > 100)) {
       return NextResponse.json({ error: 'Invalid name' }, { status: 400 })
     }
 
-    const result = await pool.query(
-      'UPDATE users SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, name, email, phone, profile_photo_url, banner_url, skills, description, profession, created_at',
-      [name, userId]
-    )
+    // Validate profession if provided
+    const profession = typeof body.profession === 'string' ? body.profession.trim() : undefined
+    if (profession && profession.length > 100) {
+      return NextResponse.json({ error: 'Profession too long' }, { status: 400 })
+    }
+
+    // Validate description if provided
+    const description = typeof body.description === 'string' ? body.description.trim() : undefined
+    if (description && description.length > 500) {
+      return NextResponse.json({ error: 'Description too long' }, { status: 400 })
+    }
+
+    // Validate skills if provided
+    const skills = Array.isArray(body.skills) ? body.skills.filter(skill => typeof skill === 'string' && skill.trim().length > 0) : undefined
+    if (skills && skills.length > 10) {
+      return NextResponse.json({ error: 'Too many skills' }, { status: 400 })
+    }
+
+    // Validate interest if provided
+    const interest = typeof body.interest === 'string' ? body.interest.trim() : undefined
+    if (interest && interest.length > 100) {
+      return NextResponse.json({ error: 'Interest too long' }, { status: 400 })
+    }
+
+    // Build dynamic update query
+    const updateFields = []
+    const values = []
+    let paramCount = 1
+
+    if (name !== undefined) {
+      updateFields.push(`name = $${paramCount}`)
+      values.push(name)
+      paramCount++
+    }
+
+    if (profession !== undefined) {
+      updateFields.push(`profession = $${paramCount}`)
+      values.push(profession)
+      paramCount++
+    }
+
+    if (description !== undefined) {
+      updateFields.push(`description = $${paramCount}`)
+      values.push(description)
+      paramCount++
+    }
+
+    if (skills !== undefined) {
+      updateFields.push(`skills = $${paramCount}`)
+      values.push(JSON.stringify(skills))
+      paramCount++
+    }
+
+    if (interest !== undefined) {
+      updateFields.push(`interest = $${paramCount}`)
+      values.push(interest)
+      paramCount++
+    }
+
+    if (updateFields.length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+    }
+
+    updateFields.push(`updated_at = CURRENT_TIMESTAMP`)
+    values.push(userId)
+
+    const query = `
+      UPDATE users 
+      SET ${updateFields.join(', ')} 
+      WHERE id = $${paramCount} 
+      RETURNING id, name, email, phone, profile_photo_url, banner_url, skills, description, profession, interest, created_at
+    `
+
+    const result = await pool.query(query, values)
     const row = result.rows[0]
+    
     const res = NextResponse.json({
       user: {
         id: row.id,
@@ -130,6 +210,7 @@ export async function PATCH(
         skills: row.skills || [],
         description: row.description,
         profession: row.profession,
+        interest: row.interest,
         createdAt: row.created_at,
       }
     })

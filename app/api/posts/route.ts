@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
           u.id as user_id,
           u.name as user_name,
           u.profile_photo_url,
+          u.profession,
           COALESCE(like_count.likes, 0) as likes,
           COALESCE(comment_count.comments, 0) as comments,
           COALESCE(share_count.shares, 0) as shares

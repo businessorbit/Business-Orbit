@@ -11,7 +11,6 @@ import SecretGroupsCard from "@/components/SecretGroupsCard"
 import RequestsCard from "@/components/RequestsCard"
 import SuggestedConnectionsCard from "@/components/SuggestedConnectionsCard"
 import UpcomingEventsCard from "@/components/UpcomingEventsCard"
-import DynamicEventsFeed from "@/components/DynamicEventsFeed"
 import { safeApiCall } from "@/lib/utils/api"
 import { Button } from "@/components/ui/button"
 import { Sparkles } from "lucide-react"
@@ -24,6 +23,7 @@ interface Post {
   user_id: number;
   user_name: string;
   profile_photo_url?: string;
+  profession?: string;
   likes: number;
   comments: number;
   shares: number;
@@ -205,8 +205,6 @@ export default function FeedPage() {
                       onPostDeleted={handlePostDeleted}
                     />
                   ))}
-                  
-                  <DynamicEventsFeed />
                 </>
               )}
             </div>

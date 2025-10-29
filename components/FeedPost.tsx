@@ -16,6 +16,7 @@ interface Post {
   user_id: number;
   user_name: string;
   profile_photo_url?: string;
+  profession?: string;
   likes: number;
   comments: number;
   shares: number;
@@ -201,7 +202,7 @@ export default function FeedPost({ post, onEngagementChange, onPostDeleted }: Fe
                 <span className="text-xs font-medium text-gray-600">92</span>
               </div>
             </div>
-            <p className="text-sm text-gray-500">Product Manager</p>
+            <p className="text-sm text-gray-500">{post.profession || 'Professional'}</p>
             <p className="text-xs text-gray-400">{formatTimeAgo(post.published_at || post.created_at)}</p>
           </div>
 

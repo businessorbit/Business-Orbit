@@ -11,7 +11,7 @@ import { Calendar, Trophy, MessageSquare, Users, Lock, Plus, MapPin, Loader2, Tr
 import { Navigation } from "@/components/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { safeApiCall } from "@/lib/utils/api";
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import Link from "next/link";
 
 interface UserChapter {
@@ -135,33 +135,42 @@ export default function ChapterDashboard() {
 
     setIsAdding(true);
     try {
-      const result = await safeApiCall(
-        () => fetch('/api/chapters/add', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            locations: selectedChapters
-          }),
+      const response = await fetch('/api/chapters/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          locations: selectedChapters
         }),
-        'Failed to add chapters'
-      );
+      });
 
-      if (result.success) {
-        const memberships = (result.data as any)?.memberships ?? 0;
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const memberships = data?.memberships ?? 0;
         toast.success(`Successfully joined ${memberships} chapters!`);
         setIsAddChapterOpen(false);
         setSelectedChapters([]);
         // Refresh user chapters
         await fetchUserChapters();
-      } else if (result.error) {
-        // Show specific error message for chapter limit
-        const errorMsg = result.error === 'Chapter limit exceeded' 
-          ? 'You cannot join more than 5 chapters' 
-          : result.error;
-        toast.error(errorMsg);
+      } else {
+        // Check for chapter limit error specifically (check both error and message fields)
+        const errorMsg = data?.error || data?.message || 'Failed to add chapters';
+        const lowerError = errorMsg.toLowerCase();
+        
+        // Debug logging
+        console.log('Add chapter error response:', { status: response.status, data, errorMsg, lowerError });
+        
+        if (lowerError.includes('chapter limit exceeded') || 
+            lowerError.includes('cannot join more than 5') ||
+            lowerError.includes('chapter limit')) {
+          console.log('Showing chapter limit toast');
+          toast.error('You cannot join more than 5 chapters');
+        } else {
+          toast.error(errorMsg);
+        }
       }
     } catch (error) {
       toast.error('Failed to add chapters');

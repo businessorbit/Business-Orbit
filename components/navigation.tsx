@@ -2,11 +2,14 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Bell, Search, Home, Compass, Users, Calendar, User, Settings } from "lucide-react"
+import { useState } from "react"
+import SearchModal from "@/components/SearchModal"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 export function Navigation() {
   const pathname = usePathname()
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const tabs = [
     { name: "Feed", href: "/product/feed", icon: Home },
@@ -50,7 +53,7 @@ export function Navigation() {
 
             {/* Right - Search and Actions */}
             <div className="flex items-center space-x-3">
-              <Button variant="ghost" size="sm" className="hidden sm:flex items-center space-x-2 hover:bg-accent/50 cursor-pointer">
+              <Button onClick={() => setSearchOpen(true)} variant="ghost" size="sm" className="hidden sm:flex items-center space-x-2 hover:bg-accent/50 cursor-pointer">
                 <Search className="w-4 h-4" />
                 <span className="text-sm text-muted-foreground">Search</span>
               </Button>
@@ -78,6 +81,7 @@ export function Navigation() {
           </div>
         </div>
       </nav>
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* Mobile Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border md:hidden">
