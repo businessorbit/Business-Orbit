@@ -109,14 +109,13 @@ export default function AuthPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [submitting, setSubmitting] = useState(false);
-    const API_BASE = process.env.NEXT_PUBLIC_APP_BASE_URL || '';
 
     const onSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setSubmitting(true);
       try {
-        const endpoint = `${API_BASE}/api/admin/auth/login`;
-        const res = await fetch(endpoint, {
+        // Use relative path - Vercel rewrite will proxy to EC2 backend
+        const res = await fetch('/api/admin/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
