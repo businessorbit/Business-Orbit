@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateToken, setTokenCookie } from '@/lib/utils/auth';
 import pool from '@/lib/config/database';
+import { proxyToBackend } from '@/lib/utils/proxy-api';
 
 // Admin credentials from environment variables with fallback
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 export async function POST(request: NextRequest) {
+  // In production on Vercel, proxy to backend (Vercel doesn't have database access)
+  // Also proxy if database pool is not available
+  if (process.env.VERCEL || !pool) {
+    return proxyToBackend(request, '/api/admin/auth/login');
+  }
+  
   try {
     const { email, password } = await request.json();
 

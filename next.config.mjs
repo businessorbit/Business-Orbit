@@ -11,6 +11,15 @@ const nextConfig = {
     domains: ['res.cloudinary.com'],
   },
   serverExternalPackages: ['pg'],
+  // Proxy all API routes to backend
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_APP_BASE_URL || 'https://api.businessorbit.org'}/api/:path*`,
+      },
+    ];
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {

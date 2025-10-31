@@ -3,10 +3,16 @@ import bcrypt from 'bcryptjs';
 import { cloudinary } from '@/lib/config/cloudinary';
 import pool from '@/lib/config/database';
 import { generateToken, setTokenCookie } from '@/lib/utils/auth';
+import { proxyToBackend } from '@/lib/utils/proxy-api';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
+  // In production on Vercel, proxy to backend (Vercel doesn't have database access)
+  // Also proxy if database pool is not available
+  if (process.env.VERCEL || !pool) {
+    return proxyToBackend(request, '/api/auth/signup');
+  }
   // Declare variables at function scope so they're accessible in catch block
   let name: string = '', email: string = '', phone: string = '', password: string = '', confirmPassword: string = '';
   let skills: string = '', description: string = '', profession: string = '', interest: string = '';
