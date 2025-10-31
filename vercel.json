@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "http://51.20.78.210:3001/api/$1" }
+    { "source": "/api/(.*)", "destination": "https://api.businessorbit.org/api/$1" }
   ]
 }
 
