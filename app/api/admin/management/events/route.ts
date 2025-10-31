@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from '@/lib/config/database';
 import sgMail from "@sendgrid/mail";
+import { proxyToBackend } from '@/lib/utils/proxy-api';
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY || "");
 
 // ---------------- GET /api/admin/events ----------------
 export async function GET(req: NextRequest) {
+  // In production on Vercel, proxy to backend
+  if (process.env.VERCEL || !pool) {
+    const url = new URL(req.url);
+    return proxyToBackend(req, `/api/admin/management/events${url.search}`);
+  }
   try {
     const url = new URL(req.url);
     const eventId = url.searchParams.get("id");
@@ -56,6 +62,10 @@ export async function GET(req: NextRequest) {
 
 // ---------------- POST /api/admin/events ----------------
 export async function POST(req: NextRequest) {
+  // In production on Vercel, proxy to backend
+  if (process.env.VERCEL || !pool) {
+    return proxyToBackend(req, '/api/admin/management/events');
+  }
   try {
     const { title, description, date, event_type, meeting_link, venue_address, status } = await req.json();
 
@@ -92,6 +102,10 @@ export async function POST(req: NextRequest) {
 
 // ---------------- PUT /api/admin/events ----------------
 export async function PUT(req: NextRequest) {
+  // In production on Vercel, proxy to backend
+  if (process.env.VERCEL || !pool) {
+    return proxyToBackend(req, '/api/admin/management/events');
+  }
   try {
     const { id, title, description, date, event_type, meeting_link, venue_address, status } =
       await req.json();

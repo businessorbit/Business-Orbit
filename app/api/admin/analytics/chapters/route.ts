@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/config/database'
 import { getUserFromToken } from '@/lib/utils/auth'
+import { proxyToBackend } from '@/lib/utils/proxy-api'
 
 export async function GET(request: NextRequest) {
+  // In production on Vercel, proxy to backend
+  if (process.env.VERCEL || !pool) {
+    const url = new URL(request.url);
+    return proxyToBackend(request, `/api/admin/analytics/chapters${url.search}`);
+  }
   try {
     // Check if user is admin
     const user = await getUserFromToken(request)

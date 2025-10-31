@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromToken } from '@/lib/utils/auth';
+import { proxyToBackend } from '@/lib/utils/proxy-api';
+import pool from '@/lib/config/database';
 
 export async function GET(request: NextRequest) {
+  // In production on Vercel, proxy to backend (Vercel doesn't have database access)
+  if (process.env.VERCEL || !pool) {
+    return proxyToBackend(request, '/api/auth/me');
+  }
   try {
     const user = await getUserFromToken(request);
 
