@@ -106,6 +106,7 @@ export default function AuthPage() {
   }
 
   const AdminForm = () => {
+    const { checkAuth } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -122,8 +123,16 @@ export default function AuthPage() {
           body: JSON.stringify({ email, password }),
         });
         if (res.ok) {
-          // Direct redirect to admin dashboard after successful login
-          window.location.href = '/product/admin';
+          const data = await res.json();
+          // Update auth context with admin user data
+          if (data.user) {
+            // Refresh auth state before redirect
+            await checkAuth();
+          }
+          // Small delay to ensure cookie is set, then redirect
+          setTimeout(() => {
+            window.location.href = '/product/admin';
+          }, 100);
           return;
         }
         const data = await res.json();

@@ -2,10 +2,10 @@
  * Proxy utility to forward API requests to the backend server
  * Used in production when API routes should be handled by EC2 backend
  */
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function proxyToBackend(
-  request: Request,
+  request: NextRequest | Request,
   path: string
 ): Promise<NextResponse> {
   const backendUrl = process.env.NEXT_PUBLIC_APP_BASE_URL || 'https://api.businessorbit.org';
@@ -19,6 +19,30 @@ export async function proxyToBackend(
   headers.set('host', new URL(targetUrl).host);
   headers.set('x-forwarded-host', request.headers.get('host') || '');
   headers.set('x-forwarded-proto', 'https');
+  
+  // Properly forward cookies from NextRequest
+  let cookieHeader = request.headers.get('cookie') || '';
+  
+  // If NextRequest, also get cookies from cookies API and merge
+  if (request instanceof NextRequest) {
+    const cookies: string[] = [];
+    request.cookies.getAll().forEach(cookie => {
+      cookies.push(`${cookie.name}=${cookie.value}`);
+    });
+    
+    // Merge with existing cookie header if any
+    if (cookies.length > 0) {
+      const mergedCookies = cookieHeader 
+        ? [...cookies, cookieHeader].join('; ')
+        : cookies.join('; ');
+      cookieHeader = mergedCookies;
+    }
+  }
+  
+  // Set cookie header for backend
+  if (cookieHeader) {
+    headers.set('cookie', cookieHeader);
+  }
 
   // Clone the request to read body if needed
   let body: BodyInit | null = null;
@@ -54,12 +78,6 @@ export async function proxyToBackend(
   }
 
   try {
-    // Forward cookies from original request
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      headers.set('cookie', cookieHeader);
-    }
-
     const response = await fetch(targetUrl, {
       method,
       headers: headers as HeadersInit,

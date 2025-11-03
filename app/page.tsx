@@ -9,19 +9,13 @@ export default function HomePage() {
   const [shouldRedirect, setShouldRedirect] = useState(false)
 
   useEffect(() => {
-    // Debug logging
-    console.log('HomePage - loading:', loading, 'user:', user)
-    
     // Only redirect if user is actually authenticated and not loading
     if (!loading && user && user.id) {
-      console.log('User is authenticated, redirecting to feed')
       setShouldRedirect(true)
       // Small delay to prevent flash
       setTimeout(() => {
         window.location.href = '/product/feed';
       }, 100)
-    } else if (!loading && !user) {
-      console.log('User is not authenticated, showing landing page')
     }
   }, [user, loading])
 

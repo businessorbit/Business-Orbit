@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
   if (process.env.VERCEL || !pool) {
     return proxyToBackend(request, '/api/auth/signup');
   }
+  
   // Declare variables at function scope so they're accessible in catch block
   let name: string = '', email: string = '', phone: string = '', password: string = '', confirmPassword: string = '';
   let skills: string = '', description: string = '', profession: string = '', interest: string = '';
@@ -82,13 +83,13 @@ export async function POST(request: NextRequest) {
           skillsArray = [];
       }
     } catch (error) {
-      skillsArray = [];
-    }
+        skillsArray = [];
+      }
     }
 
     // Handle file uploads with Cloudinary
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
-    const maxSize = 4 * 1024 * 1024 // 4MB to align with serverless payload constraints
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 4 * 1024 * 1024; // 4MB to align with serverless payload constraints
 
     // Upload helper: use base64 data URI (more reliable on serverless)
     const uploadImage = async (
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
       }
       try {
         // Check if Cloudinary is configured
-        if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_URL) {
+        if ((process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) || process.env.CLOUDINARY_URL) {
           const arrayBuffer = await profilePhoto.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
           const profilePhotoResult = await uploadImage(buffer, {
@@ -131,8 +132,9 @@ export async function POST(request: NextRequest) {
           profilePhotoUrl = null;
           profilePhotoId = null;
         }
-      } catch (error) {
-        // If upload fails, continue without photo
+      } catch (error: any) {
+        // If upload fails, log and continue without photo
+        console.error('Profile photo upload error:', error.message || error);
         profilePhotoUrl = null;
         profilePhotoId = null;
       }
@@ -148,7 +150,7 @@ export async function POST(request: NextRequest) {
       }
       try {
         // Check if Cloudinary is configured
-        if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_URL) {
+        if ((process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) || process.env.CLOUDINARY_URL) {
           const arrayBuffer = await banner.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
           const bannerResult = await uploadImage(buffer, {
@@ -168,8 +170,9 @@ export async function POST(request: NextRequest) {
           bannerUrl = null;
           bannerId = null;
         }
-      } catch (error) {
-        // If upload fails, continue without banner
+      } catch (error: any) {
+        // If upload fails, log and continue without banner
+        console.error('Banner upload error:', error.message || error);
         bannerUrl = null;
         bannerId = null;
       }
@@ -231,6 +234,14 @@ export async function POST(request: NextRequest) {
     return response;
 
   } catch (error: any) {
+    // Log error for debugging
+    console.error('Signup error:', {
+      message: error.message,
+      code: error.code,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      email: email || 'unknown'
+    });
+    
     // Provide more specific error messages
     if (error.code === '23505') {
       return NextResponse.json(
@@ -313,10 +324,16 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Return detailed error in development, generic in production
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? error.message 
+      : 'Something went wrong. Please try again or contact support.';
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+        details: errorMessage,
+        ...(process.env.NODE_ENV === 'development' && { code: error.code })
       },
       { status: 500 }
     );

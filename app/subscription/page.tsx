@@ -78,7 +78,6 @@ export default function SubscriptionPage() {
   const handleProceedToPay = () => {
     if (!selectedPlan) return;
     // Here you would integrate with payment gateway
-    console.log('Selected plan:', selectedPlan);
     window.location.href = '/product/connection';
   };
 

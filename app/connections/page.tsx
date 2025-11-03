@@ -225,12 +225,10 @@ export default function ConnectionsPage() {
   const handleViewProfile = (connection: Connection) => {
     // In a real app, this would navigate to the profile page
     toast.success(`Viewing ${connection.name}'s profile`);
-    console.log('Viewing profile:', connection);
   };
 
   const handleMessage = (connection: Connection) => {
     toast.success(`Starting conversation with ${connection.name}`);
-    console.log('Starting conversation:', connection);
   };
 
   const filteredConnections = connections.filter(connection => {

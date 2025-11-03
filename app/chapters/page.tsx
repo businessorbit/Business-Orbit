@@ -160,13 +160,9 @@ export default function ChapterDashboard() {
         const errorMsg = data?.error || data?.message || 'Failed to add chapters';
         const lowerError = errorMsg.toLowerCase();
         
-        // Debug logging
-        console.log('Add chapter error response:', { status: response.status, data, errorMsg, lowerError });
-        
         if (lowerError.includes('chapter limit exceeded') || 
             lowerError.includes('cannot join more than 5') ||
             lowerError.includes('chapter limit')) {
-          console.log('Showing chapter limit toast');
           toast.error('You cannot join more than 5 chapters');
         } else {
           toast.error(errorMsg);
@@ -216,7 +212,6 @@ export default function ChapterDashboard() {
   };
 
   useEffect(() => {
-    console.log('Chapters page - User state:', { user, loading });
     if (user && !loading) {
       fetchUserChapters();
       fetchUpcomingEvents();

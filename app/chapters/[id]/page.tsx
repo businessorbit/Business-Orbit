@@ -208,18 +208,14 @@ export default function ChapterPage() {
     fetchingMembersRef.current = true
     setMembersLoading(true)
     try {
-      console.log('Fetching chapter members for:', params.id)
       const result = await safeApiCall(
         () => fetch(`/api/chapters/${params.id}/members`, { credentials: 'include' }),
         'Failed to fetch chapter members'
       )
 
-      console.log('Chapter members API result:', result)
-
       if (result.success && result.data && typeof result.data === 'object' && result.data !== null) {
         const data = result.data as any
         const members = data.members || []
-        console.log('Setting chapter members:', members.length, 'members')
         setChapterMembers(members)
         
         // Member count will be displayed separately, no need to update chapterData
@@ -345,10 +341,8 @@ export default function ChapterPage() {
     // Skip refresh if already loading and not forced
     if (eventsLoading && !forceRefresh) return
     
-    setEventsLoading(true)
+      setEventsLoading(true)
     try {
-      console.log('Fetching upcoming events...')
-      
       // Include user ID in query for better filtering (RSVP status)
       const url = user?.id ? `/api/events?userId=${user.id}&limit=8` : '/api/events?limit=8'
       const response = await fetch(url, {
@@ -358,11 +352,8 @@ export default function ChapterPage() {
         }
       })
       
-      console.log('Events API response status:', response.status)
-      
       if (response.ok) {
         const events = await response.json()
-        console.log('Events API response:', events)
         
         // Filter upcoming events, sort by date, and limit to 5 (showing more relevant events)
         const now = new Date()
@@ -395,7 +386,6 @@ export default function ChapterPage() {
             }
           })
         
-        console.log('Processed upcoming events:', upcoming)
         setUpcomingEvents(upcoming)
         setLastEventsUpdate(new Date())
         
@@ -423,14 +413,12 @@ export default function ChapterPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      console.log('Fetching chapter data for ID:', params.id);
       fetchChapterData()
     }
   }, [params.id, authLoading, user])
 
   useEffect(() => {
     if (chapterData && params.id) {
-      console.log('Fetching chapter members for:', chapterData.id);
       // Add a small delay to prevent rapid successive calls
       const timeoutId = setTimeout(() => {
         fetchChapterMembers()
@@ -535,7 +523,6 @@ export default function ChapterPage() {
         const res = await fetch(`/api/chat/${params.id}/messages?limit=50`, { credentials: 'include' })
         if (res.ok) {
           const data = await res.json() as { success: boolean; messages: ChatMessage[]; nextCursor?: string | null }
-          console.log('Loaded messages from API:', data.messages.length, 'messages')
           if (data.success) {
             setMessages(data.messages || [])
             setNextCursor(data.nextCursor || null)
@@ -575,11 +562,9 @@ export default function ChapterPage() {
           signal: AbortSignal.timeout(3000) // 3 second timeout
         })
         if (response.ok) {
-          console.log('Chat server available, connecting WebSocket...')
           return true
         }
       } catch (error) {
-        console.log('Chat server not available, using HTTP-only mode')
         setConnecting(false)
         setConnectionError('')
         return false
@@ -606,7 +591,6 @@ export default function ChapterPage() {
         s.off('connect').on('connect', () => { 
           setConnecting(false)
           setConnectionError("")
-          console.log('Socket connected successfully')
           // Join room on successful connect
           const uid = user?.id ? String(user.id) : ''
           if (uid && params.id) {
@@ -615,7 +599,6 @@ export default function ChapterPage() {
                 console.error('joinRoom denied on connect:', res?.error)
                 setConnectionError(res?.error || 'Join denied')
               } else {
-                console.log('Successfully joined room after connect')
                 setConnectionError("")
               }
             })
@@ -624,18 +607,15 @@ export default function ChapterPage() {
         
         s.off('disconnect').on('disconnect', () => {
           setConnecting(true)
-          console.log('Socket disconnected')
         })
         
         s.off('connect_error').on('connect_error', (error: any) => {
-          console.log('WebSocket connection failed, using HTTP-only mode')
           setConnectionError('')
           setConnecting(false)
         })
         
         // Message handling
         s.off('newMessage').on('newMessage', (msg: ChatMessage) => {
-          console.log('Received new message via socket:', msg.content)
           if (String(msg.chapterId) === String(params.id)) {
             setMessages(prev => {
               const exists = prev.some(m => m.id === msg.id)
@@ -739,7 +719,6 @@ export default function ChapterPage() {
     }
     
     setInput("")
-    console.log('Sending message:', msg.content)
     
     // Optimistic update
     setMessages(prev => [...prev, msg])
