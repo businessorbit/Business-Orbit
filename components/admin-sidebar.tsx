@@ -45,12 +45,10 @@ export function AdminSidebar() {
         // Redirect to product auth page
         router.push('/product/auth')
       } else {
-        console.error('Logout failed')
         // Still redirect even if logout API fails
         router.push('/product/auth')
       }
-    } catch (error) {
-      console.error('Logout error:', error)
+    } catch {
       // Still redirect even if logout API fails
       router.push('/product/auth')
     } finally {

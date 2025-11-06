@@ -262,8 +262,7 @@ export async function POST(request: NextRequest) {
     } finally {
       client.release();
     }
-  } catch (error) {
-    console.error('Error creating post:', error);
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Failed to create post' },
       { status: 500 }
@@ -333,8 +332,7 @@ export async function DELETE(request: NextRequest) {
     } finally {
       client.release();
     }
-  } catch (error) {
-    console.error('Error deleting post:', error);
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Failed to delete post' },
       { status: 500 }

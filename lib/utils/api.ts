@@ -27,7 +27,6 @@ export async function safeApiCall<T>(
       data
     };
   } catch (error) {
-    console.error('API call failed:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : errorMessage

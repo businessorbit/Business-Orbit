@@ -122,8 +122,7 @@ export async function GET(request: NextRequest) {
     } finally {
       client.release()
     }
-  } catch (error) {
-    console.error('Search API error:', error)
+  } catch {
     return NextResponse.json({ success: false, error: 'Search failed' }, { status: 500 })
   }
 }

@@ -107,8 +107,7 @@ export default function AdminDashboard(): React.JSX.Element | null {
           }));
         }
 
-      } catch (error) {
-        console.error('Failed to fetch stats:', error);
+      } catch {
       } finally {
         setLoading(false);
       }

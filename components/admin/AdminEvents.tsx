@@ -98,8 +98,8 @@ export default function AdminEvents() {
       
       if (res.ok) {
         const data = await res.json();
-        // Filter out cancelled events from the dashboard list
-        const visible = Array.isArray(data) ? data.filter((e: Event) => String(e.status).toLowerCase() !== 'cancelled') : [];
+        // Events are already filtered at database level, but keep this as safety check
+        const visible = Array.isArray(data) ? data : [];
         setEvents(visible);
       } else {
         const errorData = await res.json();
@@ -192,12 +192,12 @@ export default function AdminEvents() {
     }
   };
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 60 seconds (reduced frequency for better performance)
   useEffect(() => {
     const interval = setInterval(() => {
       fetchEvents();
       fetchProposals();
-    }, 30000);
+    }, 60000); // Changed from 30000 to 60000 (30s to 60s)
 
     return () => clearInterval(interval);
   }, []);

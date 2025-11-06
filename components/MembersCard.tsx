@@ -53,8 +53,7 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
         } else {
           setError(result.error || 'Failed to fetch members')
         }
-      } catch (err) {
-        console.error('Error fetching members:', err)
+      } catch {
         setError('Failed to fetch members')
       } finally {
         setLoading(false)
@@ -85,8 +84,7 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
             setFollowing(followingIds)
           }
         }
-      } catch (error) {
-        console.error('Error fetching following list:', error)
+      } catch {
       }
     }
 
@@ -117,8 +115,7 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
             setPendingRequests(pendingIds)
           }
         }
-      } catch (error) {
-        console.error('Error fetching sent requests:', error)
+      } catch {
       }
     }
 
@@ -162,8 +159,7 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
       } else {
         toast.error(result.error || `Failed to ${action} member`)
       }
-    } catch (error) {
-      console.error('Error following member:', error)
+    } catch {
       toast.error('Failed to follow member')
     } finally {
       setFollowLoading(prev => {

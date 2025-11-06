@@ -67,7 +67,6 @@ export async function proxyToBackend(
       }
     }
   } catch (error) {
-    console.error('Error reading request body for proxy:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -165,7 +164,6 @@ export async function proxyToBackend(
 
     return nextResponse;
   } catch (error: any) {
-    console.error('Proxy error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',
