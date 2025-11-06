@@ -45,6 +45,7 @@ module.exports = {
         
         // Email
         EMAIL_USER: process.env.EMAIL_USER || '',
+        SENDGRID_API_KEY: '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',
         EMAIL_PASS: process.env.EMAIL_PASS || '',
         
         // Admin
@@ -67,7 +68,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         CHAT_SERVER_PORT: 4000,
-        DATABASE_URL: process.env.DATABASE_URL || '',
+        DATABASE_URL: 'postgresql://newbusinessorbit:Businessorbit123@businessorbit-db-new.cjiiwyokq0y2.eu-north-1.rds.amazonaws.com:5432/business_orbit_new',
         JWT_SECRET: process.env.JWT_SECRET || '',
         APP_BASE_URL: 'http://localhost:3001', // For internal API calls from chat server
         NEXT_PUBLIC_CHAT_SOCKET_URL: 'http://51.20.78.210:4000' // TODO: Change after SSL setup
