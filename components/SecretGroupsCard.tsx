@@ -108,6 +108,11 @@ export default function SecretGroupsCard({ className = "" }: SecretGroupsCardPro
           <div className="flex items-center">
             <Lock className="w-4 h-4 mr-2" />
             <span className="text-sm">Secret Groups</span>
+            {groups.length > 0 && (
+              <span className="ml-2 text-xs text-muted-foreground">
+                ({groups.length})
+              </span>
+            )}
           </div>
           <ChevronDown
             className={`w-4 h-4 transition-transform ${
@@ -126,7 +131,15 @@ export default function SecretGroupsCard({ className = "" }: SecretGroupsCardPro
                   key={group.id}
                   variant="ghost"
                   className="w-full justify-start p-1 h-auto text-xs"
-                  onClick={() => window.location.href = `/product/groups/${group.id}`}
+                  onClick={() => {
+                    // Try to navigate to group page, or show a message if it's a preference-based group
+                    if (group.id.startsWith('secret-')) {
+                      // This is a preference-based group, navigate to groups page
+                      window.location.href = '/product/groups'
+                    } else {
+                      window.location.href = `/product/groups/${group.id}`
+                    }
+                  }}
                 >
                   {group.name}
                   {group.member_count !== undefined && (

@@ -108,6 +108,11 @@ export default function ChaptersCard({ className = "" }: ChaptersCardProps) {
           <div className="flex items-center">
             <Users className="w-4 h-4 mr-2" />
             <span className="text-sm">Chapters</span>
+            {chapters.length > 0 && (
+              <span className="ml-2 text-xs text-muted-foreground">
+                ({chapters.length})
+              </span>
+            )}
           </div>
           <ChevronDown
             className={`w-4 h-4 transition-transform ${
@@ -126,7 +131,15 @@ export default function ChaptersCard({ className = "" }: ChaptersCardProps) {
                   key={chapter.id}
                   variant="ghost"
                   className="w-full justify-start p-1 h-auto text-xs"
-                  onClick={() => router.push(`/chapters/${chapter.id}`)}
+                  onClick={() => {
+                    // Try to navigate to chapter page, or show a message if it's a preference-based chapter
+                    if (chapter.id.startsWith('chapter-')) {
+                      // This is a preference-based chapter, navigate to chapters page
+                      router.push('/chapters')
+                    } else {
+                      router.push(`/chapters/${chapter.id}`)
+                    }
+                  }}
                 >
                   {chapter.name}
                 </Button>
