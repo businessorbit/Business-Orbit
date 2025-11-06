@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/config/database'
 import { createUserSecretGroups } from '@/lib/utils/chapters'
+import { proxyToBackend } from '@/lib/utils/proxy-api'
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  // In production, proxy to backend if database is not available
+  if (process.env.VERCEL || !pool) {
+    const { id } = await ctx.params
+    const url = new URL(req.url)
+    return proxyToBackend(req, `/api/users/${id}/secret-groups${url.search}`)
+  }
+
   try {
     const { id } = await ctx.params
     

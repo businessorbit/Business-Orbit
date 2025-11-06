@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/config/database'
 import { createUserChapters } from '@/lib/utils/chapters'
+import { proxyToBackend } from '@/lib/utils/proxy-api'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // In production, proxy to backend if database is not available
+  if (process.env.VERCEL || !pool) {
+    const { id: userId } = await params
+    const url = new URL(request.url)
+    return proxyToBackend(request, `/api/users/${userId}/chapters${url.search}`)
+  }
+
   try {
     const { id: userId } = await params
     
