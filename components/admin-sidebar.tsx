@@ -28,7 +28,7 @@ export function AdminSidebar() {
     { name: "Chapters", href: "/product/admin/chapters", icon: MapPinned },
     { name: "Groups", href: "/product/admin/groups", icon: Users },
     { name: "Chat Management", href: "/product/admin/chat", icon: MessageSquare },
-    { name: "Create Event", href: "/product/admin/events", icon: Calendar },
+    { name: "Event Management", href: "/product/admin/events", icon: Calendar },
     { name: "Review Members", href: "/product/admin/members", icon: Users },
     { name: "Platform Settings", href: "/product/admin/settings", icon: Settings },
   ]

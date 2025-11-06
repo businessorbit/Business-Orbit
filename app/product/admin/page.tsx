@@ -156,7 +156,7 @@ export default function AdminDashboard(): React.JSX.Element | null {
       color: "bg-black",
     },
     {
-      title: "Create Event",
+      title: "Event Management",
       description: "Create and manage events",
       href: "/product/admin/events",
       icon: Calendar,
@@ -292,7 +292,7 @@ export default function AdminDashboard(): React.JSX.Element | null {
             <Button asChild variant="outline" className="h-auto p-3 sm:p-4 flex flex-col items-center space-y-1 sm:space-y-2 text-xs sm:text-sm">
               <Link href="/product/admin/events">
                 <Calendar className="w-4 h-4 sm:w-6 sm:h-6 text-black" />
-                <span className="truncate">Create Event</span>
+                <span className="truncate">Event Management</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-3 sm:p-4 flex flex-col items-center space-y-1 sm:space-y-2 text-xs sm:text-sm">
