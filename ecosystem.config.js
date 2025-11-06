@@ -45,8 +45,8 @@ module.exports = {
         
         // Email
         EMAIL_USER: process.env.EMAIL_USER || '',
-        SENDGRID_API_KEY: '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',
         EMAIL_PASS: process.env.EMAIL_PASS || '',
+        SENDGRID_API_KEY: process.env.SENDGRID_API_KEY || '',
         
         // Admin
         ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
@@ -55,6 +55,24 @@ module.exports = {
         // Navigator AI
         NAVIGATOR_API_URL: process.env.NAVIGATOR_API_URL || '',
         NAVIGATOR_API_KEY: process.env.NAVIGATOR_API_KEY || ''
+      }
+    },
+    {
+      name: 'frontend',
+      script: 'npm',
+      args: 'start',
+      cwd: '/home/ubuntu/Business-Orbit',
+      exec_mode: 'fork',
+      instances: 1,
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+        // Frontend needs these to connect to backend
+        NEXT_PUBLIC_APP_URL: 'https://www.businessorbit.org',
+        NEXT_PUBLIC_APP_BASE_URL: 'https://api.businessorbit.org',
+        NEXT_PUBLIC_CHAT_SOCKET_URL: 'http://51.20.78.210:4000',
+        // Database connection for API routes
+        DATABASE_URL: process.env.DATABASE_URL || ''
       }
     },
     {
@@ -68,7 +86,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         CHAT_SERVER_PORT: 4000,
-        DATABASE_URL: 'postgresql://newbusinessorbit:Businessorbit123@businessorbit-db-new.cjiiwyokq0y2.eu-north-1.rds.amazonaws.com:5432/business_orbit_new',
+        DATABASE_URL: process.env.DATABASE_URL || '',
         JWT_SECRET: process.env.JWT_SECRET || '',
         APP_BASE_URL: 'http://localhost:3001', // For internal API calls from chat server
         NEXT_PUBLIC_CHAT_SOCKET_URL: 'http://51.20.78.210:4000' // TODO: Change after SSL setup
