@@ -9,22 +9,26 @@ if (process.env.VERCEL !== '1' && process.env.NODE_ENV !== 'production') {
 }
 
 // Configure Cloudinary (prefer explicit vars; if missing, fall back to CLOUDINARY_URL string)
-if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true,
-  });
-} else if (process.env.CLOUDINARY_URL) {
-  cloudinary.config(process.env.CLOUDINARY_URL);
-  cloudinary.config({ secure: true });
-} else {
-  // Helpful warning in non-prod envs
-  if (process.env.NODE_ENV !== 'production') {
-    // eslint-disable-next-line no-console
+try {
+  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+      secure: true,
+    });
+    console.log('Cloudinary configured with explicit credentials');
+  } else if (process.env.CLOUDINARY_URL) {
+    cloudinary.config(process.env.CLOUDINARY_URL);
+    cloudinary.config({ secure: true });
+    console.log('Cloudinary configured with CLOUDINARY_URL');
+  } else {
+    // Log warning in all environments for debugging
     console.warn('Cloudinary env vars are not set. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET or CLOUDINARY_URL');
   }
+} catch (error) {
+  console.error('Error configuring Cloudinary:', error);
+  // Don't throw - let individual routes handle the error
 }
 
 // Configure Cloudinary storage for multer
