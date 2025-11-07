@@ -142,7 +142,7 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
 
   const uploadFiles = async () => {
     if (files.length === 0) {
-      return [];
+      return { success: true, data: [] };
     }
 
     const formData = new FormData();
@@ -162,9 +162,15 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
     if (result.success) {
       const mediaArray = (result.data as any)?.data || result.data || [];
       setUploadedMedia(mediaArray as any[]);
-      return mediaArray as any[];
+      return { success: true, data: mediaArray };
     }
-    return [];
+    
+    // Return error information
+    return { 
+      success: false, 
+      error: result.error || 'Failed to upload files',
+      data: [] 
+    };
   };
 
   const handlePost = async () => {
@@ -180,8 +186,17 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
     setError("");
     try {
       // Upload files first if any
-      const uploadResult = files.length > 0 ? await uploadFiles() : [];
-      const media = Array.isArray(uploadResult) ? uploadResult : [];
+      let media = [];
+      if (files.length > 0) {
+        const uploadResult = await uploadFiles();
+        if (!uploadResult.success) {
+          // If upload failed, show error and stop
+          setError(uploadResult.error || 'Failed to upload image. Please try again.');
+          setIsSubmitting(false);
+          return;
+        }
+        media = Array.isArray(uploadResult.data) ? uploadResult.data : [];
+      }
 
       // Create post
       const result = await safeApiCall(
@@ -209,6 +224,12 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
+        if (imageInputRef.current) {
+          imageInputRef.current.value = "";
+        }
+        if (videoInputRef.current) {
+          videoInputRef.current.value = "";
+        }
         
         // Refresh daily status
         // await fetchDailyStatus();
@@ -227,7 +248,8 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
         // }
       }
     } catch (error) {
-      setError('Failed to create post');
+      console.error('Error creating post:', error);
+      setError('Failed to create post. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -240,8 +262,17 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
     setError("");
     try {
       // Upload files first if any
-      const uploadResult = files.length > 0 ? await uploadFiles() : [];
-      const media = Array.isArray(uploadResult) ? uploadResult : [];
+      let media = [];
+      if (files.length > 0) {
+        const uploadResult = await uploadFiles();
+        if (!uploadResult.success) {
+          // If upload failed, show error and stop
+          setError(uploadResult.error || 'Failed to upload image. Please try again.');
+          setIsSubmitting(false);
+          return;
+        }
+        media = Array.isArray(uploadResult.data) ? uploadResult.data : [];
+      }
 
       // Create scheduled post
       const result = await safeApiCall(
@@ -269,6 +300,12 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
+        if (imageInputRef.current) {
+          imageInputRef.current.value = "";
+        }
+        if (videoInputRef.current) {
+          videoInputRef.current.value = "";
+        }
         
         // Refresh daily status
         // await fetchDailyStatus();
@@ -287,7 +324,8 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
         // }
       }
     } catch (error) {
-      setError('Failed to schedule post');
+      console.error('Error scheduling post:', error);
+      setError('Failed to schedule post. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

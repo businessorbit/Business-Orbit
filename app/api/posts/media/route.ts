@@ -2,12 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/utils/auth';
 import { cloudinary } from '@/lib/config/cloudinary';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 export async function POST(request: NextRequest) {
   try {
     const token = request.cookies.get('token')?.value;
@@ -23,6 +17,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Invalid token' },
         { status: 401 }
+      );
+    }
+
+    // Check if Cloudinary is configured
+    if (!process.env.CLOUDINARY_CLOUD_NAME && !process.env.CLOUDINARY_URL) {
+      console.error('Cloudinary not configured - missing environment variables');
+      return NextResponse.json(
+        { success: false, error: 'Image upload service is not configured. Please contact support.' },
+        { status: 500 }
       );
     }
 
@@ -54,51 +57,70 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Convert File to Buffer for Cloudinary
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
+      try {
+        // Convert File to Buffer for Cloudinary
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
 
-      // Upload to Cloudinary directly
-      const uploadResult = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: 'business-orbit/feed',
-            resource_type: 'auto',
-            transformation: [
-              { width: 1200, height: 1200, crop: 'limit' },
-              { quality: 'auto' }
-            ]
-          },
-          (error: any, result: any) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(result);
+        // Upload to Cloudinary directly
+        const uploadResult = await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_stream(
+            {
+              folder: 'business-orbit/feed',
+              resource_type: 'auto',
+              transformation: [
+                { width: 1200, height: 1200, crop: 'limit' },
+                { quality: 'auto' }
+              ]
+            },
+            (error: any, result: any) => {
+              if (error) {
+                console.error('Cloudinary upload error:', error);
+                reject(error);
+              } else {
+                resolve(result);
+              }
             }
-          }
-        ).end(buffer);
-      });
+          ).end(buffer);
+        });
 
-      const uploadData = uploadResult as any;
-      
-      uploadedMedia.push({
-        media_type: uploadData.resource_type === 'video' ? 'video' : 'image',
-        cloudinary_public_id: uploadData.public_id,
-        cloudinary_url: uploadData.secure_url,
-        file_name: file.name,
-        file_size: file.size,
-        mime_type: file.type
-      });
+        const uploadData = uploadResult as any;
+        
+        if (!uploadData || !uploadData.secure_url) {
+          throw new Error('Invalid response from image upload service');
+        }
+        
+        uploadedMedia.push({
+          media_type: uploadData.resource_type === 'video' ? 'video' : 'image',
+          cloudinary_public_id: uploadData.public_id,
+          cloudinary_url: uploadData.secure_url,
+          file_name: file.name,
+          file_size: file.size,
+          mime_type: file.type
+        });
+      } catch (fileError: any) {
+        console.error(`Error uploading file ${file.name}:`, fileError);
+        // Return specific error message
+        const errorMessage = fileError.message || fileError.http_code 
+          ? `Failed to upload ${file.name}. ${fileError.message || 'Please try again.'}`
+          : `Failed to upload ${file.name}. Please check your connection and try again.`;
+        
+        return NextResponse.json(
+          { success: false, error: errorMessage },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json({
       success: true,
       data: uploadedMedia
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error uploading media:', error);
+    const errorMessage = error.message || 'Failed to upload media. Please try again.';
     return NextResponse.json(
-      { success: false, error: 'Failed to upload media' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
