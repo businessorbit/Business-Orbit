@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/utils/auth';
+import { cloudinary } from '@/lib/config/cloudinary';
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication first
+    // Verify authentication
     const token = request.cookies.get('token')?.value;
     if (!token) {
       return NextResponse.json(
@@ -38,27 +39,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Import Cloudinary dynamically to catch initialization errors
-    let cloudinary;
-    try {
-      const cloudinaryModule = await import('@/lib/config/cloudinary');
-      cloudinary = cloudinaryModule.cloudinary;
-      
-      // Verify Cloudinary is configured
-      if (!cloudinary) {
-        throw new Error('Cloudinary is not configured');
-      }
-    } catch (cloudinaryError: any) {
-      console.error('Cloudinary initialization error:', cloudinaryError);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Cloudinary configuration error. Please check server logs.' 
-        },
-        { status: 500 }
-      );
-    }
-
     const uploadedMedia = [];
 
     for (const file of files) {
@@ -79,38 +59,33 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // Convert File to Buffer for Cloudinary
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        // Upload to Cloudinary directly
+        // Convert File to Buffer for Cloudinary (same as profile upload)
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        
+        // Upload to Cloudinary (same pattern as profile upload)
         const uploadResult = await new Promise<any>((resolve, reject) => {
-          try {
-            const uploadStream = cloudinary.uploader.upload_stream(
-              {
-                folder: 'business-orbit/feed',
-                resource_type: 'auto',
-                transformation: [
-                  { width: 1200, height: 1200, crop: 'limit' },
-                  { quality: 'auto' }
-                ]
-              },
-              (error: any, result: any) => {
-                if (error) {
-                  console.error('Cloudinary upload error:', error);
-                  reject(error);
-                } else {
-                  resolve(result);
-                }
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              folder: 'business-orbit/feed',
+              resource_type: 'auto',
+              transformation: [
+                { width: 1200, height: 1200, crop: 'limit' },
+                { quality: 'auto' }
+              ]
+            },
+            (error, result) => {
+              if (error) {
+                console.error('Cloudinary upload error:', error);
+                reject(error);
+              } else {
+                resolve(result);
               }
-            );
-            uploadStream.end(buffer);
-          } catch (streamError: any) {
-            console.error('Error creating upload stream:', streamError);
-            reject(streamError);
-          }
+            }
+          );
+          uploadStream.end(buffer);
         });
-
+        
         if (!uploadResult || !uploadResult.secure_url) {
           throw new Error('Cloudinary upload failed: No URL returned');
         }
@@ -141,7 +116,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error uploading media:', error);
-    // Always return JSON, never let Next.js return HTML error page
     return NextResponse.json(
       { 
         success: false, 
