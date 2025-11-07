@@ -51,7 +51,8 @@ jobs:
           NODE_OPTIONS="--max-old-space-size=4096" npm run build # Rebuild with increased memory
           
           echo "🔄 Restarting PM2 applications..."
-          pm2 restart all # Restart all named processes
+          pm2 delete all || true # Delete existing processes
+          pm2 start ecosystem.config.js # Start with fresh config to load env vars
           
           echo "✅ Deployment complete. Checking status..."
           pm2 list
