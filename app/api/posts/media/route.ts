@@ -20,15 +20,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if Cloudinary is configured
-    if (!process.env.CLOUDINARY_CLOUD_NAME && !process.env.CLOUDINARY_URL) {
-      console.error('Cloudinary not configured - missing environment variables');
-      return NextResponse.json(
-        { success: false, error: 'Image upload service is not configured. Please contact support.' },
-        { status: 500 }
-      );
-    }
-
     // Parse the multipart form data
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
@@ -57,13 +48,22 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/mov', 'video/avi'];
+      if (!allowedTypes.includes(file.type)) {
+        return NextResponse.json(
+          { success: false, error: `Invalid file type: ${file.type}. Only images and videos are allowed.` },
+          { status: 400 }
+        );
+      }
+
       try {
         // Convert File to Buffer for Cloudinary
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
         // Upload to Cloudinary directly
-        const uploadResult = await new Promise((resolve, reject) => {
+        const uploadResult = await new Promise<any>((resolve, reject) => {
           cloudinary.uploader.upload_stream(
             {
               folder: 'business-orbit/feed',
@@ -84,29 +84,25 @@ export async function POST(request: NextRequest) {
           ).end(buffer);
         });
 
-        const uploadData = uploadResult as any;
-        
-        if (!uploadData || !uploadData.secure_url) {
-          throw new Error('Invalid response from image upload service');
+        if (!uploadResult || !uploadResult.secure_url) {
+          throw new Error('Cloudinary upload failed: No URL returned');
         }
-        
+
         uploadedMedia.push({
-          media_type: uploadData.resource_type === 'video' ? 'video' : 'image',
-          cloudinary_public_id: uploadData.public_id,
-          cloudinary_url: uploadData.secure_url,
+          media_type: uploadResult.resource_type === 'video' ? 'video' : 'image',
+          cloudinary_public_id: uploadResult.public_id,
+          cloudinary_url: uploadResult.secure_url,
           file_name: file.name,
           file_size: file.size,
           mime_type: file.type
         });
-      } catch (fileError: any) {
-        console.error(`Error uploading file ${file.name}:`, fileError);
-        // Return specific error message
-        const errorMessage = fileError.message || fileError.http_code 
-          ? `Failed to upload ${file.name}. ${fileError.message || 'Please try again.'}`
-          : `Failed to upload ${file.name}. Please check your connection and try again.`;
-        
+      } catch (uploadError: any) {
+        console.error('Error uploading file to Cloudinary:', uploadError);
         return NextResponse.json(
-          { success: false, error: errorMessage },
+          { 
+            success: false, 
+            error: `Failed to upload ${file.name}: ${uploadError.message || 'Unknown error'}` 
+          },
           { status: 500 }
         );
       }
@@ -118,9 +114,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error uploading media:', error);
-    const errorMessage = error.message || 'Failed to upload media. Please try again.';
     return NextResponse.json(
-      { success: false, error: errorMessage },
+      { 
+        success: false, 
+        error: error.message || 'Failed to upload media' 
+      },
       { status: 500 }
     );
   }

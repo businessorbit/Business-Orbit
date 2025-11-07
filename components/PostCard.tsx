@@ -142,7 +142,7 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
 
   const uploadFiles = async () => {
     if (files.length === 0) {
-      return { success: true, data: [] };
+      return [];
     }
 
     const formData = new FormData();
@@ -159,18 +159,22 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
       'Failed to upload files'
     );
 
-    if (result.success) {
+    if (result.success && result.data) {
       const mediaArray = (result.data as any)?.data || result.data || [];
-      setUploadedMedia(mediaArray as any[]);
-      return { success: true, data: mediaArray };
+      if (Array.isArray(mediaArray) && mediaArray.length > 0) {
+        setUploadedMedia(mediaArray as any[]);
+        return mediaArray as any[];
+      }
+      // If files were provided but no media returned, throw error
+      if (files.length > 0) {
+        throw new Error('Media upload failed: No media data returned');
+      }
+      return [];
+    } else {
+      // Upload failed - throw error with message
+      const errorMessage = (result.error as any)?.error || result.error || 'Failed to upload files';
+      throw new Error(errorMessage);
     }
-    
-    // Return error information
-    return { 
-      success: false, 
-      error: result.error || 'Failed to upload files',
-      data: [] 
-    };
   };
 
   const handlePost = async () => {
@@ -186,16 +190,21 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
     setError("");
     try {
       // Upload files first if any
-      let media = [];
+      let media: any[] = [];
       if (files.length > 0) {
-        const uploadResult = await uploadFiles();
-        if (!uploadResult.success) {
-          // If upload failed, show error and stop
-          setError(uploadResult.error || 'Failed to upload image. Please try again.');
+        try {
+          const uploadResult = await uploadFiles();
+          media = Array.isArray(uploadResult) ? uploadResult : [];
+          if (files.length > 0 && media.length === 0) {
+            setError('Failed to upload media. Please try again.');
+            setIsSubmitting(false);
+            return;
+          }
+        } catch (uploadError: any) {
+          setError(uploadError.message || 'Failed to upload media. Please try again.');
           setIsSubmitting(false);
           return;
         }
-        media = Array.isArray(uploadResult.data) ? uploadResult.data : [];
       }
 
       // Create post
@@ -247,9 +256,9 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
           setError(result.error || 'Failed to create post');
         // }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating post:', error);
-      setError('Failed to create post. Please try again.');
+      setError(error.message || 'Failed to create post');
     } finally {
       setIsSubmitting(false);
     }
@@ -262,16 +271,21 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
     setError("");
     try {
       // Upload files first if any
-      let media = [];
+      let media: any[] = [];
       if (files.length > 0) {
-        const uploadResult = await uploadFiles();
-        if (!uploadResult.success) {
-          // If upload failed, show error and stop
-          setError(uploadResult.error || 'Failed to upload image. Please try again.');
+        try {
+          const uploadResult = await uploadFiles();
+          media = Array.isArray(uploadResult) ? uploadResult : [];
+          if (files.length > 0 && media.length === 0) {
+            setError('Failed to upload media. Please try again.');
+            setIsSubmitting(false);
+            return;
+          }
+        } catch (uploadError: any) {
+          setError(uploadError.message || 'Failed to upload media. Please try again.');
           setIsSubmitting(false);
           return;
         }
-        media = Array.isArray(uploadResult.data) ? uploadResult.data : [];
       }
 
       // Create scheduled post
@@ -323,9 +337,9 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
           setError(result.error || 'Failed to schedule post');
         // }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error scheduling post:', error);
-      setError('Failed to schedule post. Please try again.');
+      setError(error.message || 'Failed to schedule post');
     } finally {
       setIsSubmitting(false);
     }
@@ -638,3 +652,5 @@ export function EventCard({ title, host, date, time, location, attendees, isJoin
     </Card>
   )
 }
+
+
