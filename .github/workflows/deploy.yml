@@ -22,7 +22,7 @@ jobs:
       run: npm ci # Use 'npm ci' for clean, faster installation
 
     - name: 4. Build Project
-      run: npm run build
+      run: NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
     - name: 5. Copy Build Artifacts and Source Code to EC2
       uses: appleboy/scp-action@master
@@ -48,7 +48,7 @@ jobs:
           npm ci --production # Install only required production dependencies
           
           echo "🔨 Rebuilding Next.js application..."
-          npm run build # Rebuild to ensure latest code is compiled
+          NODE_OPTIONS="--max-old-space-size=4096" npm run build # Rebuild with increased memory
           
           echo "🔄 Restarting PM2 applications..."
           pm2 restart all # Restart all named processes
