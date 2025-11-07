@@ -7,6 +7,7 @@ module.exports = {
       cwd: '/home/ubuntu/Business-Orbit',
       exec_mode: 'fork',
       instances: 1,
+      env_file: '.env.local',
       // All environment variables embedded directly here
       env: {
         // --- Infrastructure/Server ---
@@ -64,6 +65,7 @@ module.exports = {
       cwd: '/home/ubuntu/Business-Orbit',
       exec_mode: 'fork',
       instances: 1,
+      env_file: '.env.local',
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
@@ -82,6 +84,7 @@ module.exports = {
       cwd: '/home/ubuntu/Business-Orbit',
       exec_mode: 'fork',
       instances: 1,
+      env_file: '.env.local',
       // Chat server needs its own set of variables
       env: {
         NODE_ENV: 'production',
