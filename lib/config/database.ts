@@ -74,8 +74,24 @@ const testConnection = async (retries = process.env.NODE_ENV === 'production' ? 
   }
 };
 
-// Skip eager connection checks during Vercel build or tests
-if (process.env.NODE_ENV !== 'test' && process.env.VERCEL !== '1') {
+// Skip eager connection checks during build, Vercel build, or tests
+// Detect if we're in a Next.js build context
+const isBuildTime = 
+  process.env.NEXT_PHASE === 'phase-production-build' || 
+  process.env.NEXT_PHASE === 'phase-development-build' ||
+  process.env.npm_lifecycle_event === 'build' ||
+  process.env.NEXT_BUILD === '1' ||
+  // During Next.js build, __NEXT_DATA__ is not available, but we can check other indicators
+  (typeof process !== 'undefined' && process.argv && process.argv.some(arg => arg.includes('next') && arg.includes('build')));
+
+// Only test connection in development runtime, not during builds
+const shouldTestConnection = 
+  process.env.NODE_ENV !== 'test' && 
+  process.env.VERCEL !== '1' && 
+  !isBuildTime &&
+  process.env.NODE_ENV === 'development';
+
+if (shouldTestConnection) {
   testConnection();
 }
 
