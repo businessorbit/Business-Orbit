@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
     // Try query with host_id first, fallback to without host_id if column doesn't exist
     let result;
     try {
+      // Query events where user is the host, include creator and host info
       const query = `
         SELECT 
           e.id,
@@ -32,22 +33,105 @@ export async function GET(req: NextRequest) {
           e.status,
           e.venue_address,
           e.host_id,
-          COUNT(DISTINCT r.id) AS rsvp_count
+          COUNT(DISTINCT r.id) AS rsvp_count,
+          ep.name AS creator_name,
+          ep.email AS creator_email,
+          u.name AS host_name,
+          u.email AS host_email
         FROM events e
         LEFT JOIN rsvps r ON e.id = r.event_id
+        LEFT JOIN event_proposals ep ON 
+          LOWER(TRIM(e.title)) = LOWER(TRIM(ep.event_title)) AND
+          DATE(e.date) = DATE(ep.event_date) AND
+          ep.status = 'approved'
+        LEFT JOIN users u ON e.host_id = u.id
         WHERE e.host_id = $1 AND e.status = 'approved'
-        GROUP BY e.id
+        GROUP BY e.id, ep.name, ep.email, u.name, u.email
         ORDER BY e.date ASC
       `;
 
       result = await pool.query(query, [userId]);
+      
+      // If no results and host_id column exists, also check if there are events
+      // that were created from proposals by this user (via event_proposals table)
+      if (result.rows.length === 0) {
+        try {
+          // Try to find events created from proposals by this user
+          // This handles cases where host_id might not have been set during approval
+          const fallbackQuery = `
+            SELECT DISTINCT
+              e.id,
+              e.title,
+              e.description,
+              e.date,
+              e.event_type,
+              e.status,
+              e.venue_address,
+              e.host_id,
+              COUNT(DISTINCT r.id) AS rsvp_count,
+              ep.name AS creator_name,
+              ep.email AS creator_email,
+              u.name AS host_name,
+              u.email AS host_email
+            FROM events e
+            LEFT JOIN rsvps r ON e.id = r.event_id
+            INNER JOIN event_proposals ep ON 
+              LOWER(TRIM(e.title)) = LOWER(TRIM(ep.event_title)) AND
+              DATE(e.date) = DATE(ep.event_date)
+            LEFT JOIN users u ON e.host_id = u.id
+            WHERE ep.user_id = $1 
+              AND ep.status = 'approved'
+              AND e.status = 'approved'
+            GROUP BY e.id, ep.name, ep.email, u.name, u.email
+            ORDER BY e.date ASC
+          `;
+          
+          const fallbackResult = await pool.query(fallbackQuery, [userId]);
+          if (fallbackResult.rows.length > 0) {
+            result = fallbackResult;
+          }
+        } catch (fallbackError) {
+          // If fallback query fails, just use the original empty result
+          console.log('Fallback query failed, using original result');
+        }
+      }
     } catch (dbError: any) {
-      // If host_id column doesn't exist, return empty array (no hosting events yet)
-      // This happens if the migration to add host_id hasn't been run
+      // If host_id column doesn't exist, try alternative approach
       if (dbError?.code === '42703' && dbError?.message?.includes('host_id')) {
-        // Return empty array since host_id column doesn't exist
-        // User hasn't hosted any events yet (or migration not run)
-        return NextResponse.json([], { status: 200 });
+        // Try to find events via event_proposals table
+        try {
+          const alternativeQuery = `
+            SELECT DISTINCT
+              e.id,
+              e.title,
+              e.description,
+              e.date,
+              e.event_type,
+              e.status,
+              e.venue_address,
+              COUNT(DISTINCT r.id) AS rsvp_count,
+              ep.name AS creator_name,
+              ep.email AS creator_email,
+              NULL AS host_name,
+              NULL AS host_email
+            FROM events e
+            LEFT JOIN rsvps r ON e.id = r.event_id
+            INNER JOIN event_proposals ep ON 
+              LOWER(TRIM(e.title)) = LOWER(TRIM(ep.event_title)) AND
+              DATE(e.date) = DATE(ep.event_date)
+            WHERE ep.user_id = $1 
+              AND ep.status = 'approved'
+              AND e.status = 'approved'
+            GROUP BY e.id, ep.name, ep.email
+            ORDER BY e.date ASC
+          `;
+          
+          result = await pool.query(alternativeQuery, [userId]);
+        } catch (altError) {
+          // If alternative also fails, return empty array
+          console.error('Alternative query also failed:', altError);
+          return NextResponse.json([], { status: 200 });
+        }
       } else {
         // Re-throw if it's a different error
         throw dbError;

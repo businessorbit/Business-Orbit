@@ -65,6 +65,31 @@ export async function POST(req: NextRequest) {
     // Description goes in description field, venue_address is separate
     const venueAddress = null; // Physical events don't have venue address from proposals
     
+    // Get the user_id from proposal - this is critical for hosting tab
+    // If user_id is not in proposal, try to find user by email
+    let hostId = proposal.user_id || null;
+    
+    // If user_id is null but we have email, try to find user by email
+    if (!hostId && proposal.email) {
+      try {
+        const userResult = await pool.query(
+          'SELECT id FROM users WHERE email = $1 LIMIT 1',
+          [proposal.email]
+        );
+        if (userResult.rows.length > 0) {
+          hostId = userResult.rows[0].id;
+          // Update the proposal with the found user_id for future reference
+          await pool.query(
+            'UPDATE event_proposals SET user_id = $1 WHERE id = $2',
+            [hostId, proposalId]
+          );
+        }
+      } catch (userError) {
+        console.error('Error finding user by email:', userError);
+        // Continue without host_id if we can't find user
+      }
+    }
+    
     // Try to create event with host_id, fallback to without host_id if column doesn't exist
     let eventResult;
     try {
@@ -81,7 +106,7 @@ export async function POST(req: NextRequest) {
         eventType,
         venueAddress,
         'approved', // Auto-approve when created by admin
-        proposal.user_id || null // Set host_id from proposal's user_id, or null if not available
+        hostId // Set host_id from proposal's user_id or found user
       ]);
     } catch (dbError: any) {
       // If host_id column doesn't exist, try without it

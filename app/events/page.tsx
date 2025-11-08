@@ -90,11 +90,16 @@ export default function EventsPage() {
         const data = await res.json();
         const transformed = data.map((event: any) => {
           const eventDate = new Date(event.date);
+          // Get creator name from proposal, fallback to host name or user name
+          const creatorName = event.creator_name || event.host_name || user?.name || "Unknown";
+          const hostName = event.host_name || user?.name || "You";
           return {
             id: event.id,
             title: event.title,
-            host: user?.name || "You",
-            hostAvatar: (user?.name || "Y").slice(0, 2).toUpperCase(),
+            host: hostName,
+            hostAvatar: (hostName || "Y").slice(0, 2).toUpperCase(),
+            creator: creatorName,
+            creatorAvatar: (creatorName || "U").slice(0, 2).toUpperCase(),
             date: eventDate.toLocaleDateString(),
             time: eventDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
             location: event.venue_address || "Online Event",
@@ -384,16 +389,32 @@ export default function EventsPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center space-x-2 min-w-0 flex-1">
+                      <div className="space-y-2 pt-2">
+                        {/* Creator info */}
+                        <div className="flex items-center space-x-2 min-w-0">
                           <div className="w-5 h-5 sm:w-6 sm:h-6 bg-muted rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">
-                            {event.hostAvatar}
+                            {event.creatorAvatar}
                           </div>
-                          <span className="text-xs sm:text-sm text-muted-foreground truncate">{event.host}</span>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-xs text-muted-foreground">Created by: </span>
+                            <span className="text-xs sm:text-sm font-medium truncate">{event.creator || "Unknown"}</span>
+                          </div>
                         </div>
-                        <Badge variant="secondary" className="text-xs sm:text-sm ml-2 flex-shrink-0">
-                          Hosting
-                        </Badge>
+                        {/* Host info */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2 min-w-0 flex-1">
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-muted rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                              {event.hostAvatar}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <span className="text-xs text-muted-foreground">Host: </span>
+                              <span className="text-xs sm:text-sm font-medium truncate">{event.host}</span>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-xs sm:text-sm ml-2 flex-shrink-0">
+                            Hosting
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   </Card>
