@@ -28,21 +28,26 @@ declare global {
   var __PG_POOL__: any;
 }
 
-// Detect if we're in a Next.js build context - be very aggressive here
+// Detect if we're in a Next.js build context - be VERY aggressive here
+// During build, Next.js analyzes routes which can trigger imports
 const isBuildTime = 
   process.env.NEXT_PHASE === 'phase-production-build' || 
   process.env.NEXT_PHASE === 'phase-development-build' ||
+  process.env.NEXT_PHASE?.includes('build') ||
   process.env.npm_lifecycle_event === 'build' ||
   process.env.NEXT_BUILD === '1' ||
-  process.env.CI === 'true' && process.env.NODE_ENV === 'production' ||
-  // Check if we're running next build command
+  // Check if we're running next build command (most reliable)
   (typeof process !== 'undefined' && process.argv && (
     process.argv.some(arg => arg.includes('next') && arg.includes('build')) ||
-    process.argv.some(arg => arg === 'build')
-  ));
+    process.argv.some(arg => arg === 'build') ||
+    process.argv.some(arg => arg.includes('next') && (arg.includes('build') || arg.includes('export')))
+  )) ||
+  // CI environment during build (GitHub Actions sets this)
+  (process.env.CI === 'true' && process.env.npm_lifecycle_event === 'build');
 
 // NEVER create pool during build time - this causes timeouts
 // Create pool only if DATABASE_URL is available AND we're not building
+// During build, pool must be null to prevent any connection attempts
 const pool = global.__PG_POOL__ ?? (
   !isBuildTime && databaseUrl ? new Pool({
     connectionString: databaseUrl,
@@ -58,6 +63,11 @@ const pool = global.__PG_POOL__ ?? (
     keepAliveInitialDelayMillis: 30_000,
   }) : null
 );
+
+// Log build detection for debugging (only in non-production)
+if (process.env.NODE_ENV !== 'production' && isBuildTime) {
+  console.log('[Database] Build time detected - pool will be null');
+}
 
 if (!global.__PG_POOL__) {
   global.__PG_POOL__ = pool;
@@ -119,6 +129,10 @@ process.on('SIGTERM', async () => {
 
 // Helper function to ensure pool is available
 export const ensurePool = () => {
+  // NEVER allow pool access during build
+  if (isBuildTime) {
+    throw new Error('Database pool cannot be accessed during build time. This is a build-time safety check.');
+  }
   if (!pool) {
     throw new Error('Database pool not initialized. Please check DATABASE_URL environment variable.');
   }
