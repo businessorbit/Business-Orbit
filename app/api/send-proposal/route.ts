@@ -12,23 +12,58 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });
     }
 
+    // Check if database pool is available
+    if (!pool) {
+      console.error("Database pool is not initialized. Check DATABASE_URL environment variable.");
+      return NextResponse.json(
+        { success: false, message: "Database connection not available" },
+        { status: 500 }
+      );
+    }
+
     // Store proposal in database
-    const insertQuery = `
-      INSERT INTO event_proposals (name, email, phone, event_title, event_date, mode, description, user_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING id
-    `;
-    
-    const result = await pool.query(insertQuery, [
-      name,
-      email,
-      phone,
-      eventTitle,
-      eventDate,
-      mode,
-      description || '',
-      userId || null
-    ]);
+    // Try with user_id first, fallback to without user_id if column doesn't exist
+    let result;
+    try {
+      const insertQuery = `
+        INSERT INTO event_proposals (name, email, phone, event_title, event_date, mode, description, user_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id
+      `;
+      
+      result = await pool.query(insertQuery, [
+        name,
+        email,
+        phone,
+        eventTitle,
+        eventDate,
+        mode,
+        description || '',
+        userId || null
+      ]);
+    } catch (dbError: any) {
+      // If user_id column doesn't exist, try without it
+      if (dbError?.code === '42703' && dbError?.message?.includes('user_id')) {
+        const insertQueryWithoutUserId = `
+          INSERT INTO event_proposals (name, email, phone, event_title, event_date, mode, description)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING id
+        `;
+        
+        result = await pool.query(insertQueryWithoutUserId, [
+          name,
+          email,
+          phone,
+          eventTitle,
+          eventDate,
+          mode,
+          description || ''
+        ]);
+      } else {
+        // Re-throw if it's a different error
+        throw dbError;
+      }
+    }
 
     // Send email notification to admin
     const msg = {
@@ -68,8 +103,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "Proposal submitted successfully!" });
   } catch (error: any) {
     console.error("Error saving proposal:", error);
+    
+    // Provide more detailed error message for debugging
+    let errorMessage = "Failed to submit proposal";
+    if (error?.code === '42P01') {
+      errorMessage = "Database table not found. Please run migrations.";
+    } else if (error?.code === '42703') {
+      errorMessage = "Database column not found. Please run migrations.";
+    } else if (error?.message) {
+      errorMessage = error.message;
+    }
+    
     return NextResponse.json(
-      { success: false, message: "Failed to submit proposal" },
+      { success: false, message: errorMessage },
       { status: 500 }
     );
   }
