@@ -28,20 +28,36 @@ declare global {
   var __PG_POOL__: any;
 }
 
-// Create pool only if DATABASE_URL is available
-const pool = global.__PG_POOL__ ?? (databaseUrl ? new Pool({
-  connectionString: databaseUrl,
-  ssl: shouldUseSsl || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  // Keep dev pool small to avoid exhausting server connection slots during HMR
-  max: process.env.NODE_ENV === 'production' ? 20 : 5,
-  min: process.env.NODE_ENV === 'production' ? 5 : 0,
-  idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 15_000, // Increased from 5s to 15s
-  maxUses: 7_500,
-  // Keep TCP connection alive to reduce ECONNRESET in some environments
-  keepAlive: true,
-  keepAliveInitialDelayMillis: 30_000,
-}) : null);
+// Detect if we're in a Next.js build context - be very aggressive here
+const isBuildTime = 
+  process.env.NEXT_PHASE === 'phase-production-build' || 
+  process.env.NEXT_PHASE === 'phase-development-build' ||
+  process.env.npm_lifecycle_event === 'build' ||
+  process.env.NEXT_BUILD === '1' ||
+  process.env.CI === 'true' && process.env.NODE_ENV === 'production' ||
+  // Check if we're running next build command
+  (typeof process !== 'undefined' && process.argv && (
+    process.argv.some(arg => arg.includes('next') && arg.includes('build')) ||
+    process.argv.some(arg => arg === 'build')
+  ));
+
+// NEVER create pool during build time - this causes timeouts
+// Create pool only if DATABASE_URL is available AND we're not building
+const pool = global.__PG_POOL__ ?? (
+  !isBuildTime && databaseUrl ? new Pool({
+    connectionString: databaseUrl,
+    ssl: shouldUseSsl || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    // Keep dev pool small to avoid exhausting server connection slots during HMR
+    max: process.env.NODE_ENV === 'production' ? 20 : 5,
+    min: 0, // Always start with 0 connections - lazy connection
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 15_000, // Increased from 5s to 15s
+    maxUses: 7_500,
+    // Keep TCP connection alive to reduce ECONNRESET in some environments
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 30_000,
+  }) : null
+);
 
 if (!global.__PG_POOL__) {
   global.__PG_POOL__ = pool;
@@ -74,21 +90,13 @@ const testConnection = async (retries = process.env.NODE_ENV === 'production' ? 
   }
 };
 
-// Skip eager connection checks during build, Vercel build, or tests
-// Detect if we're in a Next.js build context
-const isBuildTime = 
-  process.env.NEXT_PHASE === 'phase-production-build' || 
-  process.env.NEXT_PHASE === 'phase-development-build' ||
-  process.env.npm_lifecycle_event === 'build' ||
-  process.env.NEXT_BUILD === '1' ||
-  // During Next.js build, __NEXT_DATA__ is not available, but we can check other indicators
-  (typeof process !== 'undefined' && process.argv && process.argv.some(arg => arg.includes('next') && arg.includes('build')));
-
-// Only test connection in development runtime, not during builds
+// NEVER test connection during build time - this is critical
+// Only test connection in development runtime, not during builds or CI
 const shouldTestConnection = 
+  !isBuildTime &&
   process.env.NODE_ENV !== 'test' && 
   process.env.VERCEL !== '1' && 
-  !isBuildTime &&
+  process.env.CI !== 'true' &&
   process.env.NODE_ENV === 'development';
 
 if (shouldTestConnection) {
