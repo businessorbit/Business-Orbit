@@ -85,9 +85,23 @@ export default function EventsPage() {
     
     const fetchHostingEvents = async () => {
       try {
+        console.log(`[Frontend] Fetching hosting events for user ${user.id}`);
         const res = await fetch(`/api/events/hosting?userId=${user.id}`);
-        if (!res.ok) return;
+        if (!res.ok) {
+          console.error(`[Frontend] Hosting API error: ${res.status} ${res.statusText}`);
+          const errorData = await res.json().catch(() => ({}));
+          console.error(`[Frontend] Error details:`, errorData);
+          return;
+        }
         const data = await res.json();
+        console.log(`[Frontend] Received ${Array.isArray(data) ? data.length : 0} hosting events:`, data);
+        
+        if (!Array.isArray(data)) {
+          console.error('[Frontend] Hosting API did not return an array:', data);
+          setHostingEvents([]);
+          return;
+        }
+        
         const transformed = data.map((event: any) => {
           const eventDate = new Date(event.date);
           // Get creator name from proposal, fallback to host name or user name
@@ -115,9 +129,11 @@ export default function EventsPage() {
             dateMs: eventDate.getTime(),
           };
         });
+        console.log(`[Frontend] Transformed ${transformed.length} hosting events`);
         setHostingEvents(transformed);
       } catch (error) {
-        console.error('Failed to fetch hosting events:', error);
+        console.error('[Frontend] Failed to fetch hosting events:', error);
+        setHostingEvents([]);
       }
     };
 
