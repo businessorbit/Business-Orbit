@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Search, X } from "lucide-react"
 
+type SearchCategory = "people" | "chapter" | "events" | null
+
 interface SearchResult {
   chapters: Array<{ id: string; name: string; location_city: string }>
   people: Array<{ id: number; name: string; profession: string | null; profile_photo_url: string | null }>
@@ -20,6 +22,7 @@ interface SearchModalProps {
 
 export default function SearchModal({ open, onClose }: SearchModalProps) {
   const [q, setQ] = useState("")
+  const [category, setCategory] = useState<SearchCategory>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<SearchResult | null>(null)
@@ -28,6 +31,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   useEffect(() => {
     if (!open) {
       setQ("")
+      setCategory(null)
       setData(null)
       setError(null)
       setLoading(false)
@@ -43,10 +47,19 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
   }, [open])
 
   const runSearch = async () => {
+    if (!category) {
+      setError("Please select a category (People, Chapter, or Events)")
+      return
+    }
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=5`, { credentials: 'include' })
+      const params = new URLSearchParams({
+        q: q,
+        limit: '5',
+        category: category
+      })
+      const res = await fetch(`/api/search?${params.toString()}`, { credentials: 'include' })
       const json = await res.json()
       if (!res.ok || json.success === false) throw new Error(json.error || 'Search failed')
       setData(json)
@@ -73,12 +86,45 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
         </div>
 
         <div className="p-4">
+          {/* Category Buttons */}
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant={category === "people" ? "default" : "outline"}
+              onClick={() => setCategory("people")}
+              className="flex-1"
+            >
+              People
+            </Button>
+            <Button
+              variant={category === "chapter" ? "default" : "outline"}
+              onClick={() => setCategory("chapter")}
+              className="flex-1"
+            >
+              Chapter
+            </Button>
+            <Button
+              variant={category === "events" ? "default" : "outline"}
+              onClick={() => setCategory("events")}
+              className="flex-1"
+            >
+              Events
+            </Button>
+          </div>
+
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
             <Input
               ref={inputRef}
               aria-label="Search"
-              placeholder="Type to search chapters (by location), people, and events"
+              placeholder={
+                category === "people" 
+                  ? "Type to search people by name" 
+                  : category === "chapter"
+                  ? "Type to search chapters by location or name"
+                  : category === "events"
+                  ? "Type to search events by title"
+                  : "Select a category above to search"
+              }
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && runSearch()}
@@ -87,7 +133,7 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
           </div>
 
           <div className="mt-3">
-            <Button onClick={runSearch} disabled={!q.trim() || loading} className="w-full sm:w-auto">
+            <Button onClick={runSearch} disabled={!q.trim() || !category || loading} className="w-full sm:w-auto">
               {loading ? 'Searching...' : 'Search'}
             </Button>
           </div>
@@ -97,66 +143,72 @@ export default function SearchModal({ open, onClose }: SearchModalProps) {
           )}
 
           {!loading && data && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <h3 className="text-sm font-semibold mb-2">Chapters</h3>
-                <div className="space-y-2">
-                  {data.chapters.length === 0 && <p className="text-sm text-muted-foreground">No chapters</p>}
-                  {data.chapters.map((c) => (
-                    <Card key={c.id} className="p-3 hover:bg-accent/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-sm font-medium">{c.name}</div>
-                          <div className="text-xs text-muted-foreground">{c.location_city}</div>
+            <div className="mt-4">
+              {category === "people" && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">People</h3>
+                  <div className="space-y-2">
+                    {data.people.length === 0 && <p className="text-sm text-muted-foreground">No people found</p>}
+                    {data.people.map((p) => (
+                      <Card key={p.id} className="p-3 hover:bg-accent/30 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-medium">{p.name}</div>
+                            <div className="text-xs text-muted-foreground">{p.profession || 'Professional'}</div>
+                          </div>
+                          <Badge variant="outline">Person</Badge>
                         </div>
-                        <Badge variant="outline">Chapter</Badge>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <h3 className="text-sm font-semibold mb-2">People</h3>
-                <div className="space-y-2">
-                  {data.people.length === 0 && <p className="text-sm text-muted-foreground">No people</p>}
-                  {data.people.map((p) => (
-                    <Card key={p.id} className="p-3 hover:bg-accent/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-sm font-medium">{p.name}</div>
-                          <div className="text-xs text-muted-foreground">{p.profession || 'Professional'}</div>
+              {category === "chapter" && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Chapters</h3>
+                  <div className="space-y-2">
+                    {data.chapters.length === 0 && <p className="text-sm text-muted-foreground">No chapters found</p>}
+                    {data.chapters.map((c) => (
+                      <Card key={c.id} className="p-3 hover:bg-accent/30 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-medium">{c.name}</div>
+                            <div className="text-xs text-muted-foreground">{c.location_city}</div>
+                          </div>
+                          <Badge variant="outline">Chapter</Badge>
                         </div>
-                        <Badge variant="outline">Person</Badge>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <h3 className="text-sm font-semibold mb-2">Events</h3>
-                <div className="space-y-2">
-                  {data.events.length === 0 && <p className="text-sm text-muted-foreground">No events</p>}
-                  {data.events.map((e) => (
-                    <Card key={e.id} className="p-3 hover:bg-accent/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-sm font-medium">{e.title}</div>
-                          <div className="text-xs text-muted-foreground">{new Date(e.date).toLocaleString()}</div>
+              {category === "events" && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Events</h3>
+                  <div className="space-y-2">
+                    {data.events.length === 0 && <p className="text-sm text-muted-foreground">No events found</p>}
+                    {data.events.map((e) => (
+                      <Card key={e.id} className="p-3 hover:bg-accent/30 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-medium">{e.title}</div>
+                            <div className="text-xs text-muted-foreground">{new Date(e.date).toLocaleString()}</div>
+                          </div>
+                          <Badge variant="outline">{e.event_type}</Badge>
                         </div>
-                        <Badge variant="outline">{e.event_type}</Badge>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {!loading && !data && (
             <div className="mt-6 text-sm text-muted-foreground">
-              Start typing above to search chapters, people, and events.
+              Select a category above and start typing to search.
             </div>
           )}
         </div>
