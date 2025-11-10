@@ -26,6 +26,7 @@ export default function GroupsSecretPage() {
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [newGroupName, setNewGroupName] = useState("")
   const [groupDescription, setGroupDescription] = useState("")
+  const [inviteEmails, setInviteEmails] = useState("")
   const [chatMessages, setChatMessages] = useState<{ user: string; text: string }[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [inviteEmail, setInviteEmail] = useState("")
@@ -34,7 +35,8 @@ export default function GroupsSecretPage() {
   // Server data
   const [allGroups, setAllGroups] = useState<SecretGroupMeta[]>([])
   const [myGroups, setMyGroups] = useState<SecretGroupMeta[]>([])
-  const [suggested, setSuggested] = useState<SecretGroupMeta[]>([])
+  // Suggested groups feature commented out - will be added later
+  // const [suggested, setSuggested] = useState<SecretGroupMeta[]>([])
 
   // Invite connections data (only real users from DB)
   const [allUsers, setAllUsers] = useState<SimpleUser[]>([])
@@ -52,10 +54,25 @@ export default function GroupsSecretPage() {
   // Events state (single-load, no loader/refresh)
   const [events, setEvents] = useState<Array<any>>([])
 
+  // Secret group requests state
+  const [groupRequests, setGroupRequests] = useState<Array<{
+    id: number
+    group_id: string
+    group_name: string
+    group_description?: string
+    sender_name: string
+    sender_email: string
+    created_at: string
+  }>>([])
+  const [requestsLoading, setRequestsLoading] = useState(false)
+
   // Load groups and user's memberships
+  // Note: allGroups is only used for internal tracking, myGroups is what's displayed
+  // The API now filters to only show groups user is member of or admin of
   useEffect(() => {
     ;(async () => {
       try {
+        // Fetch groups (API now filters to only show groups user can see)
         const res = await fetch('/api/admin/management/secret-groups', { credentials: 'include' })
         if (res.ok) {
           const data = await res.json()
@@ -67,13 +84,18 @@ export default function GroupsSecretPage() {
             member_count: Number(g.member_count || 0)
           })) : []
           setAllGroups(groups)
+          // Also set as myGroups since API only returns groups user is member/admin of
+          setMyGroups(groups)
         } else {
           setAllGroups([])
+          setMyGroups([])
         }
       } catch {
         setAllGroups([])
+        setMyGroups([])
       }
 
+      // Also fetch from user endpoint for consistency
       try {
         if (user?.id) {
           const res2 = await fetch(`/api/users/${user.id}/secret-groups`, { credentials: 'include' })
@@ -87,14 +109,10 @@ export default function GroupsSecretPage() {
               member_count: Number(g.member_count || 0)
             })) : []
             setMyGroups(mine)
-          } else {
-            setMyGroups([])
           }
-        } else {
-          setMyGroups([])
         }
       } catch {
-        setMyGroups([])
+        // Keep existing myGroups if fetch fails
       }
     })()
   }, [user?.id])
@@ -119,11 +137,12 @@ export default function GroupsSecretPage() {
     })()
   }, [showCreateGroup, showAddMembers])
 
+  // Suggested groups feature commented out - will be added later
   // Compute suggested when allGroups/myGroups change
-  useEffect(() => {
-    const mySet = new Set(myGroups.map(g => g.id))
-    setSuggested(allGroups.filter(g => !mySet.has(g.id)))
-  }, [allGroups, myGroups])
+  // useEffect(() => {
+  //   const mySet = new Set(myGroups.map(g => g.id))
+  //   setSuggested(allGroups.filter(g => !mySet.has(g.id)))
+  // }, [allGroups, myGroups])
 
   const fetchUpcomingEvents = async () => {
     try {
@@ -161,6 +180,30 @@ export default function GroupsSecretPage() {
 
   React.useEffect(() => { fetchUpcomingEvents() }, [user?.id])
 
+  // Fetch secret group requests
+  const fetchGroupRequests = async () => {
+    if (!user?.id) return
+    setRequestsLoading(true)
+    try {
+      const res = await fetch('/api/secret-groups/invites/received', { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        setGroupRequests(data.invites || [])
+      }
+    } catch (error) {
+      console.error('Error fetching group requests:', error)
+    } finally {
+      setRequestsLoading(false)
+    }
+  }
+
+  React.useEffect(() => {
+    fetchGroupRequests()
+    // Refresh requests every 30 seconds
+    const interval = setInterval(fetchGroupRequests, 30000)
+    return () => clearInterval(interval)
+  }, [user?.id])
+
   // Actions
   const handleCreateGroup = async () => {
     const name = newGroupName.trim()
@@ -187,21 +230,42 @@ export default function GroupsSecretPage() {
           if (created.id) {
             try { await fetch(`/api/secret-groups/${created.id}/membership`, { method: 'POST', credentials: 'include' }) } catch {}
           }
-          // Best-effort: email invites to selected existing users
+          
+          // Send secret group invites to selected users and emails
+          const recipientUserIds: number[] = []
+          const recipientEmails: string[] = []
+
+          // Collect user IDs from selected connections
           if (selectedInviteeIds.size > 0 && allUsers.length > 0) {
             const idSet = new Set(selectedInviteeIds)
             const toInvite = allUsers.filter(u => idSet.has(u.id))
-            for (const u of toInvite) {
-              try {
-                await fetch('/api/invites/send', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  credentials: 'include',
-                  body: JSON.stringify({ recipient_email: u.email, message: `You are invited to join secret group "${created.name}".` })
+            recipientUserIds.push(...toInvite.map(u => u.id))
+          }
+
+          // Collect emails from inviteEmails field (comma-separated)
+          if (inviteEmails.trim()) {
+            const emails = inviteEmails.split(',').map(e => e.trim()).filter(e => e.length > 0)
+            recipientEmails.push(...emails)
+          }
+
+          // Send invites via secret group invite API
+          if (recipientUserIds.length > 0 || recipientEmails.length > 0) {
+            try {
+              await fetch('/api/secret-groups/invites/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  group_id: created.id,
+                  recipient_user_ids: recipientUserIds,
+                  recipient_emails: recipientEmails
                 })
-              } catch {}
+              })
+            } catch (error) {
+              console.error('Error sending secret group invites:', error)
             }
           }
+
           // refresh my groups
           if (user?.id) {
             try {
@@ -218,6 +282,7 @@ export default function GroupsSecretPage() {
     } finally {
     setNewGroupName("")
       setGroupDescription("")
+      setInviteEmails("")
       setSelectedInviteeIds(new Set())
       setInviteSearch("")
     setShowCreateGroup(false)
@@ -227,11 +292,11 @@ export default function GroupsSecretPage() {
   const joinGroup = async (groupId: string) => {
     try {
       await fetch(`/api/secret-groups/${groupId}/membership`, { method: 'POST', credentials: 'include' })
-      // move from suggested to myGroups
+      // move from suggested to myGroups (suggested groups feature commented out)
       const g = allGroups.find(g => g.id === groupId)
       if (g) {
         setMyGroups(prev => [{ ...g, member_count: (g.member_count || 0) + 1 }, ...prev.filter(x => x.id !== groupId)])
-        setSuggested(prev => prev.filter(x => x.id !== groupId))
+        // setSuggested(prev => prev.filter(x => x.id !== groupId))
       }
     } catch {}
   }
@@ -462,8 +527,100 @@ export default function GroupsSecretPage() {
             )}
           </section>
 
-          {/* Suggested Groups */}
+          {/* Secret Group Requests */}
           <Card className="p-4 lg:p-6">
+            <h3 className="font-semibold mb-4 text-sm lg:text-base">Secret Group Requests</h3>
+            {requestsLoading ? (
+              <div className="text-sm text-muted-foreground">Loading requests...</div>
+            ) : groupRequests.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No pending requests.</div>
+            ) : (
+              <div className="space-y-3">
+                {groupRequests.map((request) => (
+                  <div key={request.id} className="border border-border/50 rounded-lg p-3 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm">{request.group_name}</h4>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Invited by {request.sender_name}
+                        </p>
+                        {request.group_description && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {request.group_description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1 h-7 text-xs"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(`/api/secret-groups/invites/${request.id}/accept`, {
+                              method: 'POST',
+                              credentials: 'include'
+                            })
+                            if (res.ok) {
+                              // Refresh groups and requests
+                              await fetchGroupRequests()
+                              if (user?.id) {
+                                try {
+                                  const res2 = await fetch(`/api/users/${user.id}/secret-groups`, { credentials: 'include' })
+                                  const data2 = await res2.json()
+                                  const mine: SecretGroupMeta[] = Array.isArray(data2?.groups) ? data2.groups.map((g: any) => ({
+                                    id: String(g.id), name: g.name, description: g.description, created_at: g.created_at, member_count: Number(g.member_count || 0)
+                                  })) : []
+                                  setMyGroups(mine)
+                                  // Show success message
+                                  alert(`Successfully joined "${request.group_name}"!`)
+                                } catch {}
+                              }
+                            } else {
+                              const errorData = await res.json().catch(() => ({}))
+                              alert(errorData.error || 'Failed to accept request')
+                            }
+                          } catch (error) {
+                            console.error('Error accepting request:', error)
+                            alert('Failed to accept request. Please try again.')
+                          }
+                        }}
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 h-7 text-xs bg-transparent"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(`/api/secret-groups/invites/${request.id}/decline`, {
+                              method: 'POST',
+                              credentials: 'include'
+                            })
+                            if (res.ok) {
+                              await fetchGroupRequests()
+                            } else {
+                              const errorData = await res.json().catch(() => ({}))
+                              alert(errorData.error || 'Failed to decline request')
+                            }
+                          } catch (error) {
+                            console.error('Error declining request:', error)
+                            alert('Failed to decline request. Please try again.')
+                          }
+                        }}
+                      >
+                        Decline
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {/* Suggested Groups - Feature commented out, will be added later */}
+          {/* <Card className="p-4 lg:p-6">
             <h3 className="font-semibold mb-4 text-sm lg:text-base">Suggested Groups</h3>
             <div className="space-y-4">
               {suggested.length === 0 ? (
@@ -481,7 +638,7 @@ export default function GroupsSecretPage() {
                 ))
               )}
             </div>
-          </Card>
+          </Card> */}
         </div>
 
       </div>
@@ -529,12 +686,22 @@ export default function GroupsSecretPage() {
                 )}
               </div>
 
-              <label className="text-sm font-medium">Invite by Email</label>
+              <label className="text-sm font-medium">Group Description (optional)</label>
               <textarea
                 value={groupDescription}
                 onChange={(e) => setGroupDescription(e.target.value)}
                 className="border p-2 rounded w-full"
                 placeholder="Enter a short description (optional)"
+                rows={2}
+              />
+
+              <label className="text-sm font-medium">Invite by Email</label>
+              <textarea
+                value={inviteEmails}
+                onChange={(e) => setInviteEmails(e.target.value)}
+                className="border p-2 rounded w-full"
+                placeholder="Enter email addresses separated by commas"
+                rows={2}
               />
               <Button onClick={handleCreateGroup} className="mt-2">Create Group</Button>
             </div>

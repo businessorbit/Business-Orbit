@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/config/database'
+import { getUserFromToken } from '@/lib/utils/auth'
 
 async function ensureTables() {
   await pool.query(`
@@ -30,15 +31,38 @@ async function ensureTables() {
   `)
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await ensureTables()
+    
+    // Get authenticated user
+    const user = await getUserFromToken(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // If user is admin, show all groups
+    if (user.is_admin) {
+      const res = await pool.query(
+        `SELECT g.id, g.name, g.description, g.admin_id, g.admin_name, g.created_at, COUNT(m.user_id)::int AS member_count
+         FROM secret_groups g
+         LEFT JOIN secret_group_memberships m ON m.group_id = g.id
+         GROUP BY g.id, g.admin_id, g.admin_name
+         ORDER BY g.created_at DESC`
+      )
+      return NextResponse.json({ groups: res.rows }, { status: 200 })
+    }
+
+    // If not admin, only show groups where user is a member or is the admin
     const res = await pool.query(
-      `SELECT g.id, g.name, g.description, g.admin_id, g.admin_name, g.created_at, COUNT(m.user_id)::int AS member_count
+      `SELECT DISTINCT g.id, g.name, g.description, g.admin_id, g.admin_name, g.created_at, 
+              (SELECT COUNT(m2.user_id)::int FROM secret_group_memberships m2 WHERE m2.group_id = g.id) AS member_count
        FROM secret_groups g
-       LEFT JOIN secret_group_memberships m ON m.group_id = g.id
+       LEFT JOIN secret_group_memberships m ON m.group_id = g.id AND m.user_id = $1
+       WHERE g.admin_id = $1 OR m.user_id = $1
        GROUP BY g.id, g.admin_id, g.admin_name
-       ORDER BY g.created_at DESC`
+       ORDER BY g.created_at DESC`,
+      [user.id]
     )
     return NextResponse.json({ groups: res.rows }, { status: 200 })
   } catch (e: any) {
