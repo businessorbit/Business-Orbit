@@ -26,22 +26,22 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
-    if (locations.length !== 2) {
+    if (locations.length < 1) {
       return NextResponse.json({
         success: false,
         error: 'Validation failed',
-        message: 'Exactly 2 locations are required'
+        message: 'At least 1 location is required'
       }, { status: 400 })
     }
 
     // Sanitize locations
     const sanitizedLocations = locations.map((loc: string) => loc.trim()).filter(loc => loc.length > 0)
     
-    if (sanitizedLocations.length !== 2) {
+    if (sanitizedLocations.length < 1) {
       return NextResponse.json({
         success: false,
         error: 'Validation failed',
-        message: 'Both locations must be valid'
+        message: 'At least 1 valid location is required'
       }, { status: 400 })
     }
 
@@ -63,23 +63,16 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
     
-    if (result.rows.length !== 2) {
-      const foundLocations = result.rows.map(row => row.location_city)
-      const missingLocations = sanitizedLocations.filter(loc => 
-        !foundLocations.some(found => found.toLowerCase() === loc.toLowerCase())
-      )
-      
-      return NextResponse.json({ 
-        success: false,
-        error: 'Some locations not found',
-        message: 'Not all selected locations have chapters created by admin',
-        details: {
-          requested: sanitizedLocations,
-          found: foundLocations,
-          missing: missingLocations,
-          suggestion: 'Ask admin to create chapters for: ' + missingLocations.join(', ')
-        }
-      }, { status: 404 })
+    // Check if some locations were not found (but allow partial success)
+    const foundLocations = result.rows.map(row => row.location_city)
+    const missingLocations = sanitizedLocations.filter(loc => 
+      !foundLocations.some(found => found.toLowerCase() === loc.toLowerCase())
+    )
+    
+    if (missingLocations.length > 0 && result.rows.length < sanitizedLocations.length) {
+      // Some locations not found, but we have at least 1 valid chapter
+      // Continue with the found chapters, but log a warning
+      console.warn('Some locations not found:', missingLocations)
     }
 
     // Insert memberships (upsert style avoiding duplicates)

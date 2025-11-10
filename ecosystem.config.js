@@ -14,8 +14,6 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 3001,
         CHAT_SERVER_PORT: 4000,
-        
-      
         APP_BASE_URL: 'http://localhost:3001',
         
         // --- External/Public URLs ---

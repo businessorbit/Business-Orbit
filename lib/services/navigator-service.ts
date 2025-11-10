@@ -66,10 +66,14 @@ export class NavigatorService {
       
       // Extract expertise/skills (look for skill-related keywords)
       const expertiseKeywords = [
-        'React', 'JavaScript', 'TypeScript', 'Node.js', 'Python', 'Java', 'C++', 'C#',
-        'AWS', 'Azure', 'Docker', 'Kubernetes', 'Machine Learning', 'AI', 'Data Science',
-        'Frontend', 'Backend', 'Full Stack', 'Mobile', 'iOS', 'Android', 'Web Development',
-        'UI/UX', 'Design', 'Marketing', 'Sales', 'Business', 'Finance', 'Consulting'
+        'Full Stack Web Development', 'Frontend Development', 'Backend Development', 'Mobile App Development',
+        'Data Science & Analytics', 'Machine Learning / AI', 'Cybersecurity', 'UI/UX Design',
+        'DevOps / CI-CD', 'Cloud Computing', 'Product Management', 'Software Testing & QA',
+        'Digital Marketing', 'SEO / SEM Optimization', 'Graphic Design', 'Video Editing & Content Creation',
+        'Game Development', 'Project Management', 'Business Development', 'Human Resource Management',
+        'Sales & Marketing', 'Customer Relationship Management (CRM)', 'Communication & Public Speaking',
+        'Leadership & Team Management', 'Content Writing & Copywriting', 'Finance & Accounting',
+        'Entrepreneurship & Startups'
       ]
       
       const expertise = expertiseKeywords.filter(keyword => 

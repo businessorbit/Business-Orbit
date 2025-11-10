@@ -93,14 +93,14 @@ export default function OnboardingPage() {
         // Remove item if already selected
         newSelection = currentSelection.filter(i => i !== item);
       } else {
-        // For chapters: limit to exactly 2 (required for onboarding)
-        // For secret groups: limit to 2
-        const limit = 2;
-        if (currentSelection.length < limit) {
+        // For chapters: allow at least 1 (can select up to 5)
+        // For secret groups: no limit
+        const maxLimit = type === 'chapters' ? 5 : 10;
+        if (currentSelection.length < maxLimit) {
           newSelection = [...currentSelection, item];
         } else {
           const itemType = type === 'chapters' ? 'chapters' : 'secret groups';
-          toast.error(`Please select exactly 2 ${itemType} to continue`);
+          toast.error(`You can select up to ${maxLimit} ${itemType}`);
           return prev;
         }
       }
@@ -114,11 +114,12 @@ export default function OnboardingPage() {
 
   const handleNext = () => {
     if (currentStep === 1) {
-      if (onboardingData.chapters.length < 2) {
-        toast.error('Please select exactly 2 chapters to continue');
+      if (onboardingData.chapters.length < 1) {
+        toast.error('Please select at least 1 chapter to continue');
         return;
       }
-      setCurrentStep(2);
+      // Complete onboarding after chapter selection (secret groups step commented out)
+      handleFinish();
     }
   };
 
@@ -129,10 +130,11 @@ export default function OnboardingPage() {
   };
 
   const handleFinish = async () => {
-    if (onboardingData.secretGroups.length === 0) {
-      toast.error('Please select at least 1 secret group');
-      return;
-    }
+    // Secret groups step commented out - users can join secret groups later from /product/groups
+    // if (onboardingData.secretGroups.length === 0) {
+    //   toast.error('Please select at least 1 secret group');
+    //   return;
+    // }
 
     setOnboardingLoading(true);
     try {
@@ -145,13 +147,13 @@ export default function OnboardingPage() {
         credentials: 'include',
         body: JSON.stringify({
           chapters: onboardingData.chapters,
-          secretGroups: onboardingData.secretGroups
+          secretGroups: [] // Secret groups step commented out - users can join later from /product/groups
         }),
       });
 
-      // Also create memberships for the two chosen chapter locations
+      // Also create memberships for the chosen chapter locations
       const locationsPayload = {
-        locations: onboardingData.chapters.slice(0, 2),
+        locations: onboardingData.chapters,
       };
       
       const chapterResponse = await fetch('/api/onboarding/chapters', {
@@ -175,40 +177,41 @@ export default function OnboardingPage() {
       
       toast.success(`Successfully joined ${chapterData.memberships} chapters!`);
 
+      // Secret groups step commented out - users can join secret groups later from /product/groups
       // Join selected secret groups
-      let joinedGroupsCount = 0;
-      for (const groupName of onboardingData.secretGroups) {
-        try {
-          // First, find the group by name
-          const groupsResponse = await fetch('/api/admin/management/secret-groups', {
-            credentials: 'include'
-          });
-          
-          if (groupsResponse.ok) {
-            const groupsData = await groupsResponse.json();
-            const group = groupsData.groups.find((g: any) => g.name === groupName);
-            
-            if (group) {
-              // Join the group
-              const joinResponse = await fetch(`/api/secret-groups/${encodeURIComponent(group.id)}/membership`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-              }              );
-              
-              if (joinResponse.ok) {
-                joinedGroupsCount++;
-              }
-            }
-          }
-        } catch (error) {
-          // Error joining group
-        }
-      }
+      // let joinedGroupsCount = 0;
+      // for (const groupName of onboardingData.secretGroups) {
+      //   try {
+      //     // First, find the group by name
+      //     const groupsResponse = await fetch('/api/admin/management/secret-groups', {
+      //       credentials: 'include'
+      //     });
+      //     
+      //     if (groupsResponse.ok) {
+      //       const groupsData = await groupsResponse.json();
+      //       const group = groupsData.groups.find((g: any) => g.name === groupName);
+      //       
+      //       if (group) {
+      //         // Join the group
+      //         const joinResponse = await fetch(`/api/secret-groups/${encodeURIComponent(group.id)}/membership`, {
+      //           method: 'POST',
+      //           credentials: 'include',
+      //           headers: { 'Content-Type': 'application/json' },
+      //         }              );
+      //         
+      //         if (joinResponse.ok) {
+      //           joinedGroupsCount++;
+      //         }
+      //       }
+      //     }
+      //   } catch (error) {
+      //     // Error joining group
+      //   }
+      // }
 
-      if (joinedGroupsCount > 0) {
-        toast.success(`Successfully joined ${joinedGroupsCount} secret groups!`);
-      }
+      // if (joinedGroupsCount > 0) {
+      //   toast.success(`Successfully joined ${joinedGroupsCount} secret groups!`);
+      // }
 
       if (response.ok) {
         // Update the onboarding status in context
@@ -259,9 +262,9 @@ export default function OnboardingPage() {
       <div className="mb-4">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-gray-700">
-            Selected: {selectedItems.length} / 2 {type === 'chapters' ? '(Required)' : ''}
+            Selected: {selectedItems.length} / {type === 'chapters' ? '5' : '10'} {type === 'chapters' ? '(Minimum 1 Required)' : ''}
           </span>
-          {selectedItems.length >= 2 && (
+          {((type === 'chapters' && selectedItems.length >= 1) || (type === 'secretGroups' && selectedItems.length >= 1)) && (
             <span className="text-sm text-green-600 font-medium flex items-center">
               <Check className="h-4 w-4 mr-1" />
               Ready
@@ -271,7 +274,7 @@ export default function OnboardingPage() {
         <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
           <div 
             className="bg-black h-2 rounded-full transition-all duration-300"
-            style={{ width: `${Math.min((selectedItems.length / 2) * 100, 100)}%` }}
+            style={{ width: `${Math.min((selectedItems.length / (type === 'chapters' ? 5 : 10)) * 100, 100)}%` }}
           ></div>
         </div>
       </div>
@@ -324,7 +327,8 @@ export default function OnboardingPage() {
         <span className="font-medium">Chapters</span>
       </div>
       
-      <div className="w-12 h-0.5 bg-gray-300"></div>
+      {/* Secret Groups step commented out - users can join secret groups later from /product/groups */}
+      {/* <div className="w-12 h-0.5 bg-gray-300"></div>
       
       <div className={`flex items-center space-x-2 ${currentStep >= 2 ? 'text-gray-900' : 'text-gray-400'}`}>
         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -333,7 +337,7 @@ export default function OnboardingPage() {
           2
         </div>
         <span className="font-medium">Secret Groups</span>
-      </div>
+      </div> */}
     </div>
   );
 
@@ -378,12 +382,13 @@ export default function OnboardingPage() {
               availableData.chapters,
               onboardingData.chapters,
               <MapPin className="h-6 w-6 text-gray-600" />,
-              'Select Your Chapters (Required: 2)',
-              'Please select exactly 2 chapters to join. You can join up to 3 more chapters later (maximum 5 total). These will help us connect you with like-minded professionals in your area.'
+              'Select Your Chapters (Minimum 1 Required)',
+              'Please select at least 1 chapter to join. You can select up to 5 chapters total. These will help us connect you with like-minded professionals in your area.'
             )
           )}
 
-          {currentStep === 2 && (
+          {/* Secret Groups step commented out - users can join secret groups later from /product/groups */}
+          {/* {currentStep === 2 && (
             <>
               {renderSelectionCard(
                 'secretGroups',
@@ -394,7 +399,6 @@ export default function OnboardingPage() {
                 'Select secret groups that match your interests and professional goals. These exclusive communities will enhance your networking experience.'
               )}
 
-              {/* Secret Groups Onboarding: Invite link / Create group / Skip */}
               <Card className="p-6 mt-6">
                 <h3 className="text-xl font-semibold mb-2">Join or Create a Secret Group</h3>
                 <p className="text-sm text-gray-600 mb-4">Optional: you can paste an invite link or create a group now, or skip and do it later.</p>
@@ -440,7 +444,6 @@ export default function OnboardingPage() {
                 </div>
               </Card>
 
-              {/* Create Group Dialog (UI only) */}
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogContent>
                   <DialogHeader>
@@ -483,12 +486,13 @@ export default function OnboardingPage() {
                 </DialogContent>
               </Dialog>
             </>
-          )}
+          )} */}
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <Button
+        <div className="flex items-center justify-end">
+          {/* Previous button removed since secret groups step is commented out */}
+          {/* <Button
             onClick={handlePrevious}
             disabled={currentStep === 1}
             variant="outline"
@@ -496,28 +500,18 @@ export default function OnboardingPage() {
           >
             <ChevronLeft className="h-5 w-5" />
             <span>Previous</span>
-          </Button>
+          </Button> */}
 
           <div className="flex items-center space-x-3">
-            {currentStep === 1 ? (
-              <Button
-                onClick={handleNext}
-                disabled={onboardingData.chapters.length !== 2}
-                className="flex items-center space-x-2 cursor-pointer"
-              >
-                <span>Next</span>
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleFinish}
-                disabled={onboardingData.secretGroups.length === 0 || onboardingLoading}
-                className="flex items-center space-x-2 cursor-pointer"
-              >
-                <span>{onboardingLoading ? 'Saving...' : 'Finish Setup'}</span>
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-            )}
+            {/* Secret groups step commented out - finish onboarding after chapter selection */}
+            <Button
+              onClick={handleNext}
+              disabled={onboardingData.chapters.length < 1 || onboardingLoading}
+              className="flex items-center space-x-2 cursor-pointer"
+            >
+              <span>{onboardingLoading ? 'Saving...' : 'Finish Setup'}</span>
+              <ArrowRight className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </div>
