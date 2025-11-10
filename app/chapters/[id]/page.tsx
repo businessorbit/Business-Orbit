@@ -156,9 +156,23 @@ export default function ChapterPage() {
   { name: "Alex Thompson", role: "UX Designer", score: 85, avatar: "AT" },
 ]
 
+  // Helper function to format membership date
+  const formatMembershipDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return "Member"
+    
+    try {
+      const date = new Date(dateString)
+      const month = date.toLocaleString('default', { month: 'short' })
+      const year = date.getFullYear()
+      return `Member since ${month} ${year}`
+    } catch (error) {
+      return "Member"
+    }
+  }
+
   // Fetch chapter data
   const fetchChapterData = async () => {
-    if (!params.id) return
+    if (!params.id || !user) return
 
     setLoading(true)
     try {
@@ -174,13 +188,35 @@ export default function ChapterPage() {
         const chapter = chapters.find((c: any) => c.id === params.id)
         
         if (chapter) {
+          // Fetch user's membership date for this chapter
+          let joinedAt = "Member"
+          try {
+            const membershipResult = await safeApiCall(
+              () => fetch(`/api/chapters/${params.id}/membership`, { credentials: 'include' }),
+              'Failed to fetch membership date'
+            )
+            
+            if (membershipResult.success && membershipResult.data && typeof membershipResult.data === 'object' && membershipResult.data !== null) {
+              const membershipData = membershipResult.data as any
+              if (membershipData.joined_at) {
+                joinedAt = formatMembershipDate(membershipData.joined_at)
+              }
+            } else if (membershipResult.error && membershipResult.error.includes('404')) {
+              // User is not a member, show default
+              joinedAt = "Member"
+            }
+          } catch (error) {
+            // If membership fetch fails, just use default
+            console.error('Error fetching membership date:', error)
+          }
+
           setChapterData({
             id: chapter.id,
             name: chapter.name,
             location_city: chapter.location_city,
             member_count: 0, // Will be updated when we fetch members
             description: `A community of professionals and innovators in ${chapter.location_city}`,
-            joined_at: "Member since Jan 2024" // This could be fetched from user's membership
+            joined_at: joinedAt
           })
         } else {
           toast.error('Chapter not found')
@@ -218,7 +254,16 @@ export default function ChapterPage() {
         const members = data.members || []
         setChapterMembers(members)
         
-        // Member count will be displayed separately, no need to update chapterData
+        // Update member count in chapterData to reflect actual number of members
+        setChapterData(prev => {
+          if (prev) {
+            return {
+              ...prev,
+              member_count: members.length
+            }
+          }
+          return prev
+        })
       } else {
         console.error('API call failed or returned no data:', result)
         if (result.error) {
