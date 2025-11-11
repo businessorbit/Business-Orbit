@@ -15,6 +15,9 @@ import { safeApiCall } from "@/lib/utils/api"
 import { Button } from "@/components/ui/button"
 import { Sparkles } from "lucide-react"
 
+// Ensure this page is rendered dynamically at runtime (avoid static generation timeouts)
+export const dynamic = 'force-dynamic';
+
 interface Post {
   id: string;
   content: string;
