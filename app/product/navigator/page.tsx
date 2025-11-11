@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Search, Send, Bot, User, MessageSquare, AlertCircle } from "lucide-react"
 import { NavigatorService } from "@/lib/services/navigator-service"
+import toast from "react-hot-toast"
 
 interface Professional {
   id: string
@@ -211,11 +212,27 @@ export default function ProductNavigatorPage() {
                       </div>
                     </div>
                     <div className="flex flex-col sm:flex-row lg:flex-col space-y-2 sm:space-y-0 sm:space-x-2 lg:space-x-0 lg:space-y-2 flex-shrink-0">
-                      <Button size="sm" className="text-xs sm:text-sm">Connect</Button>
+                      <Button 
+                        size="sm" 
+                        className="text-xs sm:text-sm"
+                        onClick={() => {
+                          toast("This feature is enabled in Phase2/Version2", {
+                            icon: "🧭",
+                            duration: 3000,
+                          })
+                        }}
+                      >
+                        Connect
+                      </Button>
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => setSelectedProfessional(professional)}
+                        onClick={() => {
+                          toast("This feature is enabled in Phase2/Version2", {
+                            icon: "👤",
+                            duration: 3000,
+                          })
+                        }}
                         className="text-xs sm:text-sm"
                       >
                         View Profile
@@ -231,7 +248,16 @@ export default function ProductNavigatorPage() {
         {/* Floating CTA */}
         {showResults && (
           <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
-            <Button size="sm" className="shadow-lg text-xs sm:text-sm">
+            <Button 
+              size="sm" 
+              className="shadow-lg text-xs sm:text-sm"
+              onClick={() => {
+                toast("This feature is enabled in Phase2/Version2", {
+                  icon: "🤖",
+                  duration: 3000,
+                })
+              }}
+            >
               <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Draft Outreach Message with AI</span>
               <span className="sm:hidden">Draft Message</span>
@@ -298,8 +324,27 @@ export default function ProductNavigatorPage() {
                   </div>
                   
                   <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pt-3 sm:pt-4">
-                    <Button className="flex-1 text-xs sm:text-sm">Connect</Button>
-                    <Button variant="outline" className="flex-1 text-xs sm:text-sm">
+                    <Button 
+                      className="flex-1 text-xs sm:text-sm"
+                      onClick={() => {
+                        toast("This feature is enabled in Phase2/Version2", {
+                          icon: "🧭",
+                          duration: 3000,
+                        })
+                      }}
+                    >
+                      Connect
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 text-xs sm:text-sm"
+                      onClick={() => {
+                        toast("This feature is enabled in Phase2/Version2", {
+                          icon: "💬",
+                          duration: 3000,
+                        })
+                      }}
+                    >
                       <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       Send Message
                     </Button>

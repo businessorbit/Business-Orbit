@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Users, Calendar, UserPlus, Check, Clock } from 'lucide-react'
 import { safeApiCall } from '@/lib/utils/api'
 import { toast } from 'sonner'
+import toastHot from 'react-hot-toast'
 
 interface Member {
   id: number
@@ -221,7 +222,15 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
         {members.map((member) => (
           <div key={member.id} className="p-3 rounded-lg hover:bg-muted/50 transition-colors border border-border/50">
             <div className="flex items-start space-x-3 mb-3">
-              <div className="relative">
+              <div 
+                className="relative cursor-pointer"
+                onClick={() => {
+                  toastHot("This feature is enabled in Phase2/Version2", {
+                    icon: "👤",
+                    duration: 3000,
+                  })
+                }}
+              >
                 {member.profilePhotoUrl ? (
                   <img
                     src={member.profilePhotoUrl}
@@ -235,7 +244,15 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
                 )}
               </div>
               
-              <div className="flex-1 min-w-0">
+              <div 
+                className="flex-1 min-w-0 cursor-pointer"
+                onClick={() => {
+                  toastHot("This feature is enabled in Phase2/Version2", {
+                    icon: "👤",
+                    duration: 3000,
+                  })
+                }}
+              >
                 <div className="flex items-center justify-between mb-1">
                   <h4 className="font-medium text-sm">{member.name}</h4>
                   <Button

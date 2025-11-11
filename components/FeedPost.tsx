@@ -7,6 +7,7 @@ import { Heart, MessageCircle, Sparkles, MoreVertical, Trash2 } from "lucide-rea
 import { useAuth } from "@/contexts/AuthContext";
 import { safeApiCall } from "@/lib/utils/api";
 import CommentsSection from "./CommentsSection";
+import toast from "react-hot-toast";
 
 interface Post {
   id: string;
@@ -178,7 +179,15 @@ export default function FeedPost({ post, onEngagementChange, onPostDeleted }: Fe
       <div className="space-y-4">
         {/* User Info */}
         <div className="flex items-center gap-3">
-          <div className="relative">
+          <div 
+            className="relative cursor-pointer"
+            onClick={() => {
+              toast("This feature is enabled in Phase2/Version2", {
+                icon: "👤",
+                duration: 3000,
+              })
+            }}
+          >
             <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-600">
               {post.profile_photo_url ? (
                 <img 
@@ -195,7 +204,15 @@ export default function FeedPost({ post, onEngagementChange, onPostDeleted }: Fe
             </div>
           </div>
           
-          <div className="flex-1">
+          <div 
+            className="flex-1 cursor-pointer"
+            onClick={() => {
+              toast("This feature is enabled in Phase2/Version2", {
+                icon: "👤",
+                duration: 3000,
+              })
+            }}
+          >
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-gray-900">{post.user_name}</h3>
               <div className="w-8 h-5 bg-gray-200 rounded-full flex items-center justify-center">

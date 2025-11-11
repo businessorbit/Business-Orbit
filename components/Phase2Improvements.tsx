@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Sparkles, Gift, MessageSquare, Sparkle } from "lucide-react"
+import { Sparkles, Gift, MessageSquare, Sparkle, Bell, Calendar, Video } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import toast from "react-hot-toast"
 
 export function Phase2Improvements() {
   return (
@@ -38,7 +39,15 @@ export function Phase2Improvements() {
         
         <div className="space-y-4 mt-4">
           {/* Navigator AI */}
-          <Card className="border-2 hover:border-foreground/20 transition-colors">
+          <Card 
+            className="border-2 hover:border-foreground/20 transition-colors cursor-pointer"
+            onClick={() => {
+              toast("This feature is enabled in Phase2/Version2", {
+                icon: "✨",
+                duration: 3000,
+              })
+            }}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl">
                 <div className="p-2 rounded-lg bg-muted">
@@ -60,7 +69,15 @@ export function Phase2Improvements() {
           </Card>
 
           {/* Reward System */}
-          <Card className="border-2 hover:border-foreground/20 transition-colors">
+          <Card 
+            className="border-2 hover:border-foreground/20 transition-colors cursor-pointer"
+            onClick={() => {
+              toast("This feature is enabled in Phase2/Version2", {
+                icon: "🎁",
+                duration: 3000,
+              })
+            }}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl">
                 <div className="p-2 rounded-lg bg-muted">
@@ -82,7 +99,15 @@ export function Phase2Improvements() {
           </Card>
 
           {/* Personal Messages */}
-          <Card className="border-2 hover:border-foreground/20 transition-colors">
+          <Card 
+            className="border-2 hover:border-foreground/20 transition-colors cursor-pointer"
+            onClick={() => {
+              toast("This feature is enabled in Phase2/Version2", {
+                icon: "💬",
+                duration: 3000,
+              })
+            }}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl">
                 <div className="p-2 rounded-lg bg-muted">
@@ -99,6 +124,99 @@ export function Phase2Improvements() {
                 Connect privately with other members through our new personal messaging system. Send direct messages, share files, 
                 schedule meetings, and maintain professional relationships in a secure, one-on-one environment. Perfect for 
                 follow-ups after events, deeper conversations with connections, and building stronger professional relationships.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Notification System */}
+          <Card 
+            className="border-2 hover:border-foreground/20 transition-colors cursor-pointer"
+            onClick={() => {
+              toast("This feature is enabled in Phase2/Version2", {
+                icon: "🔔",
+                duration: 3000,
+              })
+            }}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-lg bg-muted">
+                  <Bell className="h-6 w-6 text-foreground" />
+                </div>
+                Notification System
+              </CardTitle>
+              <CardDescription className="text-base">
+                Stay informed with real-time updates and alerts
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Never miss important updates with our comprehensive notification system. Receive real-time alerts for new messages, 
+                event invitations, connection requests, post engagements, and community activities. Customize your notification 
+                preferences to stay informed about what matters most to you. Get notified on your preferred channels and manage 
+                your alerts with granular control.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Schedule Post */}
+          <Card 
+            className="border-2 hover:border-foreground/20 transition-colors cursor-pointer"
+            onClick={() => {
+              toast("This feature is enabled in Phase2/Version2", {
+                icon: "📅",
+                duration: 3000,
+              })
+            }}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-lg bg-muted">
+                  <Calendar className="h-6 w-6 text-foreground" />
+                </div>
+                Schedule Post
+              </CardTitle>
+              <CardDescription className="text-base">
+                Plan and schedule your content in advance
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Take control of your content strategy with our advanced post scheduling feature. Create posts now and schedule them 
+                to be published at the perfect time. Plan your content calendar, maintain consistent engagement, and reach your 
+                audience when they're most active. Perfect for busy professionals who want to maintain a strong online presence 
+                without being tied to their devices.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Consultation */}
+          <Card 
+            className="border-2 hover:border-foreground/20 transition-colors cursor-pointer"
+            onClick={() => {
+              toast("This feature is enabled in Phase2/Version2", {
+                icon: "📹",
+                duration: 3000,
+              })
+            }}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-lg bg-muted">
+                  <Video className="h-6 w-6 text-foreground" />
+                </div>
+                Consultation
+              </CardTitle>
+              <CardDescription className="text-base">
+                Book and manage professional consultations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Connect with industry experts and professionals through our integrated consultation system. Book one-on-one sessions, 
+                schedule video calls, and access expert advice tailored to your needs. Whether you're seeking career guidance, 
+                business mentorship, or professional development, our consultation platform makes it easy to find and connect with 
+                the right experts. Manage your appointments, track your sessions, and build valuable professional relationships.
               </p>
             </CardContent>
           </Card>

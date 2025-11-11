@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { PlusCircle, Calendar, Upload, AlertCircle, Image, Video, Clock, Heart, MessageCircle, MoreHorizontal, MapPin, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { safeApiCall } from "@/lib/utils/api";
+import toast from "react-hot-toast";
 
 interface PostCardProps {
   onPostCreated?: () => void;
@@ -123,6 +124,10 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
     setPostType('schedule');
     setActiveButton('schedule');
     setShowPostCard(true);
+    toast("This feature is enabled in Phase2/Version2", {
+      icon: "📅",
+      duration: 3000,
+    });
   };
 
   const handleClosePostCard = () => {

@@ -13,6 +13,7 @@ import { DisplayPostCard } from "@/components/PostCard"
 import { MapPin, MessageCircle, UserPlus, Calendar, Star, Award, Users, Lock, DollarSign, Clock } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Upload } from "lucide-react"
+import toast from "react-hot-toast"
 
 const profileData = {
   id: "sarah-chen",
@@ -441,11 +442,28 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
                   </div>
 
                   <div className="space-y-2 sm:space-y-3">
-                    <Button className="w-full text-xs sm:text-sm">
+                    <Button 
+                      className="w-full text-xs sm:text-sm"
+                      onClick={() => {
+                        toast("This feature is enabled in Phase2/Version2", {
+                          icon: "📹",
+                          duration: 3000,
+                        })
+                      }}
+                    >
                       <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       Book Now
                     </Button>
-                    <Button variant="outline" className="w-full bg-transparent text-xs sm:text-sm">
+                    <Button 
+                      variant="outline" 
+                      className="w-full bg-transparent text-xs sm:text-sm"
+                      onClick={() => {
+                        toast("This feature is enabled in Phase2/Version2", {
+                          icon: "📹",
+                          duration: 3000,
+                        })
+                      }}
+                    >
                       View Available Slots
                     </Button>
                   </div>
