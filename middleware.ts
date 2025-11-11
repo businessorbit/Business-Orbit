@@ -1,6 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+// Force dynamic rendering for middleware
+export const dynamic = 'force-dynamic'
+
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 

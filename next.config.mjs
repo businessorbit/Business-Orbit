@@ -28,7 +28,19 @@ const nextConfig = {
     },
     // Skip build traces to speed up build
     optimizePackageImports: ['lucide-react'],
+    // Disable static page generation completely
+    staticGenerationRetryCount: 0,
   },
+  // Completely skip static page generation
+  // All pages are dynamic, so we don't need this phase
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
+  // Force all routes to be treated as dynamic during build
+  // This prevents Next.js from trying to collect page data
+  reactStrictMode: true,
+  // Completely disable static page optimization
+  // Since all pages are dynamic, we don't need this
+  poweredByHeader: false,
   // Proxy all API routes to backend ONLY on Vercel
   // On EC2, API routes run directly with database access
   async rewrites() {
