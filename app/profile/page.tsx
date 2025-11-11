@@ -186,8 +186,8 @@ export default function ProfilePage() {
           'Failed to fetch posts'
         )
         const postsData: any = (postsRes as any).data
-        if ((postsRes as any).success && Array.isArray(postsData?.posts)) {
-          setUserPosts(postsData.posts)
+        if ((postsRes as any).success && Array.isArray(postsData)) {
+          setUserPosts(postsData)
         } else {
           setUserPosts([])
         }
@@ -494,8 +494,8 @@ export default function ProfilePage() {
                             'Failed to fetch posts'
                           )
                           const postsData: any = (postsRes as any).data
-                          if ((postsRes as any).success && Array.isArray(postsData?.posts)) {
-                            setUserPosts(postsData.posts)
+                          if ((postsRes as any).success && Array.isArray(postsData)) {
+                            setUserPosts(postsData)
                           } else {
                             setUserPosts([])
                           }

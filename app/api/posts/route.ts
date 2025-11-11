@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
+    const userIdParam = searchParams.get('userId');
 
     const client = await pool.connect();
     try {
@@ -45,12 +46,15 @@ export async function GET(request: NextRequest) {
           WHERE engagement_type = 'share'
           GROUP BY post_id
         ) share_count ON p.id = share_count.post_id
-        WHERE p.status = 'published'
+        WHERE p.status = 'published'${userIdParam ? ' AND p.user_id = $3' : ''}
         ORDER BY p.published_at DESC, p.created_at DESC
         LIMIT $1 OFFSET $2
       `;
 
-      const postsResult = await client.query(postsQuery, [limit, offset]);
+      const postsResult = await client.query(
+        postsQuery,
+        userIdParam ? [limit, offset, parseInt(userIdParam)] : [limit, offset]
+      );
 
       // Get media for each post
       const postsWithMedia = await Promise.all(
@@ -71,8 +75,11 @@ export async function GET(request: NextRequest) {
       );
 
       // Get total count for pagination
-      const countQuery = `SELECT COUNT(*) FROM posts WHERE status = 'published'`;
-      const countResult = await client.query(countQuery);
+      const countQuery = `SELECT COUNT(*) FROM posts WHERE status = 'published'${userIdParam ? ' AND user_id = $1' : ''}`;
+      const countResult = await client.query(
+        countQuery,
+        userIdParam ? [parseInt(userIdParam)] : []
+      );
       const totalCount = parseInt(countResult.rows[0].count);
 
       return NextResponse.json({
