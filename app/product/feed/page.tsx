@@ -102,26 +102,77 @@ export default function FeedPage() {
   useEffect(() => {
     if (user) {
       // Opportunistically publish any scheduled posts whose time has arrived
-      fetch('/api/posts/publish-scheduled', { method: 'POST' }).catch(() => {})
+      const publishAndRefresh = async () => {
+        try {
+          const response = await fetch('/api/posts/publish-scheduled', { method: 'POST' })
+          const data = await response.json()
+          // If any posts were published, refresh the feed
+          if (data.success && data.published > 0) {
+            fetchPosts(1, false)
+          }
+        } catch (error) {
+          console.error('Error publishing scheduled posts:', error)
+        }
+      }
+      
+      publishAndRefresh()
       fetchPosts(1, false)
       
-      // Set up interval to check for scheduled posts every 30 seconds
-      const interval = setInterval(() => {
-        fetch('/api/posts/publish-scheduled', { method: 'POST' })
-          .then(() => {
-            // Refresh posts if any were published
+      // Set up interval to check for scheduled posts every 10 seconds (more frequent)
+      const interval = setInterval(async () => {
+        try {
+          const response = await fetch('/api/posts/publish-scheduled', { method: 'POST' })
+          const data = await response.json()
+          // Only refresh if posts were actually published
+          if (data.success && data.published > 0) {
             fetchPosts(1, false)
-          })
-          .catch(() => {})
-      }, 30000) // Check every 30 seconds
+          }
+        } catch (error) {
+          console.error('Error publishing scheduled posts:', error)
+        }
+      }, 10000) // Check every 10 seconds for more responsive updates
       
-      return () => clearInterval(interval)
+      // Refresh when user returns to the tab/window (in case they were away when post was published)
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          publishAndRefresh()
+        }
+      }
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      
+      return () => {
+        clearInterval(interval)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+      }
     }
   }, [user])
 
-  const handlePostCreated = () => {
-    // Refresh posts when a new post is created
-    fetchPosts(1, false)
+  const handlePostCreated = async () => {
+    // When a post is created (including scheduled), check if it should be published immediately
+    // and refresh the feed
+    try {
+      // First, try to publish any scheduled posts that are ready
+      const publishResponse = await fetch('/api/posts/publish-scheduled', { method: 'POST' })
+      const publishData = await publishResponse.json()
+      
+      // Always refresh posts after creating a new post
+      // If it was scheduled and just got published, it will show up
+      // If it was immediate, it will show up
+      // If it's still scheduled, it won't show (which is correct)
+      await fetchPosts(1, false)
+      
+      // If posts were published, refresh again to ensure they appear
+      if (publishData.success && publishData.published > 0) {
+        // Small delay to ensure database is updated, then refresh
+        setTimeout(() => {
+          fetchPosts(1, false)
+        }, 500)
+      }
+    } catch (error) {
+      // Even if publish check fails, refresh the feed
+      fetchPosts(1, false)
+    }
   }
 
   const handleEngagementChange = () => {
