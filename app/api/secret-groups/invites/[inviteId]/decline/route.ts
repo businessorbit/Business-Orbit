@@ -14,12 +14,26 @@ export async function POST(
 
     const { inviteId } = await params
 
-    // Update invite status to declined
+    // Ensure table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_group_invites (
+        id SERIAL PRIMARY KEY,
+        group_id UUID NOT NULL REFERENCES secret_groups(id) ON DELETE CASCADE,
+        sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        recipient_email VARCHAR(255),
+        recipient_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    // Update invite status to declined (case-insensitive email matching)
     const result = await pool.query(
       `UPDATE secret_group_invites 
        SET status = $1, updated_at = CURRENT_TIMESTAMP 
        WHERE id = $2 
-         AND (recipient_email = $3 OR recipient_user_id = $4)
+         AND (LOWER(recipient_email) = LOWER($3) OR recipient_user_id = $4)
          AND status = 'pending'
        RETURNING *`,
       ['declined', inviteId, user.email, user.id]
@@ -41,7 +55,8 @@ export async function POST(
     console.error('Error declining secret group invite:', error)
     return NextResponse.json({
       success: false,
-      error: 'Failed to decline invite'
+      error: 'Failed to decline invite',
+      details: error.message
     }, { status: 500 })
   }
 }

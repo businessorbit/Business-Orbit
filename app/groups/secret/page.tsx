@@ -188,7 +188,11 @@ export default function GroupsSecretPage() {
       const res = await fetch('/api/secret-groups/invites/received', { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
+        console.log('Fetched group requests:', data)
         setGroupRequests(data.invites || [])
+      } else {
+        const errorData = await res.json().catch(() => ({}))
+        console.error('Failed to fetch group requests:', errorData)
       }
     } catch (error) {
       console.error('Error fetching group requests:', error)
@@ -226,10 +230,6 @@ export default function GroupsSecretPage() {
         } : undefined
         if (created) {
           setAllGroups(prev => [created, ...prev])
-          // Auto-join creator if logged in
-          if (created.id) {
-            try { await fetch(`/api/secret-groups/${created.id}/membership`, { method: 'POST', credentials: 'include' }) } catch {}
-          }
           
           // Send secret group invites to selected users and emails
           const recipientUserIds: number[] = []
@@ -249,9 +249,11 @@ export default function GroupsSecretPage() {
           }
 
           // Send invites via secret group invite API
+          // Note: Creator is already added as member in the group creation API
           if (recipientUserIds.length > 0 || recipientEmails.length > 0) {
             try {
-              await fetch('/api/secret-groups/invites/send', {
+              console.log('Sending invites:', { group_id: created.id, recipientUserIds, recipientEmails })
+              const inviteRes = await fetch('/api/secret-groups/invites/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -261,9 +263,29 @@ export default function GroupsSecretPage() {
                   recipient_emails: recipientEmails
                 })
               })
+              
+              if (inviteRes.ok) {
+                const inviteData = await inviteRes.json()
+                console.log('Invites sent successfully:', inviteData)
+                alert(`Group created! ${inviteData.message || 'Invites sent successfully.'}`)
+              } else {
+                const errorData = await inviteRes.json().catch(() => ({}))
+                console.error('Failed to send invites:', errorData)
+                alert(`Group created, but failed to send some invites: ${errorData.error || 'Unknown error'}`)
+              }
             } catch (error) {
               console.error('Error sending secret group invites:', error)
+              alert('Group created, but failed to send invites. Please try inviting members manually.')
             }
+          } else {
+            alert('Group created successfully!')
+          }
+          
+          // Auto-join creator if logged in (group creation already adds creator as member, but ensure it's done)
+          if (created.id) {
+            try { 
+              await fetch(`/api/secret-groups/${created.id}/membership`, { method: 'POST', credentials: 'include' }) 
+            } catch {}
           }
 
           // refresh my groups
@@ -529,7 +551,18 @@ export default function GroupsSecretPage() {
 
           {/* Secret Group Requests */}
           <Card className="p-4 lg:p-6">
-            <h3 className="font-semibold mb-4 text-sm lg:text-base">Secret Group Requests</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-sm lg:text-base">Secret Group Requests</h3>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={fetchGroupRequests}
+                disabled={requestsLoading}
+                className="h-7 text-xs"
+              >
+                {requestsLoading ? 'Loading...' : 'Refresh'}
+              </Button>
+            </div>
             {requestsLoading ? (
               <div className="text-sm text-muted-foreground">Loading requests...</div>
             ) : groupRequests.length === 0 ? (

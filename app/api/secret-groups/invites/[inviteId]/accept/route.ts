@@ -14,11 +14,34 @@ export async function POST(
 
     const { inviteId } = await params
 
-    // Get the invite
+    // Ensure tables exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_group_invites (
+        id SERIAL PRIMARY KEY,
+        group_id UUID NOT NULL REFERENCES secret_groups(id) ON DELETE CASCADE,
+        sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        recipient_email VARCHAR(255),
+        recipient_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_group_memberships (
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        group_id UUID NOT NULL REFERENCES secret_groups(id) ON DELETE CASCADE,
+        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, group_id)
+      )
+    `)
+
+    // Get the invite (case-insensitive email matching)
     const inviteResult = await pool.query(
       `SELECT * FROM secret_group_invites 
        WHERE id = $1 
-         AND (recipient_email = $2 OR recipient_user_id = $3)
+         AND (LOWER(recipient_email) = LOWER($2) OR recipient_user_id = $3)
          AND status = 'pending'`,
       [inviteId, user.email, user.id]
     )
@@ -69,8 +92,8 @@ export async function POST(
     console.error('Error accepting secret group invite:', error)
     return NextResponse.json({
       success: false,
-      error: 'Failed to accept invite'
+      error: 'Failed to accept invite',
+      details: error.message
     }, { status: 500 })
   }
 }
-
