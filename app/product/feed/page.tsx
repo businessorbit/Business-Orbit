@@ -108,11 +108,7 @@ export default function FeedPage() {
           const data = await response.json()
           // If any posts were published, refresh the feed
           if (data.success && data.published > 0) {
-            console.log(`Published ${data.published} scheduled post(s), refreshing feed...`)
-            // Small delay to ensure database is fully updated
-            setTimeout(() => {
-              fetchPosts(1, false)
-            }, 300)
+            fetchPosts(1, false)
           }
         } catch (error) {
           console.error('Error publishing scheduled posts:', error)
@@ -127,13 +123,9 @@ export default function FeedPage() {
         try {
           const response = await fetch('/api/posts/publish-scheduled', { method: 'POST' })
           const data = await response.json()
-          // Refresh feed if posts were published
+          // Only refresh if posts were actually published
           if (data.success && data.published > 0) {
-            console.log(`Published ${data.published} scheduled post(s), refreshing feed...`)
-            // Small delay to ensure database is fully updated
-            setTimeout(() => {
-              fetchPosts(1, false)
-            }, 300)
+            fetchPosts(1, false)
           }
         } catch (error) {
           console.error('Error publishing scheduled posts:', error)

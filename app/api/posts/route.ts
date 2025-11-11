@@ -2,10 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/config/database';
 import { verifyToken } from '@/lib/utils/auth';
 
-// Force dynamic rendering to prevent build-time analysis
-export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

@@ -262,7 +262,6 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:fast": "SKIP_ENV_VALIDATION=true next build --no-lint",
     "start": "next start",
     "chat:dev": "tsx server/chat-server.ts",
     "db:setup": "tsx lib/database/setup.ts",

@@ -1,21 +1,8 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
-// Early exit if we're in build mode - prevent any database imports during build
-const isBuildTime = 
-  process.env.NEXT_PHASE === 'phase-production-build' || 
-  process.env.NEXT_PHASE === 'phase-development-build' ||
-  process.env.NEXT_PHASE?.includes('build') ||
-  process.env.npm_lifecycle_event === 'build' ||
-  process.env.NEXT_BUILD === '1' ||
-  (typeof process !== 'undefined' && process.argv && (
-    process.argv.some(arg => arg.includes('next') && arg.includes('build')) ||
-    process.argv.some(arg => arg === 'build')
-  )) ||
-  (process.env.CI === 'true' && process.env.npm_lifecycle_event === 'build');
-
 // Load local env variables only during local development (not on Vercel/build)
-if (!isBuildTime && process.env.VERCEL !== '1' && process.env.NODE_ENV !== 'production') {
+if (process.env.VERCEL !== '1' && process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: '.env.local' });
 }
 
@@ -41,7 +28,22 @@ declare global {
   var __PG_POOL__: any;
 }
 
-// isBuildTime is already defined at the top of the file - reuse it
+// Detect if we're in a Next.js build context - be VERY aggressive here
+// During build, Next.js analyzes routes which can trigger imports
+const isBuildTime = 
+  process.env.NEXT_PHASE === 'phase-production-build' || 
+  process.env.NEXT_PHASE === 'phase-development-build' ||
+  process.env.NEXT_PHASE?.includes('build') ||
+  process.env.npm_lifecycle_event === 'build' ||
+  process.env.NEXT_BUILD === '1' ||
+  // Check if we're running next build command (most reliable)
+  (typeof process !== 'undefined' && process.argv && (
+    process.argv.some(arg => arg.includes('next') && arg.includes('build')) ||
+    process.argv.some(arg => arg === 'build') ||
+    process.argv.some(arg => arg.includes('next') && (arg.includes('build') || arg.includes('export')))
+  )) ||
+  // CI environment during build (GitHub Actions sets this)
+  (process.env.CI === 'true' && process.env.npm_lifecycle_event === 'build');
 
 // NEVER create pool during build time - this causes timeouts
 // Create pool only if DATABASE_URL is available AND we're not building

@@ -11,64 +11,18 @@ export const runtime = 'nodejs'
 async function publishScheduledPosts() {
   const client = await pool.connect()
   try {
-    // First, check for scheduled posts that should be published (for debugging)
-    const checkQuery = `
-      SELECT id, content, scheduled_at, status, NOW() as current_time
-      FROM posts
-      WHERE status = 'scheduled'
-        AND scheduled_at IS NOT NULL
-      ORDER BY scheduled_at ASC
-      LIMIT 5
-    `
-    const checkResult = await client.query(checkQuery)
-    
-    // Use database NOW() for accurate timezone-aware comparison
-    // This ensures we're comparing in the same timezone as the database
+    const now = new Date()
     const query = `
       UPDATE posts
       SET status = 'published',
           published_at = COALESCE(published_at, NOW())
       WHERE status = 'scheduled'
         AND scheduled_at IS NOT NULL
-        AND scheduled_at <= NOW()
-      RETURNING id, content, scheduled_at, published_at
+        AND scheduled_at <= $1
+      RETURNING id
     `
-    const result = await client.query(query)
-    
-    // Log for debugging
-    if (result.rows.length > 0) {
-      console.log(`Published ${result.rows.length} scheduled post(s)`)
-    } else if (checkResult.rows.length > 0) {
-      // Log upcoming scheduled posts for debugging
-      console.log(`Found ${checkResult.rows.length} scheduled post(s), but none ready to publish yet`)
-      checkResult.rows.forEach((row: any) => {
-        console.log(`  - Post ${row.id}: scheduled_at=${row.scheduled_at}, current_time=${row.current_time}`)
-      })
-    }
-    
-    return { 
-      success: true, 
-      published: result.rows.length,
-      posts: result.rows.map((row: any) => ({
-        id: row.id,
-        scheduled_at: row.scheduled_at,
-        published_at: row.published_at
-      })),
-      // Include debug info in development
-      ...(process.env.NODE_ENV === 'development' && {
-        debug: {
-          scheduled_posts_count: checkResult.rows.length,
-          upcoming_posts: checkResult.rows.map((row: any) => ({
-            id: row.id,
-            scheduled_at: row.scheduled_at,
-            current_time: row.current_time
-          }))
-        }
-      })
-    }
-  } catch (error: any) {
-    console.error('Error publishing scheduled posts:', error)
-    throw error
+    const result = await client.query(query, [now])
+    return { success: true, published: result.rows.length }
   } finally {
     client.release()
   }
