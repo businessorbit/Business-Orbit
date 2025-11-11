@@ -1,5 +1,8 @@
 "use client"
 
+// Force dynamic rendering to prevent build-time static generation
+export const dynamic = 'force-dynamic'
+
 import { UserProfile, UserGroup } from "@/lib/types/profile"
 import { safeApiCall, generateRandomMemberCount } from "@/lib/utils/api"
 

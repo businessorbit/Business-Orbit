@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic rendering to prevent build-time static generation
+export const dynamic = 'force-dynamic'
+
 import Modal from "react-modal";
 import axios from "axios";
 import { useState, useEffect, useMemo } from "react";

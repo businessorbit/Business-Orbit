@@ -22,8 +22,6 @@ const nextConfig = {
     // Skip build traces to speed up build
     optimizePackageImports: ['lucide-react'],
   },
-  // Reduce build time by skipping unnecessary optimizations
-  swcMinify: true,
   // Proxy all API routes to backend ONLY on Vercel
   // On EC2, API routes run directly with database access
   async rewrites() {
