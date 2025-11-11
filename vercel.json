@@ -1,12 +1,6 @@
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://api.businessorbit.org/api/$1" }
-  ],
-  "crons": [
-    {
-      "path": "/api/posts/publish-scheduled",
-      "schedule": "*/1 * * * *"
-    }
   ]
 }
 
