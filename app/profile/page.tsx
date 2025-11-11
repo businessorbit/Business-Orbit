@@ -481,30 +481,9 @@ export default function ProfilePage() {
                   )}
 
                   {/* Your Posts */}
-                  <Card className="p-3 sm:p-4">
+                  <div className="mt-4 sm:mt-6 mb-6">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">Your Posts</h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={async () => {
-                          if (!user) return
-                          const postsRes = await safeApiCall(
-                            () => fetch(`/api/posts?userId=${user.id}&limit=20`, { credentials: 'include' }),
-                            'Failed to fetch posts'
-                          )
-                          const postsPayload: any = (postsRes as any).data
-                          const items = postsPayload?.data
-                          if ((postsRes as any).success && Array.isArray(items)) {
-                            setUserPosts(items)
-                          } else {
-                            setUserPosts([])
-                          }
-                        }}
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                      </Button>
+                      <h3 className="font-semibold text-sm sm:text-base">Your Posts</h3>
                     </div>
                     {userPosts.length === 0 ? (
                       <div className="text-sm text-muted-foreground">You haven't posted yet.</div>
@@ -529,7 +508,7 @@ export default function ProfilePage() {
                         ))}
                       </div>
                     )}
-                  </Card>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="groups" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
