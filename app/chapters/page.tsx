@@ -1,8 +1,5 @@
 "use client";
 
-// Force dynamic rendering to prevent build-time static generation
-export const dynamic = 'force-dynamic'
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";

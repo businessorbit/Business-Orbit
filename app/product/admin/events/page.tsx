@@ -1,8 +1,5 @@
 "use client";
 
-// Force dynamic rendering to prevent build-time static generation
-export const dynamic = 'force-dynamic'
-
 import { AdminSidebar } from "@/components/admin-sidebar";
 import AdminEvents from "@/components/admin/AdminEvents";
 

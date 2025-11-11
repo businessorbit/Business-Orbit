@@ -6,9 +6,6 @@ import { AuthProvider } from "@/contexts/AuthContext"
 import { Toaster } from "react-hot-toast"
 import { Phase2Improvements } from "@/components/Phase2Improvements"
 
-// Force dynamic rendering to prevent build-time static generation
-export const dynamic = 'force-dynamic'
-
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",

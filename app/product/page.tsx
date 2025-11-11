@@ -1,8 +1,5 @@
 "use client";
 
-// Force dynamic rendering to prevent build-time static generation
-export const dynamic = 'force-dynamic'
-
 import Image from "next/image";
 
 export default function ProductPage() {

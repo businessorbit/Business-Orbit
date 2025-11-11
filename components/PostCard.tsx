@@ -321,15 +321,10 @@ export default function PostCard({ onPostCreated }: PostCardProps) {
           videoInputRef.current.value = "";
         }
         
-        // Close the post card modal after successful scheduling
-        setShowPostCard(false);
-        setActiveButton(null);
-        
         // Refresh daily status
         // await fetchDailyStatus();
         
-        // Notify parent component to refresh feed
-        // This will also trigger publish-scheduled check
+        // Notify parent component
         if (onPostCreated) {
           onPostCreated();
         }

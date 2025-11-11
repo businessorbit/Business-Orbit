@@ -1,8 +1,5 @@
 "use client";
 
-// Force dynamic rendering to prevent build-time static generation
-export const dynamic = 'force-dynamic'
-
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import LandingPage from "@/components/LandingPage"

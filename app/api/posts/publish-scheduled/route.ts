@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server'
 import pool from '@/lib/config/database'
 
-// Force dynamic rendering to prevent build-time analysis
-export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
-
 // Idempotent endpoint to publish any scheduled posts whose time has arrived.
 // Safe to call periodically (e.g., on feed load or via cron).
 // Supports both GET (for cron services) and POST methods.

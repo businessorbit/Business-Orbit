@@ -1,8 +1,5 @@
 'use client';
 
-// Force dynamic rendering to prevent build-time static generation
-export const dynamic = 'force-dynamic'
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Check, ChevronLeft, ChevronRight, MapPin, Users, ArrowRight } from 'lucide-react';

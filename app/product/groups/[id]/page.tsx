@@ -1,9 +1,5 @@
 "use client"
 
-// Force dynamic rendering to prevent build-time static generation
-export const dynamic = 'force-dynamic'
-export const dynamicParams = true
-
 import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Navigation } from "@/components/navigation"

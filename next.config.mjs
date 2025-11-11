@@ -11,27 +11,12 @@ const nextConfig = {
     domains: ['res.cloudinary.com'],
   },
   serverExternalPackages: ['pg'],
-  // Use standalone output to reduce build complexity
-  output: 'standalone',
-  // Minimize output file tracing to prevent build timeout
-  // This reduces the "Collecting build traces" phase significantly
-  outputFileTracingExcludes: {
-    '*': [
-      'node_modules/@swc/**/*',
-      'node_modules/@next/**/*',
-      'node_modules/webpack/**/*',
-      'node_modules/.cache/**/*',
-      '.next/cache/**/*',
-    ],
-  },
   // Skip API route analysis during build to prevent timeouts
   experimental: {
     // This helps prevent Next.js from trying to analyze API routes during build
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    // Skip build traces to speed up build
-    optimizePackageImports: ['lucide-react'],
   },
   // Proxy all API routes to backend ONLY on Vercel
   // On EC2, API routes run directly with database access
