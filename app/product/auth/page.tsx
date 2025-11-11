@@ -1,18 +1,16 @@
 'use client';
 
-'use client';
-
 // Force dynamic rendering to prevent build-time static generation
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react';
-import nextDynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 
 import { Card } from '@/components/ui/card';
 import toast from 'react-hot-toast';
 
-const AuthForm = dynamic(() => import('@/components/AuthForm'), {
+const AuthForm = dynamicImport(() => import('@/components/AuthForm'), {
   ssr: false,
   loading: () => (
     <Card className="p-8">

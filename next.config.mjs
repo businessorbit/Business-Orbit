@@ -11,13 +11,17 @@ const nextConfig = {
     domains: ['res.cloudinary.com'],
   },
   serverExternalPackages: ['pg'],
-  // Skip static optimization to prevent build timeouts
+  // Use standalone output to reduce build complexity
   output: 'standalone',
-  // Disable output file tracing to prevent build timeout
-  // This skips the "Collecting build traces" phase
+  // Minimize output file tracing to prevent build timeout
+  // This reduces the "Collecting build traces" phase significantly
   outputFileTracingExcludes: {
     '*': [
-      'node_modules/**/*',
+      'node_modules/@swc/**/*',
+      'node_modules/@next/**/*',
+      'node_modules/webpack/**/*',
+      'node_modules/.cache/**/*',
+      '.next/cache/**/*',
     ],
   },
   // Skip API route analysis during build to prevent timeouts
