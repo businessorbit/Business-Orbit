@@ -45,7 +45,7 @@ const nextConfig = {
     // On EC2, return empty array so API routes execute directly
     return [];
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -54,7 +54,21 @@ const nextConfig = {
         tls: false,
       };
     }
+    // Skip module analysis during build to speed up
+    if (!dev) {
+      config.optimization = {
+        ...config.optimization,
+        moduleIds: 'deterministic',
+        minimize: true,
+      };
+    }
     return config;
+  },
+  // Disable source maps in production to speed up build
+  productionBrowserSourceMaps: false,
+  // Skip build ID generation optimization
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
   },
 }
 
