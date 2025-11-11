@@ -218,13 +218,25 @@ export default function ProductGroupsPage() {
       }
       const data = await createRes.json()
       const groupId = data?.group?.id
-      const emails = inviteEmails.split(',').map(e => e.trim()).filter(Boolean)
-      if (groupId && emails.length) {
-        await fetch(`/api/groups/${encodeURIComponent(groupId)}/invite`, {
+      // Collect recipients: selected connections (by user id) and optional emails
+      const recipientUserIds = selectedConnections
+        .map((id) => Number(id))
+        .filter((n) => Number.isFinite(n))
+      const recipientEmails = inviteEmails
+        .split(',')
+        .map(e => e.trim())
+        .filter(Boolean)
+      // Send invites only if we have at least one recipient (emails are optional)
+      if (groupId && (recipientUserIds.length || recipientEmails.length)) {
+        await fetch('/api/secret-groups/invites/send', {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ emails })
+          body: JSON.stringify({
+            group_id: groupId,
+            recipient_user_ids: recipientUserIds,
+            recipient_emails: recipientEmails
+          })
         })
       }
       toast.success(`Group "${name}" created successfully!`)
@@ -243,6 +255,42 @@ export default function ProductGroupsPage() {
   const [events, setEvents] = useState<Array<any>>([])
   const [eventsLoading, setEventsLoading] = useState(false)
   const [lastEventsUpdate, setLastEventsUpdate] = useState<Date | null>(null)
+
+  // Secret group requests (invites) state
+  const [groupRequests, setGroupRequests] = React.useState<Array<{
+    id: number
+    group_id: string
+    group_name: string
+    group_description?: string
+    sender_name: string
+    sender_email: string
+    created_at: string
+  }>>([])
+  const [requestsLoading, setRequestsLoading] = React.useState(false)
+
+  const fetchGroupRequests = React.useCallback(async () => {
+    if (!user?.id) return
+    setRequestsLoading(true)
+    try {
+      const res = await fetch('/api/secret-groups/invites/received', { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        setGroupRequests(Array.isArray(data?.invites) ? data.invites : [])
+      } else {
+        setGroupRequests([])
+      }
+    } catch {
+      setGroupRequests([])
+    } finally {
+      setRequestsLoading(false)
+    }
+  }, [user?.id])
+
+  React.useEffect(() => {
+    fetchGroupRequests()
+    const interval = setInterval(fetchGroupRequests, 30000)
+    return () => clearInterval(interval)
+  }, [fetchGroupRequests])
 
   const fetchUpcomingEvents = async (forceRefresh = false) => {
     if (eventsLoading && !forceRefresh) return
@@ -425,6 +473,89 @@ export default function ProductGroupsPage() {
                 </Button>
               )}
             </div>
+
+            {/* Secret Group Requests */}
+            <Card className="p-3 sm:p-4 lg:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className="font-semibold text-xs sm:text-sm lg:text-base">Secret Group Requests</h3>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={fetchGroupRequests}
+                  disabled={requestsLoading}
+                  className="h-6 sm:h-7 px-2 sm:px-3 text-xs"
+                >
+                  {requestsLoading ? 'Loading...' : 'Refresh'}
+                </Button>
+              </div>
+              {requestsLoading ? (
+                <div className="text-xs sm:text-sm text-muted-foreground">Loading requests...</div>
+              ) : groupRequests.length === 0 ? (
+                <div className="text-xs sm:text-sm text-muted-foreground">No pending requests.</div>
+              ) : (
+                <div className="space-y-2 sm:space-y-3">
+                  {groupRequests.map((req) => (
+                    <div key={req.id} className="border border-border/50 rounded-lg p-2 sm:p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs sm:text-sm font-medium truncate">{req.group_name}</p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Invited by {req.sender_name}</p>
+                          {req.group_description && (
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {req.group_description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button
+                          size="sm"
+                          className="flex-1 h-6 sm:h-7 text-xs"
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`/api/secret-groups/invites/${req.id}/accept`, { method: 'POST', credentials: 'include' })
+                              if (res.ok) {
+                                await fetchGroupRequests()
+                                await loadData()
+                                toast.success(`Joined "${req.group_name}"`)
+                              } else {
+                                const e = await res.json().catch(() => ({}))
+                                toast.error(e.error || 'Failed to accept request')
+                              }
+                            } catch {
+                              toast.error('Failed to accept request')
+                            }
+                          }}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 h-6 sm:h-7 text-xs bg-transparent"
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`/api/secret-groups/invites/${req.id}/decline`, { method: 'POST', credentials: 'include' })
+                              if (res.ok) {
+                                await fetchGroupRequests()
+                                toast.success('Request declined')
+                              } else {
+                                const e = await res.json().catch(() => ({}))
+                                toast.error(e.error || 'Failed to decline')
+                              }
+                            } catch {
+                              toast.error('Failed to decline')
+                            }
+                          }}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
 
             {/* Group Admins */}
             <Card className="p-3 sm:p-4 lg:p-6">

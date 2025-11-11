@@ -254,9 +254,9 @@ export default function GroupsSecretPage() {
             try {
               console.log('Sending invites:', { group_id: created.id, recipientUserIds, recipientEmails })
               const inviteRes = await fetch('/api/secret-groups/invites/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
                 body: JSON.stringify({
                   group_id: created.id,
                   recipient_user_ids: recipientUserIds,
