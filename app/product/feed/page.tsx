@@ -98,7 +98,21 @@ export default function FeedPage() {
 
   useEffect(() => {
     if (user) {
+      // Opportunistically publish any scheduled posts whose time has arrived
+      fetch('/api/posts/publish-scheduled', { method: 'POST' }).catch(() => {})
       fetchPosts(1, false)
+      
+      // Set up interval to check for scheduled posts every 30 seconds
+      const interval = setInterval(() => {
+        fetch('/api/posts/publish-scheduled', { method: 'POST' })
+          .then(() => {
+            // Refresh posts if any were published
+            fetchPosts(1, false)
+          })
+          .catch(() => {})
+      }, 30000) // Check every 30 seconds
+      
+      return () => clearInterval(interval)
     }
   }, [user])
 

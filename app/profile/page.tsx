@@ -492,7 +492,7 @@ export default function ProfilePage() {
                         {userPosts.map((p: any, idx: number) => (
                           <div key={p.id || idx} className="border rounded-lg p-3 sm:p-4 bg-background">
                             <div className="text-xs text-muted-foreground mb-1">
-                              {p.created_at ? new Date(p.created_at).toLocaleString() : 'Recently'}
+                              {p.created_at ? new Date(p.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'Recently'}
                             </div>
                             <div className="text-sm sm:text-base whitespace-pre-wrap break-words">
                               {p.content || p.text || ''}
