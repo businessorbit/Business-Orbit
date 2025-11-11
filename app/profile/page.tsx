@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, MessageCircle, UserPlus, Calendar, Star, Award, Users, Lock, DollarSign, Clock, Edit, Settings, LogOut, Heart, Share2, RefreshCw, Hash, Mail, Send } from "lucide-react"
+import { MapPin, MessageCircle, UserPlus, Calendar, Star, Award, Users, Lock, DollarSign, Clock, Edit, LogOut, Heart, Share2, RefreshCw, Hash, Mail, Send } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import ImageManager from "@/components/ImageManager"
 import MembersCard from "@/components/MembersCard"
@@ -85,6 +85,7 @@ export default function ProfilePage() {
     eventsAttended: 0,
   })
   const [statsLoading, setStatsLoading] = useState(false)
+  const [userPosts, setUserPosts] = useState<any[]>([])
 
   // Function to fetch user groups (chapters + secret groups)
   const fetchUserGroups = async (showLoading = false) => {
@@ -178,6 +179,17 @@ export default function ProfilePage() {
         const data: any = (res as any).data
         if ((res as any).success && data?.stats) {
           setStats(data.stats)
+        }
+        // Try to fetch user's posts for the Activity tab
+        const postsRes = await safeApiCall(
+          () => fetch(`/api/posts?userId=${user.id}&limit=20`, { credentials: 'include' }),
+          'Failed to fetch posts'
+        )
+        const postsData: any = (postsRes as any).data
+        if ((postsRes as any).success && Array.isArray(postsData?.posts)) {
+          setUserPosts(postsData.posts)
+        } else {
+          setUserPosts([])
         }
       } finally {
         setStatsLoading(false)
@@ -336,10 +348,6 @@ export default function ProfilePage() {
                     <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                     {isEditing ? "Cancel Edit" : "Edit Profile"}
                   </Button>
-                  <Button variant="outline" className="w-full sm:w-auto bg-transparent cursor-pointer text-xs sm:text-sm">
-                    <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                    Settings
-                  </Button>
                   <Button 
                     variant="destructive" 
                     onClick={handleLogout}
@@ -470,6 +478,54 @@ export default function ProfilePage() {
                       <SimpleList items={events.map((e:any)=>({id: e.id, title: `${e.title} • ${new Date(e.date).toLocaleDateString()}`}))} emptyText="No events"/>
                     </Card>
                   )}
+
+                  {/* Your Posts */}
+                  <Card className="p-3 sm:p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">Your Posts</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={async () => {
+                          if (!user) return
+                          const postsRes = await safeApiCall(
+                            () => fetch(`/api/posts?userId=${user.id}&limit=20`, { credentials: 'include' }),
+                            'Failed to fetch posts'
+                          )
+                          const postsData: any = (postsRes as any).data
+                          if ((postsRes as any).success && Array.isArray(postsData?.posts)) {
+                            setUserPosts(postsData.posts)
+                          } else {
+                            setUserPosts([])
+                          }
+                        }}
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {userPosts.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">You haven't posted yet.</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {userPosts.map((p: any, idx: number) => (
+                          <div key={p.id || idx} className="border rounded-lg p-3 sm:p-4 bg-background">
+                            <div className="text-xs text-muted-foreground mb-1">
+                              {p.created_at ? new Date(p.created_at).toLocaleString() : 'Recently'}
+                            </div>
+                            <div className="text-sm sm:text-base whitespace-pre-wrap break-words">
+                              {p.content || p.text || ''}
+                            </div>
+                            {p.media_url && (
+                              <div className="mt-2">
+                                <img src={p.media_url} alt="" className="max-h-64 rounded" />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
                 </TabsContent>
 
                 <TabsContent value="groups" className="space-y-3 sm:space-y-4 mt-4 sm:mt-6">
