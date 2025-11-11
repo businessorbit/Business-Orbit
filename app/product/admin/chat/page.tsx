@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic rendering to prevent build-time static generation
+export const dynamic = 'force-dynamic'
+
 import { useState } from "react";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import ChatManagementDashboard from "@/components/admin/ChatManagementDashboard";

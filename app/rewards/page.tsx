@@ -1,5 +1,8 @@
 "use client"
 
+// Force dynamic rendering to prevent build-time static generation
+export const dynamic = 'force-dynamic'
+
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"

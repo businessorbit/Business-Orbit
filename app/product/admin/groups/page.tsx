@@ -1,5 +1,8 @@
 "use client"
 
+// Force dynamic rendering to prevent build-time static generation
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AdminSidebar } from "@/components/admin-sidebar"

@@ -13,6 +13,13 @@ const nextConfig = {
   serverExternalPackages: ['pg'],
   // Skip static optimization to prevent build timeouts
   output: 'standalone',
+  // Disable output file tracing to prevent build timeout
+  // This skips the "Collecting build traces" phase
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/**/*',
+    ],
+  },
   // Skip API route analysis during build to prevent timeouts
   experimental: {
     // This helps prevent Next.js from trying to analyze API routes during build

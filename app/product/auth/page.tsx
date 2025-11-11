@@ -1,8 +1,14 @@
 'use client';
 
+'use client';
+
+// Force dynamic rendering to prevent build-time static generation
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
+
 import { Card } from '@/components/ui/card';
 import toast from 'react-hot-toast';
 
