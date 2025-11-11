@@ -11,13 +11,19 @@ const nextConfig = {
     domains: ['res.cloudinary.com'],
   },
   serverExternalPackages: ['pg'],
+  // Skip static optimization to prevent build timeouts
+  output: 'standalone',
   // Skip API route analysis during build to prevent timeouts
   experimental: {
     // This helps prevent Next.js from trying to analyze API routes during build
     serverActions: {
       bodySizeLimit: '2mb',
     },
+    // Skip build traces to speed up build
+    optimizePackageImports: ['lucide-react'],
   },
+  // Reduce build time by skipping unnecessary optimizations
+  swcMinify: true,
   // Proxy all API routes to backend ONLY on Vercel
   // On EC2, API routes run directly with database access
   async rewrites() {

@@ -1,6 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
+// Force dynamic rendering to prevent build-time static generation
+export const dynamic = 'force-dynamic'
+export const dynamicParams = true
+
+import dynamicImport from "next/dynamic";
 import { notFound } from "next/navigation";
 import { useParams } from "next/navigation";
 
@@ -44,7 +48,7 @@ export default function ProductAliasPage() {
     notFound();
   }
 
-  const Component = dynamic(loader, { 
+  const Component = dynamicImport(loader, { 
     ssr: false,
     loading: () => <div className="flex items-center justify-center min-h-screen">Loading...</div>
   });

@@ -1,5 +1,9 @@
 "use client";
 
+// Force dynamic rendering to prevent build-time static generation
+export const dynamic = 'force-dynamic'
+export const dynamicParams = true
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
