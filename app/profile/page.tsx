@@ -185,9 +185,10 @@ export default function ProfilePage() {
           () => fetch(`/api/posts?userId=${user.id}&limit=20`, { credentials: 'include' }),
           'Failed to fetch posts'
         )
-        const postsData: any = (postsRes as any).data
-        if ((postsRes as any).success && Array.isArray(postsData)) {
-          setUserPosts(postsData)
+        const postsPayload: any = (postsRes as any).data
+        const items = postsPayload?.data
+        if ((postsRes as any).success && Array.isArray(items)) {
+          setUserPosts(items)
         } else {
           setUserPosts([])
         }
@@ -493,9 +494,10 @@ export default function ProfilePage() {
                             () => fetch(`/api/posts?userId=${user.id}&limit=20`, { credentials: 'include' }),
                             'Failed to fetch posts'
                           )
-                          const postsData: any = (postsRes as any).data
-                          if ((postsRes as any).success && Array.isArray(postsData)) {
-                            setUserPosts(postsData)
+                          const postsPayload: any = (postsRes as any).data
+                          const items = postsPayload?.data
+                          if ((postsRes as any).success && Array.isArray(items)) {
+                            setUserPosts(items)
                           } else {
                             setUserPosts([])
                           }
@@ -516,9 +518,11 @@ export default function ProfilePage() {
                             <div className="text-sm sm:text-base whitespace-pre-wrap break-words">
                               {p.content || p.text || ''}
                             </div>
-                            {p.media_url && (
-                              <div className="mt-2">
-                                <img src={p.media_url} alt="" className="max-h-64 rounded" />
+                            {Array.isArray(p.media) && p.media.length > 0 && (
+                              <div className="mt-2 space-y-2">
+                                {p.media.map((m: any) => (
+                                  <img key={m.id} src={m.cloudinary_url} alt="" className="max-h-64 rounded" />
+                                ))}
                               </div>
                             )}
                           </div>
