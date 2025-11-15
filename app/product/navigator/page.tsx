@@ -217,7 +217,6 @@ export default function ProductNavigatorPage() {
                         className="text-xs sm:text-sm"
                         onClick={() => {
                           toast("This feature is enabled in Phase2/Version2", {
-                            icon: "🧭",
                             duration: 3000,
                           })
                         }}
@@ -229,7 +228,6 @@ export default function ProductNavigatorPage() {
                         variant="outline"
                         onClick={() => {
                           toast("This feature is enabled in Phase2/Version2", {
-                            icon: "👤",
                             duration: 3000,
                           })
                         }}
@@ -253,7 +251,6 @@ export default function ProductNavigatorPage() {
               className="shadow-lg text-xs sm:text-sm"
               onClick={() => {
                 toast("This feature is enabled in Phase2/Version2", {
-                  icon: "🤖",
                   duration: 3000,
                 })
               }}
@@ -328,7 +325,6 @@ export default function ProductNavigatorPage() {
                       className="flex-1 text-xs sm:text-sm"
                       onClick={() => {
                         toast("This feature is enabled in Phase2/Version2", {
-                          icon: "🧭",
                           duration: 3000,
                         })
                       }}
@@ -340,7 +336,6 @@ export default function ProductNavigatorPage() {
                       className="flex-1 text-xs sm:text-sm"
                       onClick={() => {
                         toast("This feature is enabled in Phase2/Version2", {
-                          icon: "💬",
                           duration: 3000,
                         })
                       }}

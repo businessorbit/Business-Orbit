@@ -183,7 +183,6 @@ export default function FeedPost({ post, onEngagementChange, onPostDeleted }: Fe
             className="relative cursor-pointer"
             onClick={() => {
               toast("This feature is enabled in Phase2/Version2", {
-                icon: "👤",
                 duration: 3000,
               })
             }}
@@ -208,7 +207,6 @@ export default function FeedPost({ post, onEngagementChange, onPostDeleted }: Fe
             className="flex-1 cursor-pointer"
             onClick={() => {
               toast("This feature is enabled in Phase2/Version2", {
-                icon: "👤",
                 duration: 3000,
               })
             }}

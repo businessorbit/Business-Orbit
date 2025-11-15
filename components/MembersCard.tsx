@@ -226,7 +226,6 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
                 className="relative cursor-pointer"
                 onClick={() => {
                   toastHot("This feature is enabled in Phase2/Version2", {
-                    icon: "👤",
                     duration: 3000,
                   })
                 }}
@@ -248,7 +247,6 @@ export default function MembersCard({ className = "" }: MembersCardProps) {
                 className="flex-1 min-w-0 cursor-pointer"
                 onClick={() => {
                   toastHot("This feature is enabled in Phase2/Version2", {
-                    icon: "👤",
                     duration: 3000,
                   })
                 }}
