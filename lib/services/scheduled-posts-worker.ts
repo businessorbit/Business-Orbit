@@ -83,8 +83,12 @@ class ScheduledPostsWorker {
 // Create singleton instance
 const scheduledPostsWorker = new ScheduledPostsWorker()
 
-// Auto-start when this module is loaded (server-side only)
-if (typeof window === 'undefined') {
+// Auto-start when this module is loaded (server-side only, not during build)
+if (
+  typeof window === 'undefined' &&
+  process.env.NEXT_PHASE !== 'phase-production-build' &&
+  process.env.NEXT_PHASE !== 'phase-development-build'
+) {
   // Start immediately - database connection will be ready by the time first check runs
   scheduledPostsWorker.start()
 }
