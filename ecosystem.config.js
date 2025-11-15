@@ -59,26 +59,6 @@ module.exports = {
         APP_BASE_URL: 'http://localhost:3001', // For internal API calls from chat server
         NEXT_PUBLIC_CHAT_SOCKET_URL: 'http://51.20.78.210:4000' // TODO: Change after SSL setup
       }
-    },
-    {
-      name: 'scheduled-posts-worker',
-      script: 'npm',
-      args: 'run scheduled-posts:worker',
-      cwd: '/home/ubuntu/Business-Orbit',
-      exec_mode: 'fork',
-      instances: 1,
-      env_file: '.env.local',
-      // Worker needs database access
-      env: {
-        NODE_ENV: 'production',
-        DATABASE_URL: process.env.DATABASE_URL || ''
-      },
-      // Auto restart if crashes
-      autorestart: true,
-      // Restart delay in milliseconds
-      restart_delay: 5000,
-      // Max memory before restart (optional safety)
-      max_memory_restart: '200M'
     }
   ],
 };

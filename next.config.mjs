@@ -11,8 +11,9 @@ const nextConfig = {
     domains: ['res.cloudinary.com'],
   },
   serverExternalPackages: ['pg'],
-  // Optimize build to prevent timeouts during trace collection
+  // Enable instrumentation hook for background workers
   experimental: {
+    instrumentationHook: true,
     // This helps prevent Next.js from trying to analyze API routes during build
     serverActions: {
       bodySizeLimit: '2mb',
