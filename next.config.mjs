@@ -10,8 +10,8 @@ const nextConfig = {
     unoptimized: true,
     domains: ['res.cloudinary.com'],
   },
-  serverExternalPackages: ['pg', 'dotenv'],
-  // Experimental features
+  serverExternalPackages: ['pg'],
+  // Optimize build to prevent timeouts during trace collection
   experimental: {
     // This helps prevent Next.js from trying to analyze API routes during build
     serverActions: {
@@ -65,28 +65,19 @@ const nextConfig = {
   },
   webpack: (config, { isServer, webpack }) => {
     if (!isServer) {
-      // Client-side: exclude Node.js built-in modules
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         net: false,
         tls: false,
-        path: false,
-        os: false,
-        crypto: false,
-        stream: false,
-        util: false,
-        buffer: false,
-        process: false,
       };
     }
-    // Server-side: externalize Node.js modules
+    // Optimize build by excluding database-related modules from client bundle
     if (isServer) {
       config.externals = config.externals || [];
       config.externals.push({
         'pg': 'commonjs pg',
         'pg-native': 'commonjs pg-native',
-        'dotenv': 'commonjs dotenv',
       });
     }
     return config;
